@@ -178,9 +178,10 @@ export default function TechnicianDashboard() {
                   <CardTitle>{t('diagnosisAndInspections')}</CardTitle>
                   <CardDescription>{t('addItemsToReview')}</CardDescription>
                 </div>
-                <Button onClick={handleAutoDiagnose} variant="outline" className="text-orange-500 dark:text-orange-400 border-orange-500/50 hover:bg-orange-50 dark:hover:bg-orange-950/30">
+                <Button onClick={handleAutoDiagnose} variant="outline" className="text-orange-500 dark:text-orange-400 border-orange-500/50 hover:bg-orange-50 dark:hover:bg-orange-950/30 flex-shrink-0">
                   <Wand2 className="w-4 h-4 mr-2" />
-                  {t('autoDiagnose')}
+                  <span className="hidden sm:inline">{t('autoDiagnose')}</span>
+                  <span className="sm:hidden text-xs">Auto</span>
                 </Button>
               </CardHeader>
               <CardContent className="space-y-6">

@@ -175,9 +175,10 @@ export default function AdvisorQuoteBuilder() {
                   <CardTitle>{t('quoteBuilder')}</CardTitle>
                   <CardDescription>{t('quoteBuilderDesc')}</CardDescription>
                 </div>
-                <Button onClick={handleAutoQuote} variant="outline" className="text-blue-500 dark:text-blue-400 border-blue-500/50 hover:bg-blue-50 dark:hover:bg-blue-950/30">
+                <Button onClick={handleAutoQuote} variant="outline" className="text-blue-500 dark:text-blue-400 border-blue-500/50 hover:bg-blue-50 dark:hover:bg-blue-950/30 flex-shrink-0">
                   <Wand2 className="w-4 h-4 mr-2" />
-                  {t('autoQuote')}
+                  <span className="hidden sm:inline">{t('autoQuote')}</span>
+                  <span className="sm:hidden text-xs">Auto</span>
                 </Button>
               </CardHeader>
               <CardContent className="space-y-6">

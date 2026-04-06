@@ -121,7 +121,7 @@ export default function Reception() {
   return (
     <ProtectedRoute allowedRoles={['ADMIN', 'RECEPTION']}>
       <div className="min-h-screen page-bg text-foreground px-4 md:px-8 py-6 flex justify-center">
-        <div className="w-full max-w-6xl space-y-6">
+        <div className="w-full max-w-4xl space-y-6">
           <header className="mb-6 flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-emerald-500 dark:text-emerald-400">{t('vehicleReception')}</h1>
@@ -133,10 +133,7 @@ export default function Reception() {
             </Button>
           </header>
 
-          <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-              {/* Left Column: Details */}
-              <div className="space-y-6">
+          <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-6">
             {/* Vehicle Details */}
             <Card className="glass-panel">
               <CardHeader>
@@ -312,14 +309,12 @@ export default function Reception() {
                  </div>
               </CardContent>
             </Card>
-              </div>
-            </div>
 
           <div className="flex justify-center pt-4">
             <Button 
               type="submit" 
               size="lg" 
-              className="w-full lg:w-1/2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-14 shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all"
+              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-14 shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all"
               disabled={submitting}
             >
               {submitting ? t('submitting') : t('registerAndBegin')}
