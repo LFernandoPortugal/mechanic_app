@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ─── Users Collection ──────────────────────────────
+    // Users can read their own profile.
+    // Admins can read/write all user profiles.
+    // New users can create their own profile on first login.
+    match /users/{userId} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && isAdmin();
+    }
+
+    // ─── Jobs Collection ───────────────────────────────
+    // Role-based access control per job status.
+    match /jobs/{jobId} {
+      // Any authenticated user can read any job (needed for dashboard views)
+      allow read: if request.auth != null;
+
+      // Reception/Admin can create new jobs
+      allow create: if request.auth != null && hasAnyRole(['ADMIN', 'RECEPTION']);
+
+      // Updates are role-gated:
+      // - ADMIN can update any job
+      // - RECEPTION can update jobs in Reception status
+      // - TECHNICIAN can update jobs in Reception or Diagnosis status
+      // - ADVISOR can update jobs in Approval status
+      allow update: if request.auth != null && (
+        isAdmin() || 
+        (hasAnyRole(['RECEPTION']) && resource.data.status == 'Reception') ||
+        (hasAnyRole(['TECHNICIAN']) && resource.data.status in ['Reception', 'Diagnosis']) ||
+        (hasAnyRole(['ADVISOR']) && resource.data.status == 'Approval')
+      );
+
+      // Only admin can delete jobs
+      allow delete: if request.auth != null && isAdmin();
+    }
+
+    // ─── Public Quote Access ───────────────────────────
+    // Clients can read jobs with "Ready" status and approve them
+    // This enables the /quote/[id] public link to work
+    match /jobs/{jobId} {
+      allow read: if resource.data.status in ['Ready', 'Approved'];
+      allow update: if resource.data.status == 'Ready' 
+                     && request.resource.data.status == 'Approved';
+    }
+
+    // ─── Helper Functions ──────────────────────────────
+    function isAdmin() {
+      return request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['ADMIN']);
+    }
+
+    function hasAnyRole(roles) {
+      return request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(roles);
+    }
+  }
+}

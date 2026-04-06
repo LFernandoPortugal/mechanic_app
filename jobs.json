@@ -1,0 +1,9 @@
+[
+    {
+        "timestamp": "2026-02-18T19:09:32.298154",
+        "customer": "John Doe",
+        "vehicle": "Toyota Corolla 2015",
+        "symptoms": "squeaky brakes",
+        "diagnosis": "Worn brake pads or warped rotors."
+    }
+]
