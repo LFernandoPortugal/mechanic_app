@@ -28,61 +28,70 @@ export function Header() {
   const roleMeta = primaryRole ? ROLE_META[primaryRole] : null;
 
   return (
-    <header className="w-full flex items-center justify-between p-4 bg-background/80 backdrop-blur-md border-b border-border sticky top-0 z-50">
-      <div className="flex items-center gap-4">
-        <Link href="/" className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-600 drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]">
-          SGA
+    <header className="w-full sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between h-14">
+        {/* Brand */}
+        <Link
+          href="/"
+          className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-600 drop-shadow-[0_0_10px_rgba(52,211,153,0.3)] flex items-center gap-2"
+        >
+          <span className="text-emerald-400">⚙</span> SGA
         </Link>
-      </div>
-      
-      <div className="flex items-center gap-3">
-        {user && hasRole('ADMIN') && (
-          <Link
-            href="/admin/users"
-            className="flex items-center justify-center w-9 h-9 rounded-full bg-secondary border border-border text-muted-foreground hover:text-purple-400 hover:border-purple-500/50 transition-all"
-            title={t('userManagement')}
+
+        {/* Right controls */}
+        <div className="flex items-center gap-2">
+          {/* Admin users link */}
+          {user && hasRole('ADMIN') && (
+            <Link
+              href="/admin/users"
+              className="header-tool-btn w-9 h-9 hover:text-purple-400 hover:border-purple-500/40 hover:shadow-[0_0_10px_rgba(168,85,247,0.15)]"
+              title={t('userManagement')}
+            >
+              <Users size={16} />
+            </Link>
+          )}
+
+          {/* Language toggle */}
+          <button
+            onClick={() => setLanguage(lang === 'es' ? 'en' : 'es')}
+            className="header-tool-btn gap-2 px-3 h-9 hover:text-amber-400 hover:border-amber-500/40 hover:shadow-[0_0_10px_rgba(251,191,36,0.15)] font-mono text-sm"
+            title="Toggle Language"
           >
-            <Users size={16} />
-          </Link>
-        )}
+            <Globe size={15} />
+            {lang.toUpperCase()}
+          </button>
 
-        <button 
-          onClick={() => setLanguage(lang === 'es' ? 'en' : 'es')}
-          className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-full bg-secondary border border-border text-muted-foreground hover:text-amber-400 hover:border-amber-500/50 transition-all font-mono text-sm"
-          title="Toggle Language"
-        >
-          <Globe size={16} />
-          {lang.toUpperCase()}
-        </button>
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            className="header-tool-btn w-9 h-9 hover:text-emerald-400 hover:border-emerald-500/40 hover:shadow-[0_0_10px_rgba(52,211,153,0.15)]"
+            title="Toggle Theme"
+          >
+            {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
+          </button>
 
-        <button 
-          onClick={toggleTheme}
-          className="flex items-center justify-center w-9 h-9 rounded-full bg-secondary border border-border text-muted-foreground hover:text-emerald-400 hover:border-emerald-500/50 transition-all"
-          title="Toggle Theme"
-        >
-          {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-        </button>
-
-        {user && (
-          <div className="flex items-center gap-3 pl-3 border-l border-border ml-1">
-             {roleMeta && (
-               <span className={`hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${roleMeta.color}`}>
-                 <span>{roleMeta.emoji}</span>
-                 {t(roleMeta.labelKey)}
-               </span>
-             )}
-             <span className="text-sm font-medium text-foreground hidden md:inline-block max-w-[160px] truncate">
-               {userProfile?.displayName || user.email || 'Staff'}
-             </span>
-             <button 
-               onClick={handleSignOut}
-               className="flex items-center justify-center w-9 h-9 rounded-full bg-secondary border border-border text-muted-foreground hover:text-red-400 hover:border-red-500/50 transition-all"
-               title={t('signOut')}
-             >
-               <LogOut size={16} />
-             </button>
-          </div>
-        )}
+          {/* User info + sign out */}
+          {user && (
+            <div className="flex items-center gap-2 pl-3 border-l border-border ml-1">
+              {roleMeta && (
+                <span className={`hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${roleMeta.color}`}>
+                  <span>{roleMeta.emoji}</span>
+                  {t(roleMeta.labelKey)}
+                </span>
+              )}
+              <span className="text-sm font-medium text-foreground hidden md:inline-block max-w-[150px] truncate">
+                {userProfile?.displayName || user.email || 'Staff'}
+              </span>
+              <button
+                onClick={handleSignOut}
+                className="header-tool-btn w-9 h-9 hover:text-red-400 hover:border-red-500/40 hover:shadow-[0_0_10px_rgba(248,113,113,0.15)]"
+                title={t('signOut')}
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );

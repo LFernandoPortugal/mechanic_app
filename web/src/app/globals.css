@@ -111,23 +111,76 @@
   --sidebar-primary: oklch(0.75 0.25 140);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.75 0.25 140);
 }
 
+/* ── Custom cursor: hide OS cursor on desktop ─────────────── */
+@media (pointer: fine) {
+  *, *::before, *::after {
+    cursor: none !important;
+  }
+}
+
+/* ── Cursor click animation ───────────────────────────────── */
+.sga-cursor {
+  transition: transform 0.04s linear;
+}
+.sga-cursor.cursor-clicking svg {
+  transform: rotate(45deg) scale(0.85);
+  transition: transform 0.1s ease;
+}
+.sga-cursor svg {
+  transition: transform 0.15s ease;
+}
+
+/* ── Touch ripple animation ───────────────────────────────── */
+@keyframes touch-ripple {
+  0%   { transform: scale(0.2); opacity: 1; }
+  100% { transform: scale(3.5); opacity: 0; }
+}
+.animate-touch-ripple {
+  animation: touch-ripple 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
 @layer utilities {
+  /* Glass panel — base */
   .glass-panel {
-    @apply bg-white/90 backdrop-blur-xl border border-gray-200 shadow-md;
+    @apply bg-white/90 backdrop-blur-xl border border-gray-200 shadow-md transition-all duration-200;
   }
+
+  /* Glass panel — dark mode */
   .dark .glass-panel {
-    @apply bg-black/40 backdrop-blur-xl border border-white/10 shadow-[0_0_15px_rgba(57,255,20,0.05)];
+    @apply bg-zinc-900/60 backdrop-blur-xl border border-white/10 shadow-[0_0_15px_rgba(57,255,20,0.05)];
   }
+
+  /* Hover on dark glass panels */
+  .dark .glass-panel:hover {
+    @apply bg-zinc-800/70 border-white/15 shadow-[0_0_25px_rgba(52,211,153,0.08)];
+  }
+
+  /* Page background */
   .page-bg {
     @apply bg-background;
   }
   .dark .page-bg {
     @apply bg-zinc-950 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-zinc-900 via-zinc-950 to-black;
+  }
+
+  /* Desktop-friendly max-width container */
+  .page-container {
+    @apply w-full max-w-5xl mx-auto px-4 md:px-8;
+  }
+  .page-container-wide {
+    @apply w-full max-w-7xl mx-auto px-4 md:px-10;
+  }
+
+  /* Header tool button dark hover */
+  .header-tool-btn {
+    @apply flex items-center justify-center rounded-full bg-secondary border border-border
+           text-muted-foreground transition-all duration-200
+           hover:text-foreground hover:bg-white/10 hover:border-white/25 hover:shadow-[0_0_10px_rgba(255,255,255,0.06)];
   }
 }
 

@@ -120,8 +120,8 @@ export default function Reception() {
 
   return (
     <ProtectedRoute allowedRoles={['ADMIN', 'RECEPTION']}>
-      <div className="min-h-screen page-bg text-foreground p-4 md:p-8 flex justify-center">
-        <div className="w-full max-w-2xl space-y-6">
+      <div className="min-h-screen page-bg text-foreground px-4 md:px-8 py-6 flex justify-center">
+        <div className="w-full max-w-4xl space-y-6">
           <header className="mb-6 flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-emerald-500 dark:text-emerald-400">{t('vehicleReception')}</h1>

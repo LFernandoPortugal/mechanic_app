@@ -48,13 +48,13 @@ export default function OwnerAnalytics() {
 
   return (
     <ProtectedRoute allowedRoles={['ADMIN']}>
-      <div className="min-h-screen page-bg p-8 max-w-6xl mx-auto space-y-8 pb-20">
+      <div className="min-h-screen page-bg px-4 md:px-8 py-8 max-w-7xl mx-auto space-y-8 pb-20">
         <header className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2 font-mono">{t('operationsAnalytics')}</h1>
           <p className="text-muted-foreground text-sm">{t('analyticsDesc')}</p>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <Card className="glass-panel border-l-4 border-l-emerald-500">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
@@ -116,7 +116,7 @@ export default function OwnerAnalytics() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <Card className="glass-panel">
             <CardHeader>
               <CardTitle>{t('jobStatusDistribution')}</CardTitle>

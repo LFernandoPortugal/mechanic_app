@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLE_ROUTE_MAP, ROLE_META } from '@/types';
-import { ClipboardList, Wrench, DollarSign, BarChart3, ShieldCheck } from 'lucide-react';
+import { ClipboardList, Wrench, DollarSign, BarChart3, ShieldCheck, ArrowRight } from 'lucide-react';
 
 interface NavCard {
   href: string;
@@ -14,6 +14,7 @@ interface NavCard {
   hoverBorder: string;
   hoverShadow: string;
   titleColor: string;
+  accentBg: string;
 }
 
 const allCards: NavCard[] = [
@@ -21,37 +22,41 @@ const allCards: NavCard[] = [
     href: '/reception',
     titleKey: 'reception',
     descKey: 'receptionDesc',
-    icon: <ClipboardList className="w-6 h-6 text-emerald-400 mb-3" />,
-    hoverBorder: 'hover:border-emerald-500/50',
-    hoverShadow: 'hover:shadow-[0_0_20px_rgba(52,211,153,0.15)]',
+    icon: <ClipboardList className="w-7 h-7 text-emerald-400" />,
+    hoverBorder: 'hover:border-emerald-500/60',
+    hoverShadow: 'hover:shadow-[0_0_30px_rgba(52,211,153,0.12)]',
     titleColor: 'text-emerald-400',
+    accentBg: 'bg-emerald-500/10 group-hover:bg-emerald-500/20',
   },
   {
     href: '/technician',
     titleKey: 'technician',
     descKey: 'technicianDesc',
-    icon: <Wrench className="w-6 h-6 text-orange-400 mb-3" />,
-    hoverBorder: 'hover:border-orange-500/50',
-    hoverShadow: 'hover:shadow-[0_0_20px_rgba(249,115,22,0.15)]',
+    icon: <Wrench className="w-7 h-7 text-orange-400" />,
+    hoverBorder: 'hover:border-orange-500/60',
+    hoverShadow: 'hover:shadow-[0_0_30px_rgba(249,115,22,0.12)]',
     titleColor: 'text-orange-400',
+    accentBg: 'bg-orange-500/10 group-hover:bg-orange-500/20',
   },
   {
     href: '/advisor',
     titleKey: 'advisor',
     descKey: 'advisorDesc',
-    icon: <DollarSign className="w-6 h-6 text-blue-400 mb-3" />,
-    hoverBorder: 'hover:border-blue-500/50',
-    hoverShadow: 'hover:shadow-[0_0_20px_rgba(59,130,246,0.15)]',
+    icon: <DollarSign className="w-7 h-7 text-blue-400" />,
+    hoverBorder: 'hover:border-blue-500/60',
+    hoverShadow: 'hover:shadow-[0_0_30px_rgba(59,130,246,0.12)]',
     titleColor: 'text-blue-400',
+    accentBg: 'bg-blue-500/10 group-hover:bg-blue-500/20',
   },
   {
     href: '/analytics',
     titleKey: 'analytics',
     descKey: 'analyticsDesc',
-    icon: <BarChart3 className="w-6 h-6 text-purple-400 mb-3" />,
-    hoverBorder: 'hover:border-purple-500/50',
-    hoverShadow: 'hover:shadow-[0_0_20px_rgba(168,85,247,0.15)]',
+    icon: <BarChart3 className="w-7 h-7 text-purple-400" />,
+    hoverBorder: 'hover:border-purple-500/60',
+    hoverShadow: 'hover:shadow-[0_0_30px_rgba(168,85,247,0.12)]',
     titleColor: 'text-purple-400',
+    accentBg: 'bg-purple-500/10 group-hover:bg-purple-500/20',
   },
 ];
 
@@ -68,12 +73,18 @@ export default function Home() {
     : allCards;
 
   return (
-    <div className="min-h-screen page-bg text-foreground p-8 flex flex-col items-center justify-center">
-      <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-600 mb-2 drop-shadow-[0_0_15px_rgba(52,211,153,0.3)]">{t('appTitle')}</h1>
-      <p className="text-muted-foreground mb-4 max-w-sm text-center">{t('appSubtitle')}</p>
+    <div className="min-h-screen page-bg text-foreground flex flex-col items-center justify-center px-4 py-12">
+      {/* Hero */}
+      <div className="text-center mb-10 max-w-2xl">
+        <h1 className="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-400 mb-3 drop-shadow-[0_0_20px_rgba(52,211,153,0.3)] leading-tight">
+          {t('appTitle')}
+        </h1>
+        <p className="text-muted-foreground text-lg">{t('appSubtitle')}</p>
+      </div>
 
+      {/* Role badges */}
       {userProfile && (
-        <div className="flex items-center gap-2 mb-8">
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-10">
           {userProfile.roles.map((role) => {
             const meta = ROLE_META[role];
             return (
@@ -84,34 +95,49 @@ export default function Home() {
           })}
         </div>
       )}
-      
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl">
+
+      {/* Navigation grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 w-full max-w-5xl">
         {visibleCards.map((card) => (
           <Link
             key={card.href}
             href={card.href}
-            className={`block p-6 glass-panel rounded-xl ${card.hoverBorder} ${card.hoverShadow} transition-all`}
+            className={`group relative flex flex-col p-6 glass-panel rounded-2xl ${card.hoverBorder} ${card.hoverShadow} transition-all duration-300 hover:-translate-y-1`}
           >
-            {card.icon}
-            <h2 className={`text-xl font-semibold mb-2 ${card.titleColor}`}>{t(card.titleKey)}</h2>
-            <p className="text-muted-foreground text-sm">{t(card.descKey)}</p>
+            {/* Icon badge */}
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-5 transition-all duration-300 ${card.accentBg}`}>
+              {card.icon}
+            </div>
+            <h2 className={`text-lg font-bold mb-2 ${card.titleColor}`}>{t(card.titleKey)}</h2>
+            <p className="text-muted-foreground text-sm flex-1 leading-relaxed">{t(card.descKey)}</p>
+            {/* Arrow */}
+            <div className={`mt-4 flex items-center gap-1 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${card.titleColor}`}>
+              <span>Abrir</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </div>
           </Link>
         ))}
 
         {hasRole('ADMIN') && (
           <Link
             href="/admin/users"
-            className="block p-6 glass-panel rounded-xl hover:border-purple-500/50 hover:shadow-[0_0_20px_rgba(168,85,247,0.15)] transition-all"
+            className="group relative flex flex-col p-6 glass-panel rounded-2xl hover:border-purple-500/60 hover:shadow-[0_0_30px_rgba(168,85,247,0.12)] transition-all duration-300 hover:-translate-y-1"
           >
-            <ShieldCheck className="w-6 h-6 text-purple-400 mb-3" />
-            <h2 className="text-xl font-semibold mb-2 text-purple-400">{t('userManagement')}</h2>
-            <p className="text-muted-foreground text-sm">{t('userManagementDesc')}</p>
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-5 bg-purple-500/10 group-hover:bg-purple-500/20 transition-all duration-300">
+              <ShieldCheck className="w-7 h-7 text-purple-400" />
+            </div>
+            <h2 className="text-lg font-bold mb-2 text-purple-400">{t('userManagement')}</h2>
+            <p className="text-muted-foreground text-sm flex-1 leading-relaxed">{t('userManagementDesc')}</p>
+            <div className="mt-4 flex items-center gap-1 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-purple-400">
+              <span>Abrir</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </div>
           </Link>
         )}
       </div>
 
       {!user && !loading && (
-        <p className="mt-8 text-muted-foreground text-sm">
+        <p className="mt-10 text-muted-foreground text-sm">
           <Link href="/login" className="text-emerald-400 hover:underline">{t('loginPrompt')}</Link> {t('loginPromptSuffix')}
         </p>
       )}
