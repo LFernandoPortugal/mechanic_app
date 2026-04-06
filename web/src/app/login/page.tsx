@@ -38,7 +38,10 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      // Ensure profile exists for existing accounts (e.g. demo accounts after a reset)
+      const roles = demoRoles || DEMO_ROLE_MAP[email] || ['RECEPTION'];
+      await createUserProfile(cred.user.uid, cred.user.email || email, undefined, roles);
       router.push(redirectTo);
     } catch (err: any) {
       console.log("Login failed. Attempting automatic registration for prototype...", err.code);

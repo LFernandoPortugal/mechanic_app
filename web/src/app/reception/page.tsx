@@ -72,7 +72,7 @@ export default function Reception() {
           lockNutKey: valuables.lockNut,
           sunglasses: valuables.sunglasses,
           documents: valuables.documents,
-          other: valuables.other || undefined,
+          other: valuables.other || "",
         },
         startingFuel: fuelLevel,
         odometer: parseInt(odometer) || 0,
