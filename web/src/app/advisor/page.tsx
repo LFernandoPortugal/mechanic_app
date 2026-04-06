@@ -128,8 +128,9 @@ export default function AdvisorQuoteBuilder() {
   return (
     <ProtectedRoute allowedRoles={['ADMIN', 'ADVISOR']}>
       <div className="min-h-screen page-bg text-foreground px-4 md:px-8 py-6 flex justify-center">
-        <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="w-full max-w-5xl space-y-6">
+        <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Left Sidebar: Pending Jobs (3/12 = 25%) */}
+          <div className="lg:col-span-3 space-y-4">
             <header className="mb-6">
               <h1 className="text-2xl font-bold text-blue-500 dark:text-blue-400">{t('advisorArea')}</h1>
               <p className="text-muted-foreground text-sm">{t('advisorSubtitle')}</p>
@@ -164,7 +165,8 @@ export default function AdvisorQuoteBuilder() {
         )}
       </div>
 
-      <div className="w-full md:w-2/3">
+      {/* Right Content: Quote Builder (9/12 = 75%) */}
+      <div className="lg:col-span-9">
         {selectedJob ? (
           <div className="space-y-6">
             <Card className="glass-panel">

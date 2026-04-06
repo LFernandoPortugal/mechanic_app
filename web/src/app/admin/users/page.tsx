@@ -88,7 +88,7 @@ export default function AdminUsersPage() {
   return (
     <ProtectedRoute allowedRoles={['ADMIN']}>
       <div className="min-h-screen page-bg text-foreground px-4 md:px-8 py-6">
-        <div className="max-w-6xl mx-auto space-y-6">
+        <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-purple-100 dark:bg-purple-950/30 rounded-xl border border-purple-500/30">

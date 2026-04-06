@@ -79,6 +79,8 @@
   "tapToSign": "Toca para firmar",
   "signedDigitalToken": "Firma Digital Capturada",
   "confirmReception": "Confirmar Recepción",
+  "registerAndBegin": "Registrar e Iniciar",
+  "submitting": "Enviando...",
   "receptionComplete": "Recepción Completa",
   "vehicleQueued": "El vehículo {id} está ahora en cola para inspección.",
   "goToTechnician": "Ir al Panel de Técnico",

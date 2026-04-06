@@ -79,6 +79,8 @@
   "tapToSign": "Tap to Sign",
   "signedDigitalToken": "Signed Digital Token",
   "confirmReception": "Confirm Reception",
+  "registerAndBegin": "Register and Begin",
+  "submitting": "Submitting...",
   "receptionComplete": "Reception Complete",
   "vehicleQueued": "Vehicle {id} is now queued for inspection.",
   "goToTechnician": "Go to Technician Dashboard",
