@@ -204,5 +204,20 @@
   "colorPlaceholder": "e.g. Red, Blue...",
   "documentsInVehicle": "Documents in Vehicle",
   "otherValuables": "Other Items",
-  "otherValuablesPlaceholder": "Describe other items left in vehicle..."
+  "otherValuablesPlaceholder": "Describe other items left in vehicle...",
+
+  "alertNoPhoneWhatsApp": "No phone number provided — the client won't receive WhatsApp updates.",
+
+  "sendWhatsApp": "📱 Send via WhatsApp",
+  "sendWhatsAppNoPhone": "📱 No phone (unavailable)",
+  "notifyClientWhatsApp": "📱 Notify Client via WhatsApp",
+  "downloadPDF": "⬇ Download Quote PDF",
+  "sendEmail": "📧 Send Email to Client",
+  "sendEmailNoConfig": "📧 Email (not configured)",
+  "sendingEmail": "Sending email...",
+  "emailSent": "Email sent to client.",
+  "emailError": "Error sending email. Check your configuration.",
+
+  "inventory": "Inventory",
+  "inventoryDesc": "Manage parts and service stock for the workshop."
 }

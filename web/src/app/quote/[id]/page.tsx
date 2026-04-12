@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Wand2, AlertTriangle, CheckCircle } from "lucide-react";
+import { Wand2, AlertTriangle, CheckCircle, Download } from "lucide-react";
+import { generateQuotePDF } from "@/lib/pdf";
 
 export default function ClientQuoteView() {
   const { t } = useLanguage();
@@ -229,6 +230,15 @@ export default function ClientQuoteView() {
           onClick={handleAcceptQuote}
         >
           {t('acceptQuoteBtn')}
+        </Button>
+
+        <Button
+          variant="outline"
+          className="w-full border-amber-500/40 text-amber-500 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 h-12 mt-3"
+          onClick={() => generateQuotePDF(job, 'client')}
+        >
+          <Download className="w-4 h-4 mr-2" />
+          {t('downloadPDF')}
         </Button>
       </div>
     </div>

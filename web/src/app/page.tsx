@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLE_ROUTE_MAP, ROLE_META } from '@/types';
-import { ClipboardList, Wrench, DollarSign, BarChart3, ShieldCheck, ArrowRight } from 'lucide-react';
+import { ClipboardList, Wrench, DollarSign, BarChart3, ShieldCheck, Package, ArrowRight } from 'lucide-react';
 
 interface NavCard {
   href: string;
@@ -57,6 +57,16 @@ const allCards: NavCard[] = [
     hoverShadow: 'hover:shadow-[0_0_30px_rgba(168,85,247,0.12)]',
     titleColor: 'text-purple-400',
     accentBg: 'bg-purple-500/10 group-hover:bg-purple-500/20',
+  },
+  {
+    href: '/inventory',
+    titleKey: 'inventory',
+    descKey: 'inventoryDesc',
+    icon: <Package className="w-7 h-7 text-teal-400" />,
+    hoverBorder: 'hover:border-teal-500/60',
+    hoverShadow: 'hover:shadow-[0_0_30px_rgba(20,184,166,0.12)]',
+    titleColor: 'text-teal-400',
+    accentBg: 'bg-teal-500/10 group-hover:bg-teal-500/20',
   },
 ];
 

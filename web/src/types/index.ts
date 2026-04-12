@@ -17,6 +17,7 @@ export const ROLE_ROUTE_MAP: Record<string, UserRole[]> = {
   '/advisor': ['ADMIN', 'ADVISOR'],
   '/analytics': ['ADMIN'],
   '/admin/users': ['ADMIN'],
+  '/inventory': ['ADMIN', 'ADVISOR'],
 };
 
 /** Display metadata for each role — labelKey is a translation key */
@@ -65,7 +66,9 @@ export interface AuditLog {
 export interface Job {
   id: string;
   vehicleId: string;
-  clientId: string;
+  clientId: string;         // Client name
+  clientPhone?: string;     // WhatsApp number (e.g. "50760001122")
+  clientEmail?: string;     // For email notifications
   advisorId: string;
   technicianId?: string;
   status: 'Reception' | 'Diagnosis' | 'Approval' | 'Repair' | 'QC' | 'Ready' | 'Delivered' | 'Approved';
@@ -97,4 +100,38 @@ export interface Job {
   // Timeline
   createdAt: Date;
   auditLog: AuditLog[];
+}
+
+// ─── Inventory Types ─────────────────────────────────────
+export type InventoryCategory = 'Frenos' | 'Motor' | 'Transmisión' | 'Suspensión' | 'Eléctrico' | 'Filtros' | 'Aceites' | 'Llantas' | 'Carrocería' | 'Mano de Obra' | 'Otro';
+
+export interface InventoryItem {
+  id: string;
+  sku: string;                  // Internal code e.g. "FRE-001"
+  name: string;                 // "Pastillas de Freno Delanteras"
+  category: InventoryCategory;
+  unitPrice: number;            // Suggested sale price (USD)
+  costPrice?: number;           // Purchase cost (for margin tracking)
+  stock: number;                // Current units in stock (-1 = unlimited/service)
+  minStock: number;             // Alert threshold (e.g. 2)
+  unit: string;                 // "pcs", "litros", "metros"
+  description?: string;
+  supplier?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type StockMovementType = 'IN' | 'OUT' | 'ADJUSTMENT';
+
+export interface InventoryTransaction {
+  id: string;
+  itemId: string;
+  itemName: string;
+  type: StockMovementType;
+  quantity: number;             // Always positive; direction set by type
+  unitPrice: number;            // Price at time of movement
+  jobId?: string;               // Linked job if OUT via repair
+  notes?: string;
+  actorId: string;
+  createdAt: Date;
 }

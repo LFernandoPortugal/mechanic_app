@@ -1,6 +1,6 @@
 import { db } from "./firebase";
-import { collection, addDoc, Timestamp, doc, getDoc, getDocs, query, where, updateDoc, setDoc, orderBy, limit as firestoreLimit } from "firebase/firestore";
-import { Job, UserProfile, UserRole, AuditLog } from "@/types";
+import { collection, addDoc, Timestamp, doc, getDoc, getDocs, query, where, updateDoc, deleteDoc, setDoc, orderBy, limit as firestoreLimit, increment } from "firebase/firestore";
+import { Job, UserProfile, UserRole, AuditLog, InventoryItem, InventoryTransaction, StockMovementType } from "@/types";
 
 // ─── User Profile Functions (RBAC) ──────────────────────
 
@@ -215,5 +215,151 @@ export async function getJobById(jobId: string): Promise<Job | null> {
   } catch (e) {
     console.error("Error fetching job: ", e);
     return null;
+  }
+}
+
+// ─── Inventory Functions ─────────────────────────────────
+
+export async function getInventoryItems(category?: string): Promise<InventoryItem[]> {
+  try {
+    const ref = collection(db, "inventory");
+    const q = category
+      ? query(ref, where("category", "==", category), orderBy("name"))
+      : query(ref, orderBy("name"));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as InventoryItem));
+  } catch (e) {
+    console.error("Error fetching inventory:", e);
+    return [];
+  }
+}
+
+export async function getInventoryItem(itemId: string): Promise<InventoryItem | null> {
+  try {
+    const snap = await getDoc(doc(db, "inventory", itemId));
+    return snap.exists() ? { id: snap.id, ...snap.data() } as InventoryItem : null;
+  } catch (e) {
+    console.error("Error fetching inventory item:", e);
+    return null;
+  }
+}
+
+export async function addInventoryItem(
+  item: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>,
+  actorId: string
+): Promise<string> {
+  try {
+    const ref = await addDoc(collection(db, "inventory"), {
+      ...item,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    });
+    // Record the initial stock as an IN movement
+    if (item.stock > 0) {
+      await recordStockMovement({
+        itemId: ref.id,
+        itemName: item.name,
+        type: 'IN',
+        quantity: item.stock,
+        unitPrice: item.costPrice ?? item.unitPrice,
+        notes: 'Stock inicial',
+        actorId,
+      });
+    }
+    return ref.id;
+  } catch (e) {
+    console.error("Error adding inventory item:", e);
+    throw e;
+  }
+}
+
+export async function updateInventoryItem(
+  itemId: string,
+  data: Partial<Omit<InventoryItem, 'id' | 'createdAt'>>,
+  actorId?: string
+): Promise<void> {
+  try {
+    await updateDoc(doc(db, "inventory", itemId), {
+      ...data,
+      updatedAt: Timestamp.now(),
+    });
+  } catch (e) {
+    console.error("Error updating inventory item:", e);
+    throw e;
+  }
+}
+
+export async function deleteInventoryItem(itemId: string): Promise<void> {
+  try {
+    await deleteDoc(doc(db, "inventory", itemId));
+  } catch (e) {
+    console.error("Error deleting inventory item:", e);
+    throw e;
+  }
+}
+
+export interface StockMovementInput {
+  itemId: string;
+  itemName: string;
+  type: StockMovementType;
+  quantity: number;
+  unitPrice: number;
+  jobId?: string;
+  notes?: string;
+  actorId: string;
+}
+
+/**
+ * Records a stock movement and atomically updates the item's stock.
+ * OUT movements decrease stock; IN movements increase it; ADJUSTMENT sets it.
+ */
+export async function recordStockMovement(movement: StockMovementInput): Promise<void> {
+  try {
+    // 1. Write the transaction log entry
+    await addDoc(collection(db, "inventory_transactions"), {
+      ...movement,
+      createdAt: Timestamp.now(),
+    });
+
+    // 2. Update the item stock atomically
+    const itemRef = doc(db, "inventory", movement.itemId);
+    if (movement.type === 'IN') {
+      await updateDoc(itemRef, { stock: increment(movement.quantity), updatedAt: Timestamp.now() });
+    } else if (movement.type === 'OUT') {
+      await updateDoc(itemRef, { stock: increment(-movement.quantity), updatedAt: Timestamp.now() });
+    } else {
+      // ADJUSTMENT: caller should pass the new absolute stock as quantity
+      await updateDoc(itemRef, { stock: movement.quantity, updatedAt: Timestamp.now() });
+    }
+  } catch (e) {
+    console.error("Error recording stock movement:", e);
+    throw e;
+  }
+}
+
+export async function getStockMovements(itemId: string, limitCount = 50): Promise<InventoryTransaction[]> {
+  try {
+    const ref = collection(db, "inventory_transactions");
+    const q = query(ref, where("itemId", "==", itemId), orderBy("createdAt", "desc"), firestoreLimit(limitCount));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as InventoryTransaction));
+  } catch (e) {
+    console.error("Error fetching stock movements:", e);
+    return [];
+  }
+}
+
+export async function searchInventoryItems(term: string, limit = 10): Promise<InventoryItem[]> {
+  // Firestore doesn't support full-text search natively.
+  // We fetch all items and filter client-side (fine for workshop-scale inventory < 5k items).
+  try {
+    const items = await getInventoryItems();
+    const lower = term.toLowerCase();
+    return items
+      .filter(i => i.name.toLowerCase().includes(lower) || i.sku.toLowerCase().includes(lower))
+      .slice(0, limit);
+  } catch (e) {
+    console.error("Error searching inventory:", e);
+    return [];
   }
 }

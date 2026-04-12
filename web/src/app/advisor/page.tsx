@@ -12,8 +12,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Wand2, Copy, ExternalLink, CheckCircle } from "lucide-react";
+import { Wand2, Copy, ExternalLink, CheckCircle, MessageCircle, Download, Mail } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { openWhatsAppQuote } from "@/lib/whatsapp";
+import { generateQuotePDF } from "@/lib/pdf";
+import { sendQuoteEmail, isEmailConfigured } from "@/lib/email";
 
 export default function AdvisorQuoteBuilder() {
   const { t } = useLanguage();
@@ -24,7 +27,9 @@ export default function AdvisorQuoteBuilder() {
   const [prices, setPrices] = useState<Record<string, number>>({});
   const [baseLaborCost, setBaseLaborCost] = useState(0);
   const [submittedJobId, setSubmittedJobId] = useState<string | null>(null);
+  const [submittedJob, setSubmittedJob] = useState<Job | null>(null);
   const [copied, setCopied] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
   
   const router = useRouter();
 
@@ -70,6 +75,14 @@ export default function AdvisorQuoteBuilder() {
         totalEstimate: calculateTotal(),
         status: "Ready"
       }, user?.uid || "unknown", "Quote Generated");
+      // Keep the full job object for PDF/WhatsApp/Email
+      const savedJob: Job = {
+        ...selectedJob,
+        inspectionItems: updatedInspectionItems,
+        totalEstimate: calculateTotal(),
+        status: "Ready",
+      };
+      setSubmittedJob(savedJob);
       setSubmittedJobId(selectedJob.id);
       setSelectedJob(null);
       setPrices({});
@@ -84,19 +97,41 @@ export default function AdvisorQuoteBuilder() {
     return <div className="min-h-screen bg-background text-foreground p-6 flex items-center justify-center">{t('loadingQuotes')}</div>;
   }
 
-  if (submittedJobId) {
+  if (submittedJobId && submittedJob) {
     const quoteUrl = typeof window !== 'undefined' ? `${window.location.origin}/quote/${submittedJobId}` : `/quote/${submittedJobId}`;
+    const hasPhone = Boolean(submittedJob.clientPhone);
+    const hasEmail = Boolean(submittedJob.clientEmail) && isEmailConfigured();
+
+    const handleSendEmail = async () => {
+      if (!submittedJob.clientEmail) return;
+      setSendingEmail(true);
+      try {
+        await sendQuoteEmail({
+          clientEmail: submittedJob.clientEmail,
+          clientName: submittedJob.clientId,
+          vehicleId: submittedJob.vehicleId,
+          quoteUrl,
+          totalEstimate: submittedJob.totalEstimate,
+        });
+        toast.success(t('emailSent'));
+      } catch {
+        toast.error(t('emailError'));
+      } finally {
+        setSendingEmail(false);
+      }
+    };
     
     return (
       <div className="min-h-screen page-bg flex items-center justify-center p-4">
-        <Card className="glass-panel text-center max-w-md w-full p-8 border-blue-500/50">
+        <Card className="glass-panel text-center max-w-lg w-full p-8 border-blue-500/50">
           <div className="w-16 h-16 bg-blue-100 dark:bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-8 h-8 text-blue-500 dark:text-blue-400" />
           </div>
-          <h2 className="text-2xl font-bold text-blue-500 dark:text-blue-400 mb-2">{t('quoteGenerated')}</h2>
-          <p className="text-muted-foreground mb-6">{t('quoteGeneratedDesc')}</p>
+          <h2 className="text-2xl font-bold text-blue-500 dark:text-blue-400 mb-1">{t('quoteGenerated')}</h2>
+          <p className="text-muted-foreground text-sm mb-6">{t('quoteGeneratedDesc')}</p>
           
-          <div className="bg-secondary dark:bg-black border border-border p-3 flex rounded items-center justify-between mb-8 overflow-hidden">
+          {/* Quote URL Copy bar */}
+          <div className="bg-secondary dark:bg-black border border-border p-3 flex rounded items-center justify-between mb-6 overflow-hidden">
              <span className="text-muted-foreground text-sm truncate mr-2">{quoteUrl}</span>
              <Button 
                size="sm" 
@@ -112,13 +147,52 @@ export default function AdvisorQuoteBuilder() {
              </Button>
           </div>
 
-          <div className="space-y-3 flex flex-col items-center">
-             <Button onClick={() => router.push(`/quote/${submittedJobId}`)} className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-lg text-white">
+          {/* Action buttons */}
+          <div className="space-y-3">
+            {/* WhatsApp */}
+            <Button
+              className="w-full bg-[#25d366] hover:bg-[#1ebe5d] text-white font-bold h-12"
+              disabled={!hasPhone}
+              onClick={() => openWhatsAppQuote(
+                submittedJob.clientPhone!,
+                submittedJob.clientId,
+                submittedJob.vehicleId,
+                quoteUrl,
+                submittedJob.totalEstimate
+              )}
+            >
+              <MessageCircle className="w-4 h-4 mr-2" />
+              {hasPhone ? t('sendWhatsApp') : t('sendWhatsAppNoPhone')}
+            </Button>
+
+            {/* Email */}
+            <Button
+              className="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold h-12"
+              disabled={!hasEmail || sendingEmail}
+              onClick={handleSendEmail}
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              {sendingEmail ? t('sendingEmail') : hasEmail ? t('sendEmail') : t('sendEmailNoConfig')}
+            </Button>
+
+            {/* PDF */}
+            <Button
+              variant="outline"
+              className="w-full border-blue-500/50 text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 h-12"
+              onClick={() => generateQuotePDF(submittedJob, 'advisor')}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              {t('downloadPDF')}
+            </Button>
+
+            <div className="flex gap-3 pt-2">
+              <Button onClick={() => router.push(`/quote/${submittedJobId}`)} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
                 <ExternalLink className="w-4 h-4 mr-2" /> {t('openClientView')}
-             </Button>
-             <Button onClick={() => setSubmittedJobId(null)} variant="ghost" className="text-muted-foreground hover:text-foreground">
+              </Button>
+              <Button onClick={() => { setSubmittedJobId(null); setSubmittedJob(null); }} variant="ghost" className="flex-1 text-muted-foreground hover:text-foreground">
                 {t('backToDashboard')}
-             </Button>
+              </Button>
+            </div>
           </div>
         </Card>
       </div>

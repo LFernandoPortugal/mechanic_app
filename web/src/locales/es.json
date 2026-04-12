@@ -204,5 +204,20 @@
   "colorPlaceholder": "ej. Rojo, Azul...",
   "documentsInVehicle": "Documentos en el Vehículo",
   "otherValuables": "Otros Artículos",
-  "otherValuablesPlaceholder": "Describe otros artículos dejados en el vehículo..."
+  "otherValuablesPlaceholder": "Describe otros artículos dejados en el vehículo...",
+
+  "alertNoPhoneWhatsApp": "Sin número de teléfono, el cliente no recibirá actualizaciones por WhatsApp.",
+
+  "sendWhatsApp": "📱 Enviar por WhatsApp",
+  "sendWhatsAppNoPhone": "📱 Sin teléfono (no disponible)",
+  "notifyClientWhatsApp": "📱 Notificar al cliente por WhatsApp",
+  "downloadPDF": "⬇ Descargar PDF de Cotización",
+  "sendEmail": "📧 Enviar Email al Cliente",
+  "sendEmailNoConfig": "📧 Email (sin configurar)",
+  "sendingEmail": "Enviando email...",
+  "emailSent": "Email enviado al cliente.",
+  "emailError": "Error enviando email. Verifique la configuración.",
+
+  "inventory": "Inventario",
+  "inventoryDesc": "Gestión de stock de repuestos y servicios del taller."
 }

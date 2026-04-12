@@ -55,11 +55,18 @@ export default function Reception() {
       return;
     }
 
+    // Non-blocking warning: WhatsApp updates require phone
+    if (!client.phone.trim()) {
+      toast.warning(t('alertNoPhoneWhatsApp'), { duration: 4000 });
+    }
+
     setSubmitting(true);
     try {
       await createJob({
         vehicleId: vehicle.plate,
         clientId: client.name,
+        clientPhone: client.phone.trim() || undefined,
+        clientEmail: client.email.trim() || undefined,
         advisorId: user?.uid || "unknown",
         status: 'Reception',
         fluidAudit: {

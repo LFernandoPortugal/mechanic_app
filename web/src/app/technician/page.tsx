@@ -13,8 +13,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Wand2 } from "lucide-react";
+import { Wand2, MessageCircle } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { openWhatsAppStatusUpdate } from "@/lib/whatsapp";
 
 const STATUS_MAP: Record<string, string> = {
   Pass: 'statusPass',
@@ -35,6 +36,7 @@ export default function TechnicianDashboard() {
   const [newItemStatus, setNewItemStatus] = useState<'Pass' | 'Fail' | 'Critical' | 'Recommended'>('Pass');
   const [newItemNotes, setNewItemNotes] = useState("");
   const [submittedJobId, setSubmittedJobId] = useState<string | null>(null);
+  const [submittedJob, setSubmittedJob] = useState<Job | null>(null);
   
   const router = useRouter();
 
@@ -98,6 +100,7 @@ export default function TechnicianDashboard() {
         inspectionItems: selectedJob.inspectionItems || [],
         status: "Approval"
       }, user?.uid || "unknown", "Diagnosis Submitted");
+      setSubmittedJob(selectedJob);  // save for WhatsApp
       setSubmittedJobId(selectedJob.vehicleId);
       setSelectedJob(null);
       fetchJobs();
@@ -111,6 +114,7 @@ export default function TechnicianDashboard() {
   }
 
   if (submittedJobId) {
+    const hasPhone = Boolean(submittedJob?.clientPhone);
     return (
     <ProtectedRoute allowedRoles={['ADMIN', 'TECHNICIAN']}>
         <div className="min-h-screen page-bg flex items-center justify-center p-4">
@@ -121,10 +125,25 @@ export default function TechnicianDashboard() {
             <h2 className="text-2xl font-bold text-orange-500 dark:text-orange-400 mb-2">{t('diagnosisSubmitted')}</h2>
             <p className="text-muted-foreground mb-8">{t('vehicleReadyForQuoting').replace('{id}', submittedJobId)}</p>
             <div className="space-y-3">
+               {/* WhatsApp notify — only if phone is stored */}
+               {hasPhone && submittedJob && (
+                 <Button
+                   className="w-full bg-[#25d366] hover:bg-[#1ebe5d] text-white font-bold h-12"
+                   onClick={() => openWhatsAppStatusUpdate(
+                     submittedJob.clientPhone!,
+                     submittedJob.clientId,
+                     submittedJob.vehicleId,
+                     'diagnosis'
+                   )}
+                 >
+                   <MessageCircle className="w-4 h-4 mr-2" />
+                   {t('notifyClientWhatsApp')}
+                 </Button>
+               )}
                <Button onClick={() => router.push('/advisor')} className="w-full bg-orange-600 hover:bg-orange-700 h-12 text-lg text-white">
                   {t('goToAdvisor')}
                </Button>
-               <Button onClick={() => setSubmittedJobId(null)} variant="outline" className="w-full border-border text-muted-foreground h-10">
+               <Button onClick={() => { setSubmittedJobId(null); setSubmittedJob(null); }} variant="outline" className="w-full border-border text-muted-foreground h-10">
                   {t('inspectAnother')}
                </Button>
             </div>
