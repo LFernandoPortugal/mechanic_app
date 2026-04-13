@@ -102,9 +102,11 @@ export default function AdvisorQuoteBuilder() {
 
     try {
       const newPayment = {
+        id: Math.random().toString(36).substring(7),
         amount,
+        method: paymentType as 'Efectivo' | 'Tarjeta' | 'Transferencia' | 'Yape/Plin',
         date: new Date().toISOString(),
-        type: paymentType
+        actorId: user?.uid || "unknown"
       };
 
       const existingPayments = selectedJob.payments || [];
@@ -420,7 +422,7 @@ export default function AdvisorQuoteBuilder() {
                       {selectedJob.payments.map((p, i) => (
                         <div key={i} className="flex justify-between items-center p-3 border border-border rounded bg-secondary/30">
                           <div>
-                            <p className="font-medium">{p.type}</p>
+                            <p className="font-medium">{p.method}</p>
                             <p className="text-xs text-muted-foreground">{new Date(p.date).toLocaleString()}</p>
                           </div>
                           <span className="font-mono text-lg text-emerald-500">+${p.amount.toFixed(2)}</span>

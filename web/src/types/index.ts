@@ -100,8 +100,8 @@ export interface Job {
   payments?: {
     id: string;
     amount: number;
-    method: 'Efectivo' | 'Tarjeta' | 'Transferencia';
-    date: Date;
+    method: 'Efectivo' | 'Tarjeta' | 'Transferencia' | 'Yape/Plin';
+    date: string;
     actorId: string;
   }[];
   
