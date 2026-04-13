@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createJob } from "@/lib/db";
+import { createJob, updateJob } from "@/lib/db";
+import { uploadJobImage } from "@/lib/storage";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ export default function Reception() {
   const [valuables, setValuables] = useState({ lockNut: false, sunglasses: false, documents: false, other: "" });
   const [fuelLevel, setFuelLevel] = useState(50);
   const [odometer, setOdometer] = useState("");
+  const [photos, setPhotos] = useState<File[]>([]);
   const [signature, setSignature] = useState(false);
   const [createdJobId, setCreatedJobId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -62,7 +64,7 @@ export default function Reception() {
 
     setSubmitting(true);
     try {
-      await createJob({
+      const jobId = await createJob({
         vehicleId: vehicle.plate,
         clientId: client.name,
         clientPhone: client.phone.trim() || undefined,
@@ -88,6 +90,18 @@ export default function Reception() {
         totalEstimate: 0,
         approvedAmount: 0,
       }, user?.uid || "unknown");
+
+      // 1.5 Subir las fotos si existen
+      if (photos.length > 0) {
+        toast.info(t('uploadingPhotos') || "Subiendo fotos...");
+        const urls: string[] = [];
+        for (const file of photos) {
+          const url = await uploadJobImage(file, jobId, "reception");
+          urls.push(url);
+        }
+        await updateJob(jobId, { receptionImages: urls });
+      }
+
       setCreatedJobId(vehicle.plate);
     } catch (e) {
       console.error(e);
@@ -116,7 +130,7 @@ export default function Reception() {
              <Button onClick={() => router.push('/technician')} className="w-full bg-emerald-600 hover:bg-emerald-700 h-12 text-lg text-white">
                 {t('goToTechnician')}
              </Button>
-             <Button onClick={() => { setCreatedJobId(null); setVehicle({ vin: "", make: "", model: "", plate: "", color: "" }); setClient({ name: "", phone: "", email: "" }); setSignature(false); setOdometer(""); setFuelLevel(50); }} variant="outline" className="w-full border-border text-muted-foreground h-10">
+             <Button onClick={() => { setCreatedJobId(null); setVehicle({ vin: "", make: "", model: "", plate: "", color: "" }); setClient({ name: "", phone: "", email: "" }); setSignature(false); setOdometer(""); setFuelLevel(50); setPhotos([]); }} variant="outline" className="w-full border-border text-muted-foreground h-10">
                 {t('registerAnother')}
              </Button>
           </div>
@@ -231,6 +245,52 @@ export default function Reception() {
                     </div>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Existing Damages (Photos) */}
+            <Card className="glass-panel">
+              <CardHeader>
+                <CardTitle className="text-lg flex justify-between items-center">
+                  Evidencia Visual (Daños Previos)
+                  <Badge variant="outline" className="text-amber-500 border-amber-500">Legal Shield</Badge>
+                </CardTitle>
+                <CardDescription>Tomas fotográficas para proteger al taller de reclamos.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Label className="block mb-2 text-muted-foreground cursor-pointer" htmlFor="reception-camera">
+                  Capturar Foto o Elegir Archivo
+                </Label>
+                <Input 
+                  id="reception-camera"
+                  type="file" 
+                  accept="image/*" 
+                  capture="environment" 
+                  multiple 
+                  onChange={(e) => {
+                    if (e.target.files) {
+                      setPhotos((prev) => [...prev, ...Array.from(e.target.files!)]);
+                    }
+                  }}
+                  className="bg-background border-border"
+                />
+                
+                {photos.length > 0 && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {photos.map((p, i) => (
+                      <div key={i} className="relative w-16 h-16 rounded overflow-hidden border border-border">
+                        <img src={URL.createObjectURL(p)} alt="preview" className="object-cover w-full h-full" />
+                        <button 
+                          type="button" 
+                          onClick={() => setPhotos(photos.filter((_, index) => index !== i))}
+                          className="absolute top-0 right-0 bg-red-500 text-white w-5 h-5 flex items-center justify-center text-xs"
+                        >
+                          X
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 

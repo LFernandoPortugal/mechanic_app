@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getJobsForQuote, updateJob } from "@/lib/db";
+import { getJobsForAdvisor, updateJob } from "@/lib/db";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Job } from "@/types";
@@ -30,6 +30,8 @@ export default function AdvisorQuoteBuilder() {
   const [submittedJob, setSubmittedJob] = useState<Job | null>(null);
   const [copied, setCopied] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentType, setPaymentType] = useState("Efectivo");
   
   const router = useRouter();
 
@@ -39,7 +41,7 @@ export default function AdvisorQuoteBuilder() {
 
   const fetchJobs = async () => {
     setLoading(true);
-    const fetched = await getJobsForQuote();
+    const fetched = await getJobsForAdvisor();
     setJobs(fetched);
     setLoading(false);
   };
@@ -90,6 +92,34 @@ export default function AdvisorQuoteBuilder() {
       fetchJobs();
     } catch (e) {
       toast.error("Error saving quote: " + e);
+    }
+  };
+
+  const handleAddPayment = async () => {
+    if (!selectedJob || !paymentAmount) return;
+    const amount = parseFloat(paymentAmount);
+    if (isNaN(amount) || amount <= 0) return;
+
+    try {
+      const newPayment = {
+        amount,
+        date: new Date().toISOString(),
+        type: paymentType
+      };
+
+      const existingPayments = selectedJob.payments || [];
+      const updatedPayments = [...existingPayments, newPayment];
+      
+      await updateJob(selectedJob.id, {
+        payments: updatedPayments
+      }, user?.uid || "unknown", `Pago registrado: $${amount} (${paymentType})`);
+
+      setSelectedJob({ ...selectedJob, payments: updatedPayments });
+      setPaymentAmount("");
+      toast.success(t('paymentRegistered') || "Pago registrado correctamente");
+      fetchJobs();
+    } catch (e) {
+      toast.error("Error: " + e);
     }
   };
 
@@ -230,7 +260,14 @@ export default function AdvisorQuoteBuilder() {
               <CardHeader className="p-4">
                 <CardTitle className="text-lg flex justify-between items-center">
                   {t('jobLabel')} {job.vehicleId}
-                  <Badge variant="outline" className="text-blue-400 border-blue-400">{t('waiting')}</Badge>
+                  <Badge variant="outline" className={`
+                    ${job.status === 'Approval' ? 'text-amber-500 border-amber-500' : ''}
+                    ${job.status === 'Ready' ? 'text-blue-400 border-blue-400' : ''}
+                    ${job.status === 'Approved' ? 'text-emerald-500 border-emerald-500' : ''}
+                    ${job.status === 'Repair' ? 'text-purple-500 border-purple-500' : ''}
+                  `}>
+                    {t(`status${job.status}` as any) || job.status}
+                  </Badge>
                 </CardTitle>
                 <CardDescription>{t('odometer')}: {job.odometer} km</CardDescription>
               </CardHeader>
@@ -239,9 +276,9 @@ export default function AdvisorQuoteBuilder() {
         )}
       </div>
 
-      {/* Right Content: Quote Builder (9/12 = 75%) */}
+      {/* Right Content: Quote Builder / Operations (9/12 = 75%) */}
       <div className="lg:col-span-9">
-        {selectedJob ? (
+        {selectedJob && selectedJob.status === "Approval" ? (
           <div className="space-y-6">
             <Card className="glass-panel">
               <CardHeader className="flex flex-row justify-between items-start">
@@ -277,6 +314,15 @@ export default function AdvisorQuoteBuilder() {
                             </Badge>
                           </div>
                           {item.notes && <p className="text-sm text-muted-foreground bg-secondary dark:bg-black/50 p-2 rounded border-l-2 border-border">{item.notes}</p>}
+                          {item.mediaUrls && item.mediaUrls.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-3">
+                              {item.mediaUrls.map((url, idx) => (
+                                <a href={url} target="_blank" rel="noopener noreferrer" key={idx}>
+                                  <img src={url} alt="Evidencia" className="w-16 h-16 object-cover rounded border border-border shadow-sm hover:scale-105 transition-transform" />
+                                </a>
+                              ))}
+                            </div>
+                          )}
                         </div>
                         
                         {(item.status !== 'Pass') && (
@@ -328,6 +374,104 @@ export default function AdvisorQuoteBuilder() {
             >
               {t('generateQuoteBtn')}
             </Button>
+          </div>
+        ) : selectedJob ? (
+          <div className="space-y-6">
+            <Card className="glass-panel">
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle>Detalles del Servicio</CardTitle>
+                    <CardDescription>Vehículo: {selectedJob.vehicleId}</CardDescription>
+                  </div>
+                  <Badge className="bg-emerald-600">{t(`status${selectedJob.status}` as any) || selectedJob.status}</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                
+                {/* Visualizar Total */}
+                <div className="bg-secondary/50 dark:bg-black/40 p-4 rounded-lg border border-border flex justify-between items-center">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Monto Total Aprobado</p>
+                    <p className="text-3xl font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                      ${selectedJob.approvedAmount?.toFixed(2) || selectedJob.totalEstimate?.toFixed(2) || "0.00"}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">Saldo Pendiente</p>
+                    <p className="text-2xl font-mono text-amber-500 font-bold">
+                      ${(
+                        (selectedJob.approvedAmount || selectedJob.totalEstimate || 0) - 
+                        (selectedJob.payments?.reduce((acc, p) => acc + p.amount, 0) || 0)
+                      ).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+
+                <hr className="border-border" />
+
+                {/* Historial de Pagos */}
+                <div>
+                  <h3 className="font-semibold text-foreground mb-3">Historial de Pagos</h3>
+                  {(!selectedJob.payments || selectedJob.payments.length === 0) ? (
+                    <p className="text-sm text-muted-foreground italic">No se han registrado pagos aún.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {selectedJob.payments.map((p, i) => (
+                        <div key={i} className="flex justify-between items-center p-3 border border-border rounded bg-secondary/30">
+                          <div>
+                            <p className="font-medium">{p.type}</p>
+                            <p className="text-xs text-muted-foreground">{new Date(p.date).toLocaleString()}</p>
+                          </div>
+                          <span className="font-mono text-lg text-emerald-500">+${p.amount.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Registrar Pago */}
+                <div className="bg-secondary/50 p-4 rounded-lg border border-border mt-4">
+                  <h3 className="font-semibold text-foreground mb-4">Registrar Nuevo Pago (Abono)</h3>
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <Label>Monto</Label>
+                      <Input 
+                        type="number" 
+                        min="0"
+                        placeholder="0.00"
+                        className="bg-background border-border font-mono"
+                        value={paymentAmount}
+                        onChange={(e) => setPaymentAmount(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <Label>Método de Pago</Label>
+                      <select 
+                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        value={paymentType}
+                        onChange={(e) => setPaymentType(e.target.value)}
+                      >
+                        <option value="Efectivo">Efectivo 💵</option>
+                        <option value="Tarjeta">Tarjeta 💳</option>
+                        <option value="Transferencia">Transferencia 🏦</option>
+                        <option value="Yape/Plin">Yape/Plin 📱</option>
+                      </select>
+                    </div>
+                  </div>
+                  <Button onClick={handleAddPayment} className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white">
+                    Procesar Abono
+                  </Button>
+                </div>
+
+                <div className="pt-4 flex gap-4">
+                  <Button onClick={() => router.push(`/quote/${selectedJob.id}`)} variant="outline" className="flex-1 border-blue-500/50 text-blue-500">
+                    <ExternalLink className="w-4 h-4 mr-2" /> Ver Vista del Cliente
+                  </Button>
+                </div>
+
+              </CardContent>
+            </Card>
           </div>
         ) : (
           <div className="h-full flex items-center justify-center bg-secondary/50 dark:bg-zinc-900/10 border border-border rounded-xl border-dashed p-8 text-center text-muted-foreground">

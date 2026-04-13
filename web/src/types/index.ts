@@ -74,6 +74,7 @@ export interface Job {
   status: 'Reception' | 'Diagnosis' | 'Approval' | 'Repair' | 'QC' | 'Ready' | 'Delivered' | 'Approved';
   
   // Liability Shield Data
+  receptionImages?: string[]; // Visual evidence of pre-existing damages
   fluidAudit: {
     oilLevel: 'OK' | 'Low' | 'Empty';
     coolantLevel: 'OK' | 'Low' | 'Empty';
@@ -96,6 +97,13 @@ export interface Job {
   // Financials
   totalEstimate: number;
   approvedAmount: number;
+  payments?: {
+    id: string;
+    amount: number;
+    method: 'Efectivo' | 'Tarjeta' | 'Transferencia';
+    date: Date;
+    actorId: string;
+  }[];
   
   // Timeline
   createdAt: Date;

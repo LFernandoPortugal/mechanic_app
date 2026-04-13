@@ -179,6 +179,15 @@ export default function ClientQuoteView() {
                           </Badge>
                         </div>
                         {item.notes && <p className="text-sm text-muted-foreground">{item.notes}</p>}
+                        {item.mediaUrls && item.mediaUrls.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-3">
+                            {item.mediaUrls.map((url, idx) => (
+                              <a href={url} target="_blank" rel="noopener noreferrer" key={idx}>
+                                <img src={url} alt="Evidencia de daño" className="w-16 h-16 object-cover rounded border border-border shadow-sm hover:scale-105 transition-transform" />
+                              </a>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       
                       {hasPrice ? (

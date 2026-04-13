@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getAssignedJobs, updateJob, assignTechnician } from "@/lib/db";
+import { uploadJobImage } from "@/lib/storage";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Job, InspectionItem } from "@/types";
@@ -35,6 +36,8 @@ export default function TechnicianDashboard() {
   const [newItemName, setNewItemName] = useState("");
   const [newItemStatus, setNewItemStatus] = useState<'Pass' | 'Fail' | 'Critical' | 'Recommended'>('Pass');
   const [newItemNotes, setNewItemNotes] = useState("");
+  const [newItemPhotos, setNewItemPhotos] = useState<File[]>([]);
+  const [isLogging, setIsLogging] = useState(false);
   const [submittedJobId, setSubmittedJobId] = useState<string | null>(null);
   const [submittedJob, setSubmittedJob] = useState<Job | null>(null);
   
@@ -51,24 +54,42 @@ export default function TechnicianDashboard() {
     setLoading(false);
   };
 
-  const handleAddInspection = () => {
+  const handleAddInspection = async () => {
     if (!selectedJob || !newItemName) return;
+    setIsLogging(true);
     
-    const newItem: InspectionItem = {
-      id: Math.random().toString(36).substring(7),
-      name: newItemName,
-      status: newItemStatus,
-      notes: newItemNotes
-    };
+    try {
+      const urls: string[] = [];
+      if (newItemPhotos.length > 0) {
+        toast.info(t('uploadingPhotos') || "Subiendo evidencia...");
+        for (const file of newItemPhotos) {
+          const url = await uploadJobImage(file, selectedJob.id, "evidence");
+          urls.push(url);
+        }
+      }
 
-    const updatedJob = {
-      ...selectedJob,
-      inspectionItems: [...(selectedJob.inspectionItems || []), newItem]
-    };
-    setSelectedJob(updatedJob);
-    setNewItemName("");
-    setNewItemNotes("");
-    setNewItemStatus("Pass");
+      const newItem: InspectionItem = {
+        id: Math.random().toString(36).substring(7),
+        name: newItemName,
+        status: newItemStatus,
+        notes: newItemNotes,
+        mediaUrls: urls
+      };
+
+      const updatedJob = {
+        ...selectedJob,
+        inspectionItems: [...(selectedJob.inspectionItems || []), newItem]
+      };
+      setSelectedJob(updatedJob);
+      setNewItemName("");
+      setNewItemNotes("");
+      setNewItemStatus("Pass");
+      setNewItemPhotos([]);
+    } catch (e) {
+      toast.error("Error uploading evidence");
+    } finally {
+      setIsLogging(false);
+    }
   };
 
   const handleAutoDiagnose = () => {
@@ -215,6 +236,13 @@ export default function TechnicianDashboard() {
                         <div>
                           <p className="font-medium text-foreground">{item.name}</p>
                           {item.notes && <p className="text-sm text-muted-foreground">{item.notes}</p>}
+                          {item.mediaUrls && item.mediaUrls.length > 0 && (
+                            <div className="flex gap-2 mt-2">
+                              {item.mediaUrls.map((url, idx) => (
+                                <img key={idx} src={url} alt="Evidencia" className="w-12 h-12 object-cover rounded border border-border" />
+                              ))}
+                            </div>
+                          )}
                         </div>
                         <Badge className={`
                           ${item.status === 'Pass' ? 'bg-emerald-600' : ''}
@@ -276,8 +304,42 @@ export default function TechnicianDashboard() {
                     />
                   </div>
 
-                  <Button onClick={handleAddInspection} variant="secondary" className="w-full">
-                    {t('logItem')}
+                  {newItemStatus !== 'Pass' && (
+                    <div className="space-y-2">
+                      <Label>Evidencia Fotográfica (Opcional)</Label>
+                      <Input 
+                        type="file" 
+                        accept="image/*" 
+                        capture="environment" 
+                        multiple 
+                        onChange={(e) => {
+                          if (e.target.files) {
+                            setNewItemPhotos((prev) => [...prev, ...Array.from(e.target.files!)]);
+                          }
+                        }}
+                        className="bg-background border-border"
+                      />
+                      {newItemPhotos.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {newItemPhotos.map((p, i) => (
+                            <div key={i} className="relative w-12 h-12 rounded overflow-hidden border border-border">
+                              <img src={URL.createObjectURL(p)} alt="preview" className="object-cover w-full h-full" />
+                              <button 
+                                type="button" 
+                                onClick={() => setNewItemPhotos(newItemPhotos.filter((_, index) => index !== i))}
+                                className="absolute top-0 right-0 bg-red-500 text-white w-4 h-4 flex items-center justify-center text-[10px]"
+                              >
+                                X
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <Button onClick={handleAddInspection} variant="secondary" className="w-full" disabled={isLogging}>
+                    {isLogging ? t('uploadingPhotos') || "Subiendo..." : t('logItem')}
                   </Button>
                 </div>
               </CardContent>

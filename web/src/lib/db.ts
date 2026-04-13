@@ -132,10 +132,10 @@ export async function assignTechnician(jobId: string, technicianUid: string) {
   }
 }
 
-export async function getJobsForQuote() {
+export async function getJobsForAdvisor() {
   try {
     const jobsRef = collection(db, "jobs");
-    const q = query(jobsRef, where("status", "==", "Approval"));
+    const q = query(jobsRef, where("status", "in", ["Approval", "Ready", "Approved", "Repair"]));
     const querySnapshot = await getDocs(q);
     const jobs: Job[] = [];
     querySnapshot.forEach((document) => {
@@ -143,7 +143,7 @@ export async function getJobsForQuote() {
     });
     return jobs;
   } catch (e) {
-    console.error("Error fetching jobs for quote: ", e);
+    console.error("Error fetching jobs for advisor: ", e);
     return [];
   }
 }
