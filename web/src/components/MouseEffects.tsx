@@ -29,42 +29,49 @@ function TouchRippleLayer() {
   }, []);
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-[9998] overflow-hidden">
-      {ripples.map((r) => (
-        <span
-          key={r.id}
-          className="absolute rounded-full animate-touch-ripple"
-          style={{
-            left: r.x - 40,
-            top: r.y - 40,
-            width: 80,
-            height: 80,
-            background:
-              "radial-gradient(circle, rgba(52,211,153,0.35) 0%, rgba(52,211,153,0) 70%)",
-            border: "1.5px solid rgba(52,211,153,0.5)",
-          }}
-        />
-      ))}
-    </div>
+    <>
+      <div className="fixed inset-0 z-[-2] pointer-events-none">
+        <div className="absolute inset-0 bg-[url('/bg-mechanic.png')] bg-cover bg-center opacity-30" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/70 to-background/95" />
+      </div>
+      <div className="pointer-events-none fixed inset-0 z-[9998] overflow-hidden">
+        {ripples.map((r) => (
+          <span
+            key={r.id}
+            className="absolute rounded-full animate-touch-ripple"
+            style={{
+              left: r.x - 40,
+              top: r.y - 40,
+              width: 80,
+              height: 80,
+              background:
+                "radial-gradient(circle, rgba(52,211,153,0.35) 0%, rgba(52,211,153,0) 70%)",
+              border: "1.5px solid rgba(52,211,153,0.5)",
+            }}
+          />
+        ))}
+      </div>
+    </>
   );
 }
 
 // ─── Desktop Effects ─────────────────────────────────────
 function DesktopEffects() {
   const cursorRef = useRef<HTMLDivElement>(null);
-  const orbRef = useRef<HTMLDivElement>(null);
+  const bgRef = useRef<HTMLDivElement>(null);
+  
   const mousePos = useRef({ x: -200, y: -200 });
-  const orbPos = useRef({ x: -200, y: -200 });
+  const bgPos = useRef({ x: 0, y: 0 });
   const isClicking = useRef(false);
   const rafRef = useRef<number>(0);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [orbVisible, setOrbVisible] = useState(true);
+  const [cursorVisible, setCursorVisible] = useState(true);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     mousePos.current = { x: e.clientX, y: e.clientY };
-    setOrbVisible(true);
+    setCursorVisible(true);
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-    idleTimerRef.current = setTimeout(() => setOrbVisible(false), 3000);
+    idleTimerRef.current = setTimeout(() => setCursorVisible(false), 3000);
   }, []);
 
   const handleMouseDown = useCallback(() => {
@@ -89,12 +96,21 @@ function DesktopEffects() {
       if (cursorRef.current) {
         cursorRef.current.style.transform = `translate(${mousePos.current.x - 12}px, ${mousePos.current.y - 12}px)`;
       }
-      // Orb: smooth lerp follow
-      orbPos.current.x = lerp(orbPos.current.x, mousePos.current.x, 0.07);
-      orbPos.current.y = lerp(orbPos.current.y, mousePos.current.y, 0.07);
-      if (orbRef.current) {
-        orbRef.current.style.transform = `translate(${orbPos.current.x - 160}px, ${orbPos.current.y - 160}px)`;
+      
+      // Background Parallax: move slightly opposite to the mouse
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+      
+      const targetBgX = ((mousePos.current.x - centerX) / centerX) * -25;
+      const targetBgY = ((mousePos.current.y - centerY) / centerY) * -25;
+      
+      bgPos.current.x = lerp(bgPos.current.x, targetBgX, 0.05);
+      bgPos.current.y = lerp(bgPos.current.y, targetBgY, 0.05);
+      
+      if (bgRef.current) {
+        bgRef.current.style.transform = `translate(${bgPos.current.x}px, ${bgPos.current.y}px) scale(1.05)`;
       }
+      
       rafRef.current = requestAnimationFrame(animate);
     };
 
@@ -111,10 +127,20 @@ function DesktopEffects() {
 
   return (
     <>
+      {/* Background with Parallax */}
+      <div className="fixed inset-0 z-[-2] pointer-events-none overflow-hidden">
+        <div
+          ref={bgRef}
+          className="absolute -inset-10 bg-[url('/bg-mechanic.png')] bg-cover bg-center will-change-transform opacity-30 object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/70 to-background/95" />
+      </div>
+
       {/* Custom cursor — Wrench icon */}
       <div
         ref={cursorRef}
-        className="sga-cursor pointer-events-none fixed top-0 left-0 z-[9999] will-change-transform"
+        className="sga-cursor pointer-events-none fixed top-0 left-0 z-[9999] will-change-transform transition-opacity duration-500"
+        style={{ opacity: cursorVisible ? 1 : 0 }}
         aria-hidden
       >
         <svg
@@ -134,28 +160,6 @@ function DesktopEffects() {
             fill="rgba(52,211,153,0.15)"
           />
         </svg>
-      </div>
-
-      {/* Glass Orb */}
-      <div
-        ref={orbRef}
-        className="pointer-events-none fixed top-0 left-0 z-[9990] will-change-transform transition-opacity duration-700"
-        style={{ opacity: orbVisible ? 1 : 0 }}
-        aria-hidden
-      >
-        <div
-          style={{
-            width: 320,
-            height: 320,
-            borderRadius: "50%",
-            background:
-              "radial-gradient(circle at 40% 40%, rgba(52,211,153,0.07) 0%, rgba(16,185,129,0.04) 40%, rgba(0,0,0,0) 70%)",
-            border: "1px solid rgba(52,211,153,0.18)",
-            backdropFilter: "blur(0.5px)",
-            boxShadow:
-              "inset 0 0 40px rgba(52,211,153,0.05), 0 0 60px rgba(52,211,153,0.04)",
-          }}
-        />
       </div>
     </>
   );

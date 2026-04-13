@@ -175,7 +175,7 @@ export default function OwnerAnalytics() {
                         ${job.status === 'Diagnosis' ? 'bg-orange-600' : ''}
                         ${job.status === 'Reception' ? 'bg-zinc-600' : ''}
                       `}>
-                        {job.status}
+                        {t(`status${job.status}` as any) || t('approved')}
                       </Badge>
                   </div>
                 ))}

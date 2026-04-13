@@ -177,7 +177,7 @@ export default function TechnicianDashboard() {
                 <CardTitle className="text-lg flex justify-between items-center">
                   {job.vehicleId}
                   <Badge variant="outline" className={job.status === 'Reception' ? 'text-amber-500 border-amber-500' : 'text-blue-400 border-blue-400'}>
-                    {job.status}
+                    {t(`status${job.status}` as any) || job.status}
                   </Badge>
                 </CardTitle>
                 <CardDescription>{t('odometer')}: {job.odometer} km</CardDescription>

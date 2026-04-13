@@ -219,5 +219,13 @@
   "emailError": "Error sending email. Check your configuration.",
 
   "inventory": "Inventory",
-  "inventoryDesc": "Manage parts and service stock for the workshop."
+  "inventoryDesc": "Manage parts and service stock for the workshop.",
+
+  "statusReception": "Reception",
+  "statusDiagnosis": "Diagnosis",
+  "statusApproval": "Quoting",
+  "statusReady": "Waiting on Client",
+  "statusRepair": "In Repair",
+  "statusQC": "Quality Control",
+  "statusDelivered": "Delivered"
 }

@@ -219,5 +219,13 @@
   "emailError": "Error enviando email. Verifique la configuración.",
 
   "inventory": "Inventario",
-  "inventoryDesc": "Gestión de stock de repuestos y servicios del taller."
+  "inventoryDesc": "Gestión de stock de repuestos y servicios del taller.",
+
+  "statusReception": "Recepción",
+  "statusDiagnosis": "Diagnóstico",
+  "statusApproval": "Cotizando",
+  "statusReady": "Esperando Cliente",
+  "statusRepair": "En Reparación",
+  "statusQC": "Control de Calidad",
+  "statusDelivered": "Entregado"
 }
