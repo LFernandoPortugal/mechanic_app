@@ -273,7 +273,7 @@ export default function AdvisorQuoteBuilder() {
                               ${item.status === 'Critical' ? 'bg-orange-600' : ''}
                               ${item.status === 'Recommended' ? 'bg-blue-600' : ''}
                             `}>
-                              {item.status}
+                              {t(`status${item.status}` as any) || item.status}
                             </Badge>
                           </div>
                           {item.notes && <p className="text-sm text-muted-foreground bg-secondary dark:bg-black/50 p-2 rounded border-l-2 border-border">{item.notes}</p>}

@@ -34,3 +34,7 @@ Ve a la reunión con el sistema exactamente como está ahora. Déjalo que lo use
 Escúchalo. Él te dirá de inmediato: "Wow, me encanta, pero... ¿cómo registro si Juan me dejó un adelanto de $50?" o "¿Dónde pongo el logo de mi taller?".
 
 Anota todo lo que te diga. Esos serán nuestros requerimientos exactos para la próxima fase. ¿Qué opinas? ¿Crees que hay algo de esta lista que consideras crítico tener antes de ir a mostrárselo?
+
+📘 4. Tareas Post-Desarrollo
+Tutorial de Usuario Final:
+Hay que armar un pequeño flujo (tutorial detallado o guía rápida interactiva) que le explique al Asesor/Técnico qué significa cada estado del vehículo y cómo avanzar el proceso desde que entra hasta que se entrega, por si se pierde.
