@@ -6,11 +6,11 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { getWorkshopSettings, updateWorkshopSettings } from "@/lib/db";
+import { getWorkshopSettings, updateWorkshopSettings, resetWorkshopData } from "@/lib/db";
 import { useRouter } from "next/navigation";
 import { uploadJobImage } from "@/lib/storage";
 import { toast } from "sonner";
-import { Building2, Save, UploadCloud, ArrowLeft } from "lucide-react";
+import { Building2, Save, UploadCloud, ArrowLeft, Trash2, AlertTriangle, RefreshCw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function SettingsPage() {
@@ -27,6 +27,12 @@ export default function SettingsPage() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Danger Zone / Reset States
+  const [resetConfirmText, setResetConfirmText] = useState("");
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resetting, setResetting] = useState(false);
+
 
   useEffect(() => {
     if (authLoading) return;
@@ -80,6 +86,33 @@ export default function SettingsPage() {
       setSaving(false);
     }
   };
+
+  const handleResetData = async () => {
+    if (!userProfile?.workshopId) {
+      toast.error("No se detectó el taller del usuario.");
+      return;
+    }
+    if (resetConfirmText.trim().toUpperCase() !== "ELIMINAR") {
+      toast.error("Por favor, escribe 'ELIMINAR' para confirmar.");
+      return;
+    }
+
+    setResetting(true);
+    try {
+      const result = await resetWorkshopData(userProfile.workshopId);
+      toast.success(
+        `¡Limpieza de prueba exitosa! Se eliminaron: ${result.jobsDeleted} órdenes, ${result.inventoryDeleted} productos e ${result.transactionsDeleted} transacciones.`
+      );
+      setShowResetConfirm(false);
+      setResetConfirmText("");
+    } catch (err) {
+      toast.error("Error al restablecer los datos del taller.");
+      console.error(err);
+    } finally {
+      setResetting(false);
+    }
+  };
+
 
   if (loading) {
     return <div className="min-h-screen p-6 text-center text-muted-foreground flex items-center justify-center">Cargando configuración...</div>;
@@ -217,6 +250,95 @@ export default function SettingsPage() {
                 </Button>
               </CardContent>
             </form>
+          </Card>
+
+          {/* Danger Zone */}
+          <Card className="glass-panel border-red-500/20 bg-red-950/5 mt-8 overflow-hidden transition-all duration-300 hover:border-red-500/30">
+            <CardHeader className="border-b border-red-500/10 bg-red-950/10">
+              <CardTitle className="text-red-500 flex items-center gap-2 text-lg font-bold">
+                <AlertTriangle className="w-5 h-5 text-red-500 animate-pulse" />
+                Zona de Peligro (Restablecer SaaS / Taller)
+              </CardTitle>
+              <CardDescription className="text-red-400/80 text-xs">
+                Acciones irreversibles de limpieza y restauración para pruebas o inicios oficiales.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div className="flex flex-col gap-2 text-foreground">
+                <p className="text-sm font-semibold">
+                  Limpiar todos los datos del Taller: <span className="font-mono text-xs bg-red-500/10 px-1.5 py-0.5 rounded text-red-400 border border-red-500/20">{userProfile?.workshopId || "demo-workshop"}</span>
+                </p>
+                <p className="text-muted-foreground text-xs leading-relaxed">
+                  Esta acción eliminará de forma permanente e irreversible de la base de datos:
+                </p>
+                <ul className="list-disc pl-5 text-xs text-muted-foreground space-y-1">
+                  <li>Todas las <strong>Órdenes de Trabajo (Jobs)</strong> registradas.</li>
+                  <li>Todos los <strong>Productos del Inventario</strong>.</li>
+                  <li>Todo el <strong>Historial de Movimientos de Stock (Transacciones)</strong>.</li>
+                </ul>
+                <p className="text-amber-500/90 text-xs font-semibold mt-1">
+                  Nota: Tus usuarios de taller, roles, contraseñas y la configuración básica de este taller NO se verán afectados.
+                </p>
+              </div>
+
+              {!showResetConfirm ? (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  className="w-full bg-red-600 hover:bg-red-700 hover:shadow-red-500/20 hover:shadow-md text-white font-medium transition-all duration-300"
+                  onClick={() => setShowResetConfirm(true)}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Iniciar Restablecimiento de Datos
+                </Button>
+              ) : (
+                <div className="space-y-4 p-4 border border-red-500/20 bg-black/30 rounded-lg animate-fade-in">
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-reset" className="text-red-400 font-semibold text-xs flex items-center gap-1.5">
+                      Confirmación de Seguridad Obligatoria
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Para confirmar que entiendes que esto es irreversible y deseas borrar todo, escribe la palabra <span className="font-bold text-red-500 select-none">ELIMINAR</span> a continuación:
+                    </p>
+                    <Input
+                      id="confirm-reset"
+                      value={resetConfirmText}
+                      onChange={(e) => setResetConfirmText(e.target.value)}
+                      placeholder="Escribe ELIMINAR para continuar..."
+                      className="border-red-500/30 focus-visible:ring-red-500 bg-background text-red-500 font-semibold tracking-wider text-center"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="flex gap-3">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="flex-1 text-muted-foreground hover:bg-secondary border border-border"
+                      onClick={() => {
+                        setShowResetConfirm(false);
+                        setResetConfirmText("");
+                      }}
+                      disabled={resetting}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold"
+                      disabled={resetConfirmText.trim().toUpperCase() !== "ELIMINAR" || resetting}
+                      onClick={handleResetData}
+                    >
+                      {resetting ? (
+                        <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Borrando...</>
+                      ) : (
+                        <><Trash2 className="w-4 h-4 mr-2" /> Sí, borrar todo permanentemente</>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
           </Card>
         </div>
       </div>

@@ -508,3 +508,41 @@ export async function getJobsByVehicleId(workshopId: string, vehicleId: string):
     return [];
   }
 }
+
+export async function resetWorkshopData(workshopId: string): Promise<{ jobsDeleted: number; inventoryDeleted: number; transactionsDeleted: number }> {
+  try {
+    let jobsDeleted = 0;
+    let inventoryDeleted = 0;
+    let transactionsDeleted = 0;
+
+    // 1. Delete jobs
+    const jobsRef = collection(db, "jobs");
+    const jobsSnap = await getDocs(query(jobsRef, where("workshopId", "==", workshopId)));
+    for (const document of jobsSnap.docs) {
+      await deleteDoc(doc(db, "jobs", document.id));
+      jobsDeleted++;
+    }
+
+    // 2. Delete inventory
+    const invRef = collection(db, "inventory");
+    const invSnap = await getDocs(query(invRef, where("workshopId", "==", workshopId)));
+    for (const document of invSnap.docs) {
+      await deleteDoc(doc(db, "inventory", document.id));
+      inventoryDeleted++;
+    }
+
+    // 3. Delete inventory transactions
+    const txRef = collection(db, "inventory_transactions");
+    const txSnap = await getDocs(query(txRef, where("workshopId", "==", workshopId)));
+    for (const document of txSnap.docs) {
+      await deleteDoc(doc(db, "inventory_transactions", document.id));
+      transactionsDeleted++;
+    }
+
+    return { jobsDeleted, inventoryDeleted, transactionsDeleted };
+  } catch (e) {
+    console.error("Error resetting workshop data:", e);
+    throw e;
+  }
+}
+
