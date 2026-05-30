@@ -1,8 +1,23 @@
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { storage } from "./firebase";
+/**
+ * Image utilities — 100% client-side, NO Firebase Storage.
+ * All images are compressed and converted to base64 data URLs
+ * which are stored directly inside Firestore documents.
+ *
+ * Size budget per Firestore document: 1 MB
+ *   • Signature  ≈ 10-50 KB
+ *   • Photo (800px JPEG 60%) ≈ 50-150 KB
+ *   • 1 signature + 3 photos ≈ 300-500 KB  ✅ well within limit
+ */
 
-// Comprimir una imagen en el cliente para no agotar almacenamiento de Firebase (Tier Free)
-export const compressImage = async (file: File, maxWidth = 1280, quality = 0.7): Promise<Blob> => {
+/**
+ * Compress a File (from <input type="file">) → base64 data URL string.
+ * Resizes to maxWidth preserving aspect ratio, then exports as JPEG.
+ */
+export const compressImageToBase64 = (
+  file: File,
+  maxWidth = 800,
+  quality = 0.6
+): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -14,7 +29,6 @@ export const compressImage = async (file: File, maxWidth = 1280, quality = 0.7):
         let width = img.width;
         let height = img.height;
 
-        // Mantener el aspect ratio
         if (width > maxWidth) {
           height = Math.round((height * maxWidth) / width);
           width = maxWidth;
@@ -30,17 +44,9 @@ export const compressImage = async (file: File, maxWidth = 1280, quality = 0.7):
 
         ctx.drawImage(img, 0, 0, width, height);
 
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              resolve(blob);
-            } else {
-              reject(new Error("Error al convertir canvas a Blob"));
-            }
-          },
-          "image/jpeg",
-          quality
-        );
+        // Export as JPEG base64 data URL
+        const dataUrl = canvas.toDataURL("image/jpeg", quality);
+        resolve(dataUrl);
       };
       img.onerror = (e) => reject(e);
     };
@@ -48,26 +54,27 @@ export const compressImage = async (file: File, maxWidth = 1280, quality = 0.7):
   });
 };
 
-// Subir al Storage local (o Firebase)
-export const uploadJobImage = async (file: File, jobId: string, type: 'reception' | 'evidence'): Promise<string> => {
-  try {
-    // 1. Comprimir archivo localmente (ahorra ~80% de peso)
-    const compressedBlob = await compressImage(file);
-    
-    // 2. Definir la ruta en el bucket: "jobs/{jobId}/{type}_{timestamp}.jpg"
-    const timestamp = new Date().getTime();
-    const fileName = `jobs/${jobId}/${type}_${timestamp}.jpg`;
-    
-    // 3. Subir a Firebase Storage
-    const storageRef = ref(storage, fileName);
-    await uploadBytes(storageRef, compressedBlob);
-    
-    // 4. Obtener URL publica
-    const publicUrl = await getDownloadURL(storageRef);
-    return publicUrl;
-    
-  } catch (error) {
-    console.error("Error uploading image:", error);
-    throw error;
-  }
+/**
+ * "Upload" a job image — actually just compresses and returns a base64 string.
+ * Drop-in replacement for the old uploadJobImage that used Firebase Storage.
+ * The returned string is a data URL that can be used directly in <img src="...">.
+ */
+export const uploadJobImage = async (
+  file: File,
+  _jobId: string,
+  _type: "reception" | "evidence" | "logo"
+): Promise<string> => {
+  return compressImageToBase64(file);
+};
+
+/**
+ * "Upload" a signature — the canvas already gives us a data URL (base64 PNG).
+ * We just pass it through. No Firebase Storage needed.
+ */
+export const uploadSignature = async (
+  dataUrl: string,
+  _jobId: string
+): Promise<string> => {
+  // The SignatureCanvas already provides a base64 data URL — just return it.
+  return dataUrl;
 };

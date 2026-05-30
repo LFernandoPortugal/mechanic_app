@@ -14,6 +14,12 @@
   "analytics": "Analíticas del Dueño",
   "analyticsDesc": "Vista de alto nivel del rendimiento del taller.",
 
+  "clientDatabase": "Base de Datos de Clientes",
+  "clientDatabaseDesc": "Historial de clientes, vehículos y visitas anteriores.",
+
+  "qc": "Control de Calidad (QC)",
+  "qcDesc": "Inspección final de vehículos reparados antes de la entrega.",
+
   "userManagement": "Gestión de Usuarios",
   "userManagementDesc": "Administra roles y permisos del personal",
   "loginPrompt": "Inicia sesión",
@@ -205,6 +211,13 @@
   "documentsInVehicle": "Documentos en el Vehículo",
   "otherValuables": "Otros Artículos",
   "otherValuablesPlaceholder": "Describe otros artículos dejados en el vehículo...",
+  "symptomsLabel": "Motivo de Ingreso / Síntomas Reportados *",
+  "symptomsPlaceholder": "ej. El motor pierde potencia al subir pendientes o chirría al frenar...",
+  "vehicleHistory": "Historial Clínico del Vehículo",
+  "previousRepairs": "Reparaciones Anteriores",
+  "noPreviousRepairs": "Este vehículo no registra visitas anteriores en el taller.",
+  "errorUploadingPhotos": "No se pudieron subir las fotos de evidencia a la nube, pero el registro continuará.",
+  "errorUploadingSignature": "No se pudo subir la firma del cliente al servidor, pero el registro continuará.",
 
   "alertNoPhoneWhatsApp": "Sin número de teléfono, el cliente no recibirá actualizaciones por WhatsApp.",
 
@@ -224,8 +237,19 @@
   "statusReception": "Recepción",
   "statusDiagnosis": "Diagnóstico",
   "statusApproval": "Cotizando",
+  "statusApproved": "Aprobado",
   "statusReady": "Esperando Cliente",
   "statusRepair": "En Reparación",
   "statusQC": "Control de Calidad",
-  "statusDelivered": "Entregado"
+  "statusDelivered": "Entregado",
+
+  "payments": "Caja / Pagos",
+  "paymentsDesc": "Registrar abonos y cerrar órdenes de trabajo.",
+  "uploadingPhotos": "Subiendo fotos...",
+
+  "settings": "Configuración",
+  "settingsDesc": "Ajustes del taller, logo y datos para facturación.",
+
+  "downloadReceipt": "Descargar Recibo de Pago (PDF)",
+  "liveUpdates": "En vivo"
 }

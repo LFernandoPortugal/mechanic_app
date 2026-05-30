@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -21,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   Package, Plus, Pencil, Trash2, ArrowDownCircle, ArrowUpCircle,
-  AlertTriangle, Search, X, ChevronDown, ChevronUp, History
+  AlertTriangle, Search, X, ChevronDown, ChevronUp, History, ArrowLeft
 } from "lucide-react";
 
 const CATEGORIES: InventoryCategory[] = [
@@ -51,7 +52,8 @@ const emptyForm = (): Partial<InventoryItem> => ({
 });
 
 export default function InventoryPage() {
-  const { user, hasRole } = useAuth();
+  const router = useRouter();
+  const { user, userProfile, hasRole, loading: authLoading } = useAuth();
   const { t } = useLanguage();
   const isAdmin = hasRole('ADMIN');
 
@@ -77,13 +79,22 @@ export default function InventoryPage() {
   const [historyLoading, setHistoryLoading] = useState(false);
 
   const fetchItems = useCallback(async () => {
+    const wId = userProfile?.workshopId || (userProfile ? "demo-workshop" : null);
+    if (!wId) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
-    const data = await getInventoryItems();
+    const data = await getInventoryItems(wId);
     setItems(data);
     setLoading(false);
-  }, []);
+  }, [userProfile]);
 
-  useEffect(() => { fetchItems(); }, [fetchItems]);
+  useEffect(() => { 
+    if (!authLoading) {
+      fetchItems(); 
+    }
+  }, [fetchItems, authLoading]);
 
   const filtered = items.filter(i => {
     const matchSearch = !search || i.name.toLowerCase().includes(search.toLowerCase()) || i.sku.toLowerCase().includes(search.toLowerCase());
@@ -110,11 +121,16 @@ export default function InventoryPage() {
     if (!form.name || !form.sku) { toast.warning('Nombre y SKU son requeridos.'); return; }
     setSaving(true);
     try {
+      const wId = userProfile?.workshopId || "demo-workshop";
       if (editingItem) {
-        await updateInventoryItem(editingItem.id, form, user?.uid || 'unknown');
+        await updateInventoryItem(editingItem.id, { ...form, workshopId: wId }, user?.uid || 'unknown');
         toast.success('Repuesto actualizado.');
       } else {
-        await addInventoryItem(form as Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>, user?.uid || 'unknown');
+        const itemWithWorkshop = {
+          ...form,
+          workshopId: wId,
+        } as Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>;
+        await addInventoryItem(itemWithWorkshop, user?.uid || 'unknown');
         toast.success('Repuesto agregado al inventario.');
       }
       setShowForm(false);
@@ -142,6 +158,7 @@ export default function InventoryPage() {
     if (!movementItem || movQty <= 0) { toast.warning('Cantidad inválida.'); return; }
     setMovSaving(true);
     try {
+      const wId = userProfile?.workshopId || "demo-workshop";
       await recordStockMovement({
         itemId: movementItem.id,
         itemName: movementItem.name,
@@ -150,6 +167,7 @@ export default function InventoryPage() {
         unitPrice: movType === 'IN' ? (movementItem.costPrice ?? movementItem.unitPrice) : movementItem.unitPrice,
         notes: movNotes || undefined,
         actorId: user?.uid || 'unknown',
+        workshopId: wId,
       });
       toast.success(`Movimiento ${movType === 'IN' ? 'de entrada' : movType === 'OUT' ? 'de salida' : 'de ajuste'} registrado.`);
       setMovementItem(null);
@@ -184,14 +202,26 @@ export default function InventoryPage() {
           
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-            <div>
-              <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">
-                Inventario
-              </h1>
-              <p className="text-muted-foreground text-sm mt-1">Control de stock de repuestos y servicios del taller.</p>
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="group gap-1.5 rounded-full border border-border bg-card/45 px-3.5 py-1.5 text-xs text-muted-foreground transition-all duration-300 hover:border-emerald-500/50 hover:bg-emerald-950/20 hover:text-emerald-400"
+                onClick={() => router.push("/")}
+              >
+                <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+                Inicio
+              </Button>
+              <div>
+                <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">
+                  Inventario
+                </h1>
+                <p className="text-muted-foreground text-xs mt-0.5">Control de stock de repuestos y servicios del taller.</p>
+              </div>
             </div>
             {isAdmin && (
-              <Button onClick={openAdd} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold gap-2">
+              <Button onClick={openAdd} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold gap-2 self-start sm:self-center ml-12 sm:ml-0">
                 <Plus className="w-4 h-4" /> Agregar Repuesto
               </Button>
             )}

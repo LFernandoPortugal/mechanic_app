@@ -15,6 +15,7 @@ export async function createUserProfile(uid: string, email: string, displayName?
       email,
       displayName: displayName || email.split('@')[0],
       roles: roles || ['RECEPTION'],
+      workshopId: "demo-workshop", // Default workshop for SaaS demo / friend
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     };
@@ -94,10 +95,10 @@ export async function createJob(jobData: Omit<Job, "id" | "createdAt" | "auditLo
   }
 }
 
-export async function getAssignedJobs() {
+export async function getAssignedJobs(workshopId: string) {
   try {
     const jobsRef = collection(db, "jobs");
-    const q = query(jobsRef, where("status", "in", ["Reception", "Diagnosis"]));
+    const q = query(jobsRef, where("workshopId", "==", workshopId), where("status", "in", ["Reception", "Diagnosis", "Approved", "Repair", "QC"]));
     const querySnapshot = await getDocs(q);
     const jobs: Job[] = [];
     querySnapshot.forEach((document) => {
@@ -132,10 +133,10 @@ export async function assignTechnician(jobId: string, technicianUid: string) {
   }
 }
 
-export async function getJobsForAdvisor() {
+export async function getJobsForAdvisor(workshopId: string) {
   try {
     const jobsRef = collection(db, "jobs");
-    const q = query(jobsRef, where("status", "in", ["Approval", "Ready", "Approved", "Repair"]));
+    const q = query(jobsRef, where("workshopId", "==", workshopId), where("status", "in", ["Approval", "Ready", "Approved", "Repair"]));
     const querySnapshot = await getDocs(q);
     const jobs: Job[] = [];
     querySnapshot.forEach((document) => {
@@ -171,10 +172,10 @@ export async function updateJob(jobId: string, data: Partial<Job>, actorId?: str
   }
 }
 
-export async function getJobsForClient() {
+export async function getJobsForClient(workshopId: string) {
   try {
     const jobsRef = collection(db, "jobs");
-    const q = query(jobsRef, where("status", "==", "Ready"));
+    const q = query(jobsRef, where("workshopId", "==", workshopId), where("status", "==", "Ready"));
     const querySnapshot = await getDocs(q);
     const jobs: Job[] = [];
     querySnapshot.forEach((document) => {
@@ -187,10 +188,11 @@ export async function getJobsForClient() {
   }
 }
 
-export async function getAllJobs() {
+export async function getAllJobs(workshopId: string) {
   try {
     const jobsRef = collection(db, "jobs");
-    const querySnapshot = await getDocs(jobsRef);
+    const q = query(jobsRef, where("workshopId", "==", workshopId));
+    const querySnapshot = await getDocs(q);
     const jobs: Job[] = [];
     querySnapshot.forEach((document) => {
       jobs.push({ id: document.id, ...document.data() } as Job);
@@ -220,14 +222,20 @@ export async function getJobById(jobId: string): Promise<Job | null> {
 
 // ─── Inventory Functions ─────────────────────────────────
 
-export async function getInventoryItems(category?: string): Promise<InventoryItem[]> {
+export async function getInventoryItems(workshopId: string, category?: string): Promise<InventoryItem[]> {
   try {
     const ref = collection(db, "inventory");
-    const q = category
-      ? query(ref, where("category", "==", category), orderBy("name"))
-      : query(ref, orderBy("name"));
-    const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() } as InventoryItem));
+    let q;
+    if (category) {
+      q = query(ref, where("workshopId", "==", workshopId), where("category", "==", category));
+      const snap = await getDocs(q);
+      const items = snap.docs.map(d => ({ id: d.id, ...d.data() } as InventoryItem));
+      return items.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    } else {
+      q = query(ref, where("workshopId", "==", workshopId), orderBy("name"));
+      const snap = await getDocs(q);
+      return snap.docs.map(d => ({ id: d.id, ...d.data() } as InventoryItem));
+    }
   } catch (e) {
     console.error("Error fetching inventory:", e);
     return [];
@@ -264,6 +272,7 @@ export async function addInventoryItem(
         unitPrice: item.costPrice ?? item.unitPrice,
         notes: 'Stock inicial',
         actorId,
+        workshopId: item.workshopId,
       });
     }
     return ref.id;
@@ -307,6 +316,7 @@ export interface StockMovementInput {
   jobId?: string;
   notes?: string;
   actorId: string;
+  workshopId: string; // Associate transaction with workshop
 }
 
 /**
@@ -340,26 +350,161 @@ export async function recordStockMovement(movement: StockMovementInput): Promise
 export async function getStockMovements(itemId: string, limitCount = 50): Promise<InventoryTransaction[]> {
   try {
     const ref = collection(db, "inventory_transactions");
-    const q = query(ref, where("itemId", "==", itemId), orderBy("createdAt", "desc"), firestoreLimit(limitCount));
+    const q = query(ref, where("itemId", "==", itemId));
     const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() } as InventoryTransaction));
+    const txs = snap.docs.map(d => ({ id: d.id, ...d.data() } as InventoryTransaction));
+    return txs
+      .sort((a, b) => {
+        const timeA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+        const timeB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+        return timeB - timeA;
+      })
+      .slice(0, limitCount);
   } catch (e) {
     console.error("Error fetching stock movements:", e);
     return [];
   }
 }
 
-export async function searchInventoryItems(term: string, limit = 10): Promise<InventoryItem[]> {
+// ─── Payment Functions ───────────────────────────────────
+
+export interface PaymentInput {
+  amount: number;
+  method: 'Efectivo' | 'Tarjeta' | 'Transferencia' | 'Yape/Plin';
+  reference?: string;
+  actorId: string;
+}
+
+/**
+ * Registers a payment against a Job.
+ * Appends to `payments[]`, updates `approvedAmount`, and optionally
+ * transitions status to `Delivered` when the balance is cleared.
+ */
+export async function registerPayment(jobId: string, payment: PaymentInput): Promise<void> {
+  try {
+    const jobRef = doc(db, "jobs", jobId);
+    const jobSnap = await getDoc(jobRef);
+    if (!jobSnap.exists()) throw new Error("Job not found");
+
+    const data = jobSnap.data();
+    const existingPayments: any[] = data?.payments || [];
+    const totalEstimate: number = data?.totalEstimate || 0;
+
+    const newPayment = {
+      id: `pay_${Date.now()}`,
+      amount: payment.amount,
+      method: payment.method,
+      reference: payment.reference || "",
+      date: new Date().toISOString(),
+      actorId: payment.actorId,
+    };
+
+    const allPayments = [...existingPayments, newPayment];
+    const totalPaid = allPayments.reduce((sum: number, p: any) => sum + p.amount, 0);
+    const isFullyPaid = totalPaid >= totalEstimate;
+
+    const existingLog: any[] = data?.auditLog || [];
+    const auditEntry = createAuditEntry(
+      "Payment Registered",
+      payment.actorId,
+      `${payment.method} $${payment.amount.toFixed(2)}${payment.reference ? ` — Ref: ${payment.reference}` : ""}`
+    );
+
+    const updates: any = {
+      payments: allPayments,
+      approvedAmount: totalPaid,
+      auditLog: [...existingLog, auditEntry],
+    };
+
+    if (isFullyPaid) {
+      updates.status = "Delivered";
+      updates.auditLog = [
+        ...existingLog,
+        auditEntry,
+        createAuditEntry("Delivered", payment.actorId, "Fully paid — vehicle delivered"),
+      ];
+    }
+
+    await updateDoc(jobRef, updates);
+  } catch (e) {
+    console.error("Error registering payment:", e);
+    throw e;
+  }
+}
+
+export async function getJobsByStatus(workshopId: string, statuses: string[]): Promise<Job[]> {
+  try {
+    const jobsRef = collection(db, "jobs");
+    const q = query(jobsRef, where("workshopId", "==", workshopId), where("status", "in", statuses));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as Job));
+  } catch (e) {
+    console.error("Error fetching jobs by status:", e);
+    return [];
+  }
+}
+
+export async function searchInventoryItems(workshopId: string, term: string, limit = 10): Promise<InventoryItem[]> {
   // Firestore doesn't support full-text search natively.
   // We fetch all items and filter client-side (fine for workshop-scale inventory < 5k items).
   try {
-    const items = await getInventoryItems();
+    const items = await getInventoryItems(workshopId);
     const lower = term.toLowerCase();
     return items
       .filter(i => i.name.toLowerCase().includes(lower) || i.sku.toLowerCase().includes(lower))
       .slice(0, limit);
   } catch (e) {
     console.error("Error searching inventory:", e);
+    return [];
+  }
+}
+
+export async function getWorkshopSettings(workshopId: string) {
+  try {
+    const docRef = doc(db, "settings", workshopId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data();
+    }
+    // Default settings if they don't exist yet
+    return {
+      workshopName: "Taller Automotriz",
+      logoUrl: "",
+      address: "",
+      phone: "",
+      taxId: "",
+      termsAndConditions: "Al firmar, el cliente autoriza los diagnósticos y reparaciones presupuestadas.",
+      demoMode: true
+    };
+  } catch (e) {
+    console.error("Error fetching settings:", e);
+    return null;
+  }
+}
+
+export async function updateWorkshopSettings(workshopId: string, data: any) {
+  try {
+    const docRef = doc(db, "settings", workshopId);
+    await setDoc(docRef, data, { merge: true });
+  } catch (e) {
+    console.error("Error updating settings:", e);
+    throw e;
+  }
+}
+
+export async function getJobsByVehicleId(workshopId: string, vehicleId: string): Promise<Job[]> {
+  try {
+    const jobsRef = collection(db, "jobs");
+    const q = query(jobsRef, where("workshopId", "==", workshopId), where("vehicleId", "==", vehicleId));
+    const snap = await getDocs(q);
+    const jobs = snap.docs.map(d => ({ id: d.id, ...d.data() } as Job));
+    return jobs.sort((a, b) => {
+      const timeA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+      const timeB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+      return timeB - timeA;
+    });
+  } catch (e) {
+    console.error("Error fetching jobs by vehicleId:", e);
     return [];
   }
 }

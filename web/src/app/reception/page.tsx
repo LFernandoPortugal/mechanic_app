@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createJob, updateJob } from "@/lib/db";
+import { createJob, getJobsByVehicleId, getWorkshopSettings } from "@/lib/db";
 import { uploadJobImage } from "@/lib/storage";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,16 +10,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-
-import { Wand2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { SignatureCanvas } from "@/components/SignatureCanvas";
+import { ArrowLeft, Wand2, Fuel } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Job } from "@/types";
+import { WorkflowStepper } from "@/components/WorkflowStepper";
 
 export default function Reception() {
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   
   const [vehicle, setVehicle] = useState({ vin: "", make: "", model: "", plate: "", color: "" });
   const [client, setClient] = useState({ name: "", phone: "", email: "" });
@@ -27,11 +29,68 @@ export default function Reception() {
   const [valuables, setValuables] = useState({ lockNut: false, sunglasses: false, documents: false, other: "" });
   const [fuelLevel, setFuelLevel] = useState(50);
   const [odometer, setOdometer] = useState("");
+  const [symptoms, setSymptoms] = useState("");
+  const [pastJobs, setPastJobs] = useState<Job[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
-  const [signature, setSignature] = useState(false);
+  const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const [createdJobId, setCreatedJobId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [demoMode, setDemoMode] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const wId = userProfile?.workshopId || (userProfile ? "demo-workshop" : null);
+        if (!wId) return;
+        const settings = await getWorkshopSettings(wId);
+        if (settings && settings.demoMode) {
+          setDemoMode(true);
+        }
+      } catch (e) {
+        console.error("Error loading settings:", e);
+      }
+    }
+    loadSettings();
+  }, [userProfile]);
+
+  useEffect(() => {
+    if (!vehicle.plate || vehicle.plate.trim().length < 3 || !userProfile?.workshopId) {
+      setPastJobs([]);
+      return;
+    }
+    const delayDebounceFn = setTimeout(async () => {
+      setLoadingHistory(true);
+      try {
+        const jobs = await getJobsByVehicleId(userProfile.workshopId, vehicle.plate.trim());
+        setPastJobs(jobs);
+      } catch (e) {
+        console.error("Error fetching vehicle history:", e);
+      } finally {
+        setLoadingHistory(false);
+      }
+    }, 500);
+    return () => clearTimeout(delayDebounceFn);
+  }, [vehicle.plate, userProfile?.workshopId]);
+
+  const handleLoadPreviousInfo = () => {
+    if (pastJobs.length === 0) return;
+    const last = pastJobs[0];
+    setVehicle((prev) => ({
+      ...prev,
+      vin: last.vin || prev.vin,
+      make: last.make || prev.make,
+      model: last.model || prev.model,
+      color: last.color || prev.color,
+    }));
+    setClient({
+      name: last.clientId || "",
+      phone: last.clientPhone || "",
+      email: last.clientEmail || "",
+    });
+    toast.success("Información del cliente y vehículo auto-completada");
+  };
 
   const handleAutoFill = () => {
     setVehicle({ vin: "1HGBH41JXMN109186", make: "Toyota", model: "Corolla", plate: "ABC-123", color: "Rojo" });
@@ -40,7 +99,7 @@ export default function Reception() {
     setValuables({ lockNut: true, sunglasses: true, documents: false, other: "" });
     setFuelLevel(75);
     setOdometer("120500");
-    setSignature(true);
+    setSymptoms("Chirrido metálico en la rueda delantera al frenar y pérdida leve de potencia en pendientes.");
   };
 
   const handleSubmit = async () => {
@@ -52,7 +111,11 @@ export default function Reception() {
       toast.warning(t('alertClientRequired'));
       return;
     }
-    if (!signature) {
+    if (!symptoms.trim()) {
+      toast.warning(t('symptomsLabel') || "Por favor ingrese el motivo de ingreso / síntomas reportados.");
+      return;
+    }
+    if (!signatureDataUrl) {
       toast.warning(t('alertSignatureRequired'));
       return;
     }
@@ -64,13 +127,32 @@ export default function Reception() {
 
     setSubmitting(true);
     try {
+      // 1. Compress photos to base64 (client-side, instant)
+      let photoBase64s: string[] = [];
+      if (photos.length > 0) {
+        toast.info(t('uploadingPhotos') || "Procesando fotos...");
+        for (const file of photos) {
+          const b64 = await uploadJobImage(file, "temp", "reception");
+          photoBase64s.push(b64);
+        }
+      }
+
+      // 2. Create the job with everything inline — no secondary updates needed
       const jobId = await createJob({
+        workshopId: userProfile?.workshopId || "demo-workshop",
         vehicleId: vehicle.plate,
+        vin: vehicle.vin.trim() || undefined,
+        make: vehicle.make.trim() || undefined,
+        model: vehicle.model.trim() || undefined,
+        color: vehicle.color.trim() || undefined,
         clientId: client.name,
         clientPhone: client.phone.trim() || undefined,
         clientEmail: client.email.trim() || undefined,
         advisorId: user?.uid || "unknown",
         status: 'Reception',
+        symptoms: symptoms.trim() || undefined,
+        signatureBase64: signatureDataUrl,
+        receptionImages: photoBase64s.length > 0 ? photoBase64s : undefined,
         fluidAudit: {
           oilLevel: fluids.oil === "OK" ? "OK" : "Low",
           coolantLevel: fluids.coolant === "OK" ? "OK" : "Low",
@@ -91,18 +173,8 @@ export default function Reception() {
         approvedAmount: 0,
       }, user?.uid || "unknown");
 
-      // 1.5 Subir las fotos si existen
-      if (photos.length > 0) {
-        toast.info(t('uploadingPhotos') || "Subiendo fotos...");
-        const urls: string[] = [];
-        for (const file of photos) {
-          const url = await uploadJobImage(file, jobId, "reception");
-          urls.push(url);
-        }
-        await updateJob(jobId, { receptionImages: urls });
-      }
-
       setCreatedJobId(vehicle.plate);
+      toast.success(t('receptionComplete') || "¡Recepción completada!");
     } catch (e) {
       console.error(e);
       toast.error("Error creating job: " + e);
@@ -130,7 +202,7 @@ export default function Reception() {
              <Button onClick={() => router.push('/technician')} className="w-full bg-emerald-600 hover:bg-emerald-700 h-12 text-lg text-white">
                 {t('goToTechnician')}
              </Button>
-             <Button onClick={() => { setCreatedJobId(null); setVehicle({ vin: "", make: "", model: "", plate: "", color: "" }); setClient({ name: "", phone: "", email: "" }); setSignature(false); setOdometer(""); setFuelLevel(50); setPhotos([]); }} variant="outline" className="w-full border-border text-muted-foreground h-10">
+             <Button onClick={() => { setCreatedJobId(null); setVehicle({ vin: "", make: "", model: "", plate: "", color: "" }); setClient({ name: "", phone: "", email: "" }); setSignatureDataUrl(null); setOdometer(""); setFuelLevel(50); setPhotos([]); }} variant="outline" className="w-full border-border text-muted-foreground h-10">
                 {t('registerAnother')}
              </Button>
           </div>
@@ -143,16 +215,35 @@ export default function Reception() {
     <ProtectedRoute allowedRoles={['ADMIN', 'RECEPTION']}>
       <div className="min-h-screen page-bg text-foreground px-4 md:px-8 py-6 flex justify-center">
         <div className="w-full max-w-4xl space-y-6">
-          <header className="mb-6 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-emerald-500 dark:text-emerald-400">{t('vehicleReception')}</h1>
-              <p className="text-muted-foreground text-sm">{t('transferOfResponsibility')}</p>
-            </div>
-            <Button onClick={handleAutoFill} variant="outline" className="text-amber-500 dark:text-amber-400 border-amber-500/50 hover:bg-amber-50 dark:hover:bg-amber-950/30">
-              <Wand2 className="w-4 h-4 mr-2" />
-              {t('demoAutoFill')}
-            </Button>
-          </header>
+          <div className="space-y-4">
+            <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="group gap-1.5 rounded-full border border-border bg-card/45 px-3.5 py-1.5 text-xs text-muted-foreground transition-all duration-300 hover:border-emerald-500/50 hover:bg-emerald-950/20 hover:text-emerald-400"
+                  onClick={() => router.push("/")}
+                >
+                  <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+                  Inicio
+                </Button>
+                <div>
+                  <h1 className="text-2xl font-bold text-emerald-500 dark:text-emerald-400">{t('vehicleReception')}</h1>
+                  <p className="text-muted-foreground text-xs">{t('transferOfResponsibility')}</p>
+                </div>
+              </div>
+              {demoMode && (
+                <Button type="button" onClick={handleAutoFill} variant="outline" className="text-amber-500 dark:text-amber-400 border-amber-500/50 hover:bg-amber-50 dark:hover:bg-amber-950/30 self-start sm:self-center ml-10 sm:ml-0">
+                  <Wand2 className="w-4 h-4 mr-2" />
+                  {t('demoAutoFill')}
+                </Button>
+              )}
+            </header>
+
+            {/* Glowing Stepper Guidance */}
+            <WorkflowStepper currentStatus="Reception" />
+          </div>
 
           <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-6">
             {/* Vehicle Details */}
@@ -190,6 +281,17 @@ export default function Reception() {
                     <Input placeholder={t('colorPlaceholder')} value={vehicle.color} onChange={(e) => setVehicle({...vehicle, color: e.target.value})} className="bg-background border-border" />
                   </div>
                 </div>
+                {pastJobs.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleLoadPreviousInfo}
+                    className="w-full border-purple-500/45 text-purple-400 hover:bg-purple-950/20 gap-1.5 h-10 font-semibold transition-all mt-2"
+                  >
+                    <Wand2 className="w-4 h-4 animate-pulse text-purple-400" />
+                    Auto-completar datos de {pastJobs[0].clientId}
+                  </Button>
+                )}
               </CardContent>
             </Card>
 
@@ -221,32 +323,163 @@ export default function Reception() {
               <CardHeader>
                 <CardTitle className="text-lg">{t('vehicleCondition')}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>{t('odometer')} (km)</Label>
-                    <Input type="number" placeholder="120500" value={odometer} onChange={(e) => setOdometer(e.target.value)} className="bg-background border-border font-mono" />
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                  <div className="space-y-5">
+                    <div className="space-y-2">
+                      <Label htmlFor="odometer">{t('odometer')} (km)</Label>
+                      <Input 
+                        id="odometer"
+                        type="number" 
+                        placeholder="120500" 
+                        value={odometer} 
+                        onChange={(e) => setOdometer(e.target.value)} 
+                        className="bg-background border-border font-mono text-base" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="fuel-slider">{t('fuelLevel')}: {fuelLevel}%</Label>
+                      <input 
+                        id="fuel-slider"
+                        type="range"
+                        value={fuelLevel} 
+                        onChange={(e) => setFuelLevel(parseInt(e.target.value))} 
+                        min={0} max={100} step={5}
+                        className="mt-3 w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                      />
+                      <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
+                        <span>E</span>
+                        <span>1/4</span>
+                        <span>1/2</span>
+                        <span>3/4</span>
+                        <span>F</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>{t('fuelLevel')}: {fuelLevel}%</Label>
-                    <input 
-                      type="range"
-                      value={fuelLevel} 
-                      onChange={(e) => setFuelLevel(parseInt(e.target.value))} 
-                      min={0} max={100} step={5}
-                      className="mt-3 w-full accent-emerald-500"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>E</span>
-                      <span>1/4</span>
-                      <span>1/2</span>
-                      <span>3/4</span>
-                      <span>F</span>
+
+                  {/* Circular Dashboard Fuel Gauge */}
+                  <div className="flex flex-col items-center justify-center p-4 border border-border/40 bg-zinc-950/5 dark:bg-black/20 rounded-2xl relative shadow-inner">
+                    <div className="relative w-36 h-36">
+                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                        {/* Outer track */}
+                        <circle 
+                          cx="50" cy="50" r="40" 
+                          fill="none" stroke="currentColor" strokeWidth="6" 
+                          strokeDasharray="251.2" strokeDashoffset="0"
+                          className="text-secondary" 
+                        />
+                        {/* Dynamic glow fill ring */}
+                        <circle 
+                          cx="50" cy="50" r="40" 
+                          fill="none" 
+                          stroke={fuelLevel <= 15 ? "#ef4444" : fuelLevel <= 40 ? "#f59e0b" : "#10b981"} 
+                          strokeWidth="7" 
+                          strokeDasharray="251.2" 
+                          strokeDashoffset={251.2 - (251.2 * fuelLevel) / 100}
+                          strokeLinecap="round"
+                          className="transition-all duration-300 drop-shadow-[0_0_4px_currentColor]" 
+                        />
+                      </svg>
+                      {/* Centered Gauge display */}
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                        <Fuel className={`w-5 h-5 mb-1 ${fuelLevel <= 15 ? 'text-red-500 animate-pulse' : fuelLevel <= 40 ? 'text-amber-500' : 'text-emerald-400'}`} />
+                        <span className="text-2xl font-black font-mono tracking-tighter text-foreground">
+                          {fuelLevel}%
+                        </span>
+                        <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold">
+                          {fuelLevel <= 15 ? 'Reserva' : fuelLevel <= 40 ? 'Bajo' : 'Combustible'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
+
+            {/* Symptoms / Reason for Entry */}
+            <Card className="glass-panel border-l-4 border-l-amber-500">
+              <CardHeader>
+                <CardTitle className="text-lg">{t('symptomsLabel') || "Motivo de Ingreso / Síntomas Reportados *"}</CardTitle>
+                <CardDescription>
+                  Describe detalladamente la falla o solicitud del cliente para alimentar la IA de diagnóstico.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <textarea
+                  value={symptoms}
+                  onChange={(e) => setSymptoms(e.target.value)}
+                  placeholder={t('symptomsPlaceholder') || "ej. El motor pierde potencia al subir pendientes o chirría al frenar..."}
+                  className="w-full min-h-[100px] bg-background border border-border rounded-md p-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500 font-sans resize-y"
+                  required
+                />
+              </CardContent>
+            </Card>
+
+            {/* Clinical History Timeline */}
+            {vehicle.plate.trim().length >= 3 && (
+              <Card className="glass-panel border-l-4 border-l-purple-500 transition-all">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <span>{t('vehicleHistory')}</span>
+                      {loadingHistory && <span className="animate-spin text-purple-400">⏳</span>}
+                    </span>
+                    <Badge variant="outline" className="text-purple-400 border-purple-500/50 bg-purple-950/20 font-mono">
+                      {vehicle.plate}
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    Verifica si este cliente ha ingresado previamente y por qué problemas.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {loadingHistory ? (
+                    <div className="text-sm text-muted-foreground flex items-center gap-2 py-2">
+                      <span>{t('processing') || "Cargando historial..."}</span>
+                    </div>
+                  ) : pastJobs.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-2 italic">{t('noPreviousRepairs')}</p>
+                  ) : (
+                    <div className="relative border-l-2 border-purple-500/30 ml-3 pl-5 py-2 space-y-6">
+                      {pastJobs.map((job) => {
+                        const date = job.createdAt
+                          ? (job.createdAt as any).toDate
+                            ? (job.createdAt as any).toDate().toLocaleDateString()
+                            : new Date(job.createdAt).toLocaleDateString()
+                          : "N/A";
+                        return (
+                          <div key={job.id} className="relative">
+                            {/* Dot */}
+                            <div className="absolute -left-[27px] top-1.5 w-3.5 h-3.5 rounded-full bg-purple-500 border border-background shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
+                            
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-semibold text-sm text-foreground">{date}</span>
+                                <Badge className="bg-purple-950/40 text-purple-400 border-purple-500/30 text-xs">
+                                  {t(`status${job.status}`) || job.status}
+                                </Badge>
+                              </div>
+                              {job.symptoms && (
+                                <p className="text-sm text-muted-foreground bg-zinc-950/30 dark:bg-black/20 p-2 rounded border border-border/40 mt-1 italic">
+                                  <strong className="text-xs text-purple-400 not-italic block uppercase tracking-wider mb-0.5">Motivo:</strong>
+                                  "{job.symptoms}"
+                                </p>
+                              )}
+                              {job.inspectionItems && job.inspectionItems.length > 0 && (
+                                <div className="text-xs text-muted-foreground mt-2">
+                                  <strong className="text-purple-400/80">Componentes: </strong>
+                                  {job.inspectionItems.map(item => `${item.name} (${item.status})`).join(", ")}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Existing Damages (Photos) */}
             <Card className="glass-panel">
@@ -357,23 +590,20 @@ export default function Reception() {
               </CardContent>
             </Card>
 
-            {/* Liability Transfer */}
+            {/* Liability Transfer — Real Signature Canvas */}
             <Card className="glass-panel border-t-4 border-t-blue-500">
               <CardHeader>
                 <CardTitle className="text-lg">{t('liabilityTransfer')}</CardTitle>
-                <CardDescription>{t('clientConfirms')}</CardDescription>
+                <CardDescription>
+                  {t('clientConfirms')}{" "}
+                  <span className="text-blue-400 font-medium">Firma digital legal.</span>
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                 <div 
-                   className={`h-32 border-2 border-dashed rounded-lg flex items-center justify-center cursor-pointer transition-colors ${signature ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20" : "border-border hover:border-muted-foreground"}`}
-                   onClick={() => setSignature(!signature)}
-                 >
-                   {signature ? (
-                     <span className="text-emerald-500 dark:text-emerald-400 font-bold text-xl">{t('signedDigitalToken')}</span>
-                   ) : (
-                     <span className="text-muted-foreground">{t('tapToSign')}</span>
-                   )}
-                 </div>
+                <SignatureCanvas
+                  onConfirm={(dataUrl) => setSignatureDataUrl(dataUrl)}
+                  onClear={() => setSignatureDataUrl(null)}
+                />
               </CardContent>
             </Card>
 

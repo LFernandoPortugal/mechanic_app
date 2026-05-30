@@ -26,11 +26,24 @@ function getLaborCost(job: Job): number {
  * @param job  The Job object from Firestore.
  * @param mode 'advisor' = full detail | 'client' = simplified client version
  */
-export function generateQuotePDF(job: Job, mode: 'advisor' | 'client' = 'advisor'): void {
+/**
+ * Generates and downloads a professional PDF quote for the given job.
+ * @param job       The Job object from Firestore.
+ * @param mode      'advisor' = full detail | 'client' = simplified client version
+ * @param workshop  Optional workshop settings for dynamic branding
+ */
+export function generateQuotePDF(
+  job: Job,
+  mode: 'advisor' | 'client' = 'advisor',
+  workshop?: { name?: string; nit?: string; phone?: string; address?: string; logoUrl?: string } | null
+): void {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 16;
   let y = margin;
+
+  const shopName = workshop?.name || 'SGA';
+  const shopSubtitle = workshop?.name ? 'Sistema de Gestión Automotriz' : 'Sistema de Gestión Automotriz';
 
   // ── Header Bar ──────────────────────────────────────────────
   doc.setFillColor(...BRAND_COLOR);
@@ -39,11 +52,11 @@ export function generateQuotePDF(job: Job, mode: 'advisor' | 'client' = 'advisor
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
-  doc.text('SGA', margin, 18);
+  doc.text(shopName, margin, 18);
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text('Sistema de Gestión Automotriz', margin, 24);
+  doc.text(shopSubtitle, margin, 24);
 
   doc.setFontSize(10);
   doc.text('COTIZACIÓN DE SERVICIO', pageWidth - margin, 14, { align: 'right' });
@@ -219,9 +232,232 @@ export function generateQuotePDF(job: Job, mode: 'advisor' | 'client' = 'advisor
   doc.setTextColor(...MUTED_COLOR);
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
-  doc.text('Este documento es generado automáticamente por SGA — Sistema de Gestión Automotriz.', pageWidth / 2, footerY, { align: 'center' });
+  const footerText = workshop?.name
+    ? `Este documento es generado automáticamente por ${workshop.name} — ${shopSubtitle}.`
+    : 'Este documento es generado automáticamente por SGA — Sistema de Gestión Automotriz.';
+  doc.text(footerText, pageWidth / 2, footerY, { align: 'center' });
 
   // ── Save ────────────────────────────────────────────────────
   const filename = `SGA-Cotizacion-${job.vehicleId}-${dateStr.replace(/\//g, '-')}.pdf`;
   doc.save(filename);
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  RECEIPT PDF — Generated after full payment
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Generates and downloads a professional receipt/invoice PDF for a paid job.
+ * @param job       The Job object (must have payments array populated).
+ * @param workshop  Optional workshop settings for dynamic branding.
+ */
+export function generateReceiptPDF(
+  job: Job,
+  workshop?: { name?: string; nit?: string; phone?: string; address?: string; logoUrl?: string } | null
+): void {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 16;
+  let y = margin;
+
+  const shopName = workshop?.name || 'SGA';
+  const shopNit = workshop?.nit || '';
+  const shopPhone = workshop?.phone || '';
+  const shopAddress = workshop?.address || '';
+  const dateStr = new Date().toLocaleDateString('es-PA', { year: 'numeric', month: '2-digit', day: '2-digit' });
+
+  // ── Header Bar (Emerald for receipts) ───────────────────────
+  doc.setFillColor(16, 185, 129);
+  doc.rect(0, 0, pageWidth, 32, 'F');
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(22);
+  doc.setFont('helvetica', 'bold');
+  doc.text(shopName, margin, 16);
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  if (shopAddress) doc.text(shopAddress, margin, 22);
+  if (shopNit) doc.text(`NIT: ${shopNit}`, margin, 27);
+  if (shopPhone) doc.text(`Tel: ${shopPhone}`, margin, shopNit ? 32 : 27);
+
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text('RECIBO DE PAGO', pageWidth - margin, 14, { align: 'right' });
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Fecha: ${dateStr}`, pageWidth - margin, 21, { align: 'right' });
+  doc.text(`Orden: ${job.id.substring(0, 12).toUpperCase()}`, pageWidth - margin, 27, { align: 'right' });
+
+  y = 42;
+
+  // ── Client & Vehicle Info ───────────────────────────────────
+  doc.setTextColor(...DARK_COLOR);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Datos del Cliente', margin, y);
+  y += 2;
+  doc.setDrawColor(...BRAND_COLOR);
+  doc.setLineWidth(0.5);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 6;
+
+  doc.setFontSize(10);
+  const infoLines = [
+    ['Cliente:', job.clientId || '—'],
+    ['Vehículo:', job.vehicleId || '—'],
+    ['Odómetro:', `${job.odometer?.toLocaleString() || '—'} km`],
+  ];
+  if (job.clientPhone) infoLines.push(['Teléfono:', job.clientPhone]);
+  if (job.clientEmail) infoLines.push(['Email:', job.clientEmail]);
+
+  for (const [label, value] of infoLines) {
+    doc.setFont('helvetica', 'bold');
+    doc.text(label, margin, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(value, margin + 40, y);
+    y += 6;
+  }
+
+  y += 4;
+
+  // ── Services Performed ──────────────────────────────────────
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Servicios Realizados', margin, y);
+  y += 2;
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 4;
+
+  const approvedItems = (job.inspectionItems || []).filter(
+    (item) => item.approved !== false && (item.price || 0) > 0
+  );
+
+  const serviceRows = approvedItems.map((item) => [
+    item.name,
+    item.status,
+    item.price ? formatMoney(item.price) : '$0.00',
+  ]);
+
+  autoTable(doc, {
+    startY: y,
+    head: [['Servicio / Repuesto', 'Estado', 'Precio']],
+    body: serviceRows,
+    headStyles: {
+      fillColor: DARK_COLOR,
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      fontSize: 9,
+    },
+    bodyStyles: {
+      fontSize: 9,
+      textColor: DARK_COLOR,
+    },
+    alternateRowStyles: { fillColor: [244, 244, 245] },
+    columnStyles: {
+      0: { cellWidth: 100 },
+      1: { cellWidth: 30, halign: 'center' },
+      2: { cellWidth: 30, halign: 'right' },
+    },
+    margin: { left: margin, right: margin },
+  });
+
+  y = (doc as any).lastAutoTable.finalY + 8;
+
+  // ── Totals Summary ──────────────────────────────────────────
+  const laborCost = getLaborCost(job);
+  const partsCost = (job.totalEstimate || 0) - laborCost;
+  const totalPaid = (job.payments || []).reduce((s, p) => s + p.amount, 0);
+
+  const summaryX = pageWidth - margin - 80;
+  doc.setFillColor(24, 24, 27);
+  doc.roundedRect(summaryX - 4, y - 3, 84, 40, 2, 2, 'F');
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+
+  doc.text('Repuestos:', summaryX, y + 4);
+  doc.text(formatMoney(partsCost), pageWidth - margin, y + 4, { align: 'right' });
+
+  doc.text('Mano de Obra:', summaryX, y + 11);
+  doc.text(formatMoney(laborCost), pageWidth - margin, y + 11, { align: 'right' });
+
+  doc.setDrawColor(...BRAND_COLOR);
+  doc.line(summaryX, y + 15, pageWidth - margin, y + 15);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('Total Orden:', summaryX, y + 22);
+  doc.text(formatMoney(job.totalEstimate || 0), pageWidth - margin, y + 22, { align: 'right' });
+
+  doc.setTextColor(16, 185, 129);
+  doc.setFontSize(11);
+  doc.text('TOTAL PAGADO:', summaryX, y + 31);
+  doc.text(formatMoney(totalPaid), pageWidth - margin, y + 31, { align: 'right' });
+
+  // ── PAID Badge ──────────────────────────────────────────────
+  doc.setFillColor(16, 185, 129);
+  doc.roundedRect(margin, y - 3, 55, 12, 2, 2, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.text('✓ PAGADO COMPLETO', margin + 27.5, y + 5, { align: 'center' });
+
+  y += 48;
+
+  // ── Payment History ─────────────────────────────────────────
+  if (job.payments && job.payments.length > 0) {
+    doc.setTextColor(...DARK_COLOR);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Historial de Pagos', margin, y);
+    y += 2;
+    doc.setDrawColor(...BRAND_COLOR);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 4;
+
+    const paymentRows = job.payments.map((p) => [
+      new Date(p.date).toLocaleDateString('es-PA'),
+      p.method,
+      p.reference || '—',
+      formatMoney(p.amount),
+    ]);
+
+    autoTable(doc, {
+      startY: y,
+      head: [['Fecha', 'Método', 'Referencia', 'Monto']],
+      body: paymentRows,
+      headStyles: {
+        fillColor: [16, 185, 129],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 9,
+      },
+      bodyStyles: {
+        fontSize: 9,
+        textColor: DARK_COLOR,
+      },
+      alternateRowStyles: { fillColor: [236, 253, 245] },
+      columnStyles: {
+        0: { cellWidth: 35 },
+        1: { cellWidth: 40 },
+        2: { cellWidth: 55 },
+        3: { cellWidth: 30, halign: 'right' },
+      },
+      margin: { left: margin, right: margin },
+    });
+  }
+
+  // ── Footer ──────────────────────────────────────────────────
+  const footerY = doc.internal.pageSize.getHeight() - 10;
+  doc.setTextColor(...MUTED_COLOR);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  const footerText = `Recibo generado automáticamente por ${shopName}. Conserve este documento como comprobante de pago.`;
+  doc.text(footerText, pageWidth / 2, footerY, { align: 'center' });
+
+  // ── Save ────────────────────────────────────────────────────
+  const filename = `${shopName}-Recibo-${job.vehicleId}-${dateStr.replace(/\//g, '-')}.pdf`;
+  doc.save(filename);
+}
+

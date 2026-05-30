@@ -49,37 +49,38 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  /* ── Light Theme — SGA Branded Palette (Emerald + Amber) ─── */
+  --background: oklch(0.98 0.006 160);       /* Blanco con tinte verde muy sutil */
+  --foreground: oklch(0.15 0.015 160);       /* Casi negro con tinte verde */
+  --card: oklch(1 0 0);                      /* Blanco puro para cards */
+  --card-foreground: oklch(0.15 0.015 160);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --popover-foreground: oklch(0.15 0.015 160);
+  --primary: oklch(0.42 0.15 160);           /* Emerald oscuro — botones principales */
+  --primary-foreground: oklch(0.99 0 0);     /* Blanco puro */
+  --secondary: oklch(0.92 0.045 160);        /* Verde muy claro */
+  --secondary-foreground: oklch(0.28 0.09 160); /* Verde oscuro */
+  --muted: oklch(0.94 0.018 160);            /* Fondo de elementos apagados */
+  --muted-foreground: oklch(0.46 0.035 160); /* Texto de apoyo — gris verdoso */
+  --accent: oklch(0.78 0.16 55);             /* Naranja/ámbar para highlights */
+  --accent-foreground: oklch(0.18 0.06 55);  /* Texto oscuro sobre accent */
+  --destructive: oklch(0.55 0.22 28);        /* Rojo */
+  --border: oklch(0.88 0.022 160);           /* Borde con tinte verde sutil */
+  --input: oklch(0.95 0.012 160);            /* Input background */
+  --ring: oklch(0.42 0.15 160);              /* Focus ring = primary */
+  --chart-1: oklch(0.52 0.20 160);           /* Emerald vibrante */
+  --chart-2: oklch(0.58 0.19 220);           /* Azul */
+  --chart-3: oklch(0.68 0.19 55);            /* Naranja */
+  --chart-4: oklch(0.55 0.22 305);           /* Violeta */
+  --chart-5: oklch(0.62 0.21 15);            /* Rojo-naranja */
+  --sidebar: oklch(0.96 0.018 160);          /* Sidebar fondo */
+  --sidebar-foreground: oklch(0.20 0.05 160);
+  --sidebar-primary: oklch(0.42 0.15 160);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.90 0.04 160);
+  --sidebar-accent-foreground: oklch(0.28 0.09 160);
+  --sidebar-border: oklch(0.88 0.022 160);
+  --sidebar-ring: oklch(0.42 0.15 160);
 }
 
 .dark {
@@ -115,26 +116,6 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.75 0.25 140);
 }
-
-/* ── Custom cursor: hide OS cursor on desktop ─────────────── */
-@media (pointer: fine) {
-  *, *::before, *::after {
-    cursor: none !important;
-  }
-}
-
-/* ── Cursor click animation ───────────────────────────────── */
-.sga-cursor {
-  transition: transform 0.04s linear;
-}
-.sga-cursor.cursor-clicking svg {
-  transform: rotate(45deg) scale(0.85);
-  transition: transform 0.1s ease;
-}
-.sga-cursor svg {
-  transition: transform 0.15s ease;
-}
-
 /* ── Touch ripple animation ───────────────────────────────── */
 @keyframes touch-ripple {
   0%   { transform: scale(0.2); opacity: 1; }
@@ -145,24 +126,29 @@
 }
 
 @layer utilities {
-  /* Glass panel — base */
+  /* Glass panel — light mode base */
   .glass-panel {
-    @apply bg-white/90 backdrop-blur-xl border border-gray-200 shadow-md transition-all duration-200;
+    @apply bg-white/95 backdrop-blur-md border border-border shadow-sm transition-all duration-200;
+  }
+
+  /* Glass panel — hover in light mode */
+  .glass-panel:hover {
+    @apply bg-white shadow-md border-primary/20;
   }
 
   /* Glass panel — dark mode */
   .dark .glass-panel {
-    @apply bg-zinc-900/60 backdrop-blur-xl border border-white/10 shadow-[0_0_15px_rgba(57,255,20,0.05)];
+    @apply bg-zinc-900/70 backdrop-blur-md border border-white/10 shadow-[0_0_15px_rgba(57,255,20,0.02)];
   }
 
   /* Hover on dark glass panels */
   .dark .glass-panel:hover {
-    @apply bg-zinc-800/70 border-white/15 shadow-[0_0_25px_rgba(52,211,153,0.08)];
+    @apply bg-zinc-800/75 border-white/15 shadow-[0_0_20px_rgba(52,211,153,0.04)];
   }
 
-  /* Page background (now transparent to show parallax background) */
+  /* Page background — light: subtle emerald tinted gradient */
   .page-bg {
-    @apply bg-transparent;
+    @apply bg-gradient-to-br from-background via-background to-secondary/30;
   }
   .dark .page-bg {
     @apply bg-transparent;
@@ -176,13 +162,20 @@
     @apply w-full max-w-7xl mx-auto px-4 md:px-10;
   }
 
-  /* Header tool button dark hover */
+  /* Header tool button — light mode: visible dark text with border */
   .header-tool-btn {
     @apply flex items-center justify-center rounded-full bg-secondary border border-border
-           text-muted-foreground transition-all duration-200
+           text-foreground/70 transition-all duration-200
+           hover:text-primary hover:bg-primary/10 hover:border-primary/30 hover:shadow-[0_0_10px_rgba(34,197,94,0.12)];
+  }
+
+  /* Header tool button — dark mode override */
+  .dark .header-tool-btn {
+    @apply text-muted-foreground
            hover:text-foreground hover:bg-white/10 hover:border-white/25 hover:shadow-[0_0_10px_rgba(255,255,255,0.06)];
   }
 }
+
 
 @layer base {
   * {

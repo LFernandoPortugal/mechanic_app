@@ -11,50 +11,62 @@ service cloud.firestore {
 
     // ─── Jobs Collection ───────────────────────────────
     match /jobs/{jobId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null && hasAnyRole(['ADMIN', 'RECEPTION']);
-      allow update: if request.auth != null && (
+      // 1. Authenticated workshop-specific access
+      allow read: if request.auth != null && isSameWorkshop(resource.data);
+      allow create: if request.auth != null && request.resource.data.workshopId == getUserData().workshopId && hasAnyRole(['ADMIN', 'RECEPTION']);
+      allow update: if request.auth != null && isSameWorkshop(resource.data) && request.resource.data.workshopId == getUserData().workshopId && (
         isAdmin() || 
         (hasAnyRole(['RECEPTION']) && resource.data.status == 'Reception') ||
-        (hasAnyRole(['TECHNICIAN']) && resource.data.status in ['Reception', 'Diagnosis']) ||
-        (hasAnyRole(['ADVISOR']) && resource.data.status == 'Approval')
+        (hasAnyRole(['TECHNICIAN']) && resource.data.status in ['Reception', 'Diagnosis', 'Approved', 'Repair']) ||
+        (hasAnyRole(['ADVISOR']))
       );
-      allow delete: if request.auth != null && isAdmin();
-    }
+      allow delete: if request.auth != null && isAdmin() && isSameWorkshop(resource.data);
 
-    // ─── Public Quote Access ───────────────────────────
-    match /jobs/{jobId} {
-      allow read: if resource.data.status in ['Ready', 'Approved'];
+      // 2. Public Client Quote Portal (No Auth Required)
+      allow read: if resource.data.status in ['Ready', 'Approved', 'Repair', 'QC', 'Delivered'];
       allow update: if resource.data.status == 'Ready' 
                      && request.resource.data.status == 'Approved';
     }
 
     // ─── Inventory Collection ──────────────────────────
-    // ADMIN: full CRUD.
-    // ADVISOR: read only (to search catalog when building quotes).
     match /inventory/{itemId} {
-      allow read: if request.auth != null && hasAnyRole(['ADMIN', 'ADVISOR']);
-      allow create, update, delete: if request.auth != null && isAdmin();
+      allow read: if request.auth != null && isSameWorkshop(resource.data) && hasAnyRole(['ADMIN', 'ADVISOR']);
+      allow create: if request.auth != null && request.resource.data.workshopId == getUserData().workshopId && isAdmin();
+      allow update: if request.auth != null && isSameWorkshop(resource.data) && request.resource.data.workshopId == getUserData().workshopId && isAdmin();
+      allow delete: if request.auth != null && isAdmin() && isSameWorkshop(resource.data);
     }
 
     // ─── Inventory Transactions Collection ─────────────
-    // Write: ADMIN or ADVISOR (record stock movements).
-    // Read: ADMIN only (full audit trail).
     match /inventory_transactions/{txId} {
-      allow read: if request.auth != null && isAdmin();
-      allow create: if request.auth != null && hasAnyRole(['ADMIN', 'ADVISOR']);
-      allow update, delete: if request.auth != null && isAdmin();
+      allow read: if request.auth != null && isSameWorkshop(resource.data) && isAdmin();
+      allow create: if request.auth != null && request.resource.data.workshopId == getUserData().workshopId && hasAnyRole(['ADMIN', 'ADVISOR']);
+      allow update, delete: if request.auth != null && isAdmin() && isSameWorkshop(resource.data);
+    }
+
+    // ─── Settings Collection ───────────────────────────
+    match /settings/{documentId} {
+      // Public read so client quotes can load shop name, address, and logo
+      allow read: if true;
+      // Writing requires admin role and matching workshopId
+      allow write: if request.auth != null && isAdmin() && getUserData().workshopId == documentId;
     }
 
     // ─── Helper Functions ──────────────────────────────
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isSameWorkshop(resourceData) {
+      return request.auth != null && resourceData.workshopId == getUserData().workshopId;
+    }
+
+    // Reuse getUserData helper for simpler roles rules
     function isAdmin() {
-      return request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(['ADMIN']);
+      return request.auth != null && getUserData().roles.hasAny(['ADMIN']);
     }
 
     function hasAnyRole(roles) {
-      return request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.roles.hasAny(roles);
+      return request.auth != null && getUserData().roles.hasAny(roles);
     }
   }
 }

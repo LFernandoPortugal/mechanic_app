@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { getJobById, updateJob } from "@/lib/db";
+import { getJobById, updateJob, getWorkshopSettings } from "@/lib/db";
 import { toast } from "sonner";
 import { Job } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ export default function ClientQuoteView() {
   const jobId = params.id as string;
   
   const [job, setJob] = useState<Job | null>(null);
+  const [settings, setSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [approvals, setApprovals] = useState<Record<string, boolean>>({});
   const [errorNotFound, setErrorNotFound] = useState(false);
@@ -33,6 +34,9 @@ export default function ClientQuoteView() {
     const fetched = await getJobById(jobId);
     if (fetched) {
       setJob(fetched);
+      const fetchedSettings = await getWorkshopSettings(fetched.workshopId);
+      setSettings(fetchedSettings);
+      
       const initialApprovals: Record<string, boolean> = {};
       fetched.inspectionItems?.forEach(item => {
         if (item.price) {
@@ -42,6 +46,8 @@ export default function ClientQuoteView() {
       setApprovals(initialApprovals);
     } else {
       setErrorNotFound(true);
+      const fetchedSettings = await getWorkshopSettings("demo-workshop");
+      setSettings(fetchedSettings);
     }
     setLoading(false);
   };
@@ -134,9 +140,10 @@ export default function ClientQuoteView() {
     <div className="min-h-screen page-bg text-foreground p-4 pb-20 md:p-8 flex justify-center">
       
       <div className="w-full max-w-3xl space-y-6">
-        <header className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-amber-500">{t('clientPortal')}</h1>
-          <p className="text-muted-foreground text-sm mt-2">{t('clientSubtitle')}</p>
+        <header className="mb-8 text-center flex flex-col items-center justify-center">
+          {settings?.logoUrl && <img src={settings.logoUrl} alt="Logo" className="w-auto h-20 mb-4 object-contain rounded-md" />}
+          <h1 className="text-3xl font-bold text-amber-500">{settings?.name ? `${settings.name} - ` : ''}{t('clientPortal')}</h1>
+          <p className="text-muted-foreground text-sm mt-2">{settings?.address || t('clientSubtitle')}</p>
           <div className="mt-4 p-2 bg-secondary dark:bg-zinc-950 inline-block rounded-full px-4 border border-border">
             <span className="text-muted-foreground mr-2">{t('vehicleIdLabel')}</span>
             <span className="text-foreground font-mono font-medium">{job.vehicleId}</span>
@@ -244,7 +251,7 @@ export default function ClientQuoteView() {
         <Button
           variant="outline"
           className="w-full border-amber-500/40 text-amber-500 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 h-12 mt-3"
-          onClick={() => generateQuotePDF(job, 'client')}
+          onClick={() => generateQuotePDF(job, 'client', settings)}
         >
           <Download className="w-4 h-4 mr-2" />
           {t('downloadPDF')}

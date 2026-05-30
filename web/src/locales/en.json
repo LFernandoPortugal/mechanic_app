@@ -14,6 +14,12 @@
   "analytics": "Owner Analytics",
   "analyticsDesc": "High-level overview of workshop performance.",
 
+  "clientDatabase": "Client Database",
+  "clientDatabaseDesc": "Client history, vehicles, and previous visits.",
+
+  "qc": "Quality Control (QC)",
+  "qcDesc": "Final inspection of repaired vehicles before delivery.",
+
   "userManagement": "User Management",
   "userManagementDesc": "Manage staff roles and permissions",
   "loginPrompt": "Log in",
@@ -205,6 +211,13 @@
   "documentsInVehicle": "Documents in Vehicle",
   "otherValuables": "Other Items",
   "otherValuablesPlaceholder": "Describe other items left in vehicle...",
+  "symptomsLabel": "Reason for Entry / Reported Symptoms *",
+  "symptomsPlaceholder": "e.g. Engine loses power on inclines or squeals when braking...",
+  "vehicleHistory": "Vehicle Clinical History",
+  "previousRepairs": "Previous Repairs",
+  "noPreviousRepairs": "This vehicle has no registered previous visits to this workshop.",
+  "errorUploadingPhotos": "Failed to upload evidence photos to the cloud, but registration will proceed.",
+  "errorUploadingSignature": "Failed to upload the customer's signature to the server, but registration will proceed.",
 
   "alertNoPhoneWhatsApp": "No phone number provided — the client won't receive WhatsApp updates.",
 
@@ -224,8 +237,19 @@
   "statusReception": "Reception",
   "statusDiagnosis": "Diagnosis",
   "statusApproval": "Quoting",
+  "statusApproved": "Approved",
   "statusReady": "Waiting on Client",
   "statusRepair": "In Repair",
   "statusQC": "Quality Control",
-  "statusDelivered": "Delivered"
+  "statusDelivered": "Delivered",
+
+  "payments": "Payments / Cash Register",
+  "paymentsDesc": "Register payments and close work orders.",
+  "uploadingPhotos": "Uploading photos...",
+
+  "settings": "Settings",
+  "settingsDesc": "Workshop preferences, logo, and billing data.",
+
+  "downloadReceipt": "Download Payment Receipt (PDF)",
+  "liveUpdates": "Live"
 }

@@ -6,6 +6,7 @@ export interface UserProfile {
   email: string;
   displayName: string;
   roles: UserRole[];
+  workshopId: string; // SaaS Workshop identifier
   createdAt: Date;
   updatedAt: Date;
 }
@@ -15,9 +16,13 @@ export const ROLE_ROUTE_MAP: Record<string, UserRole[]> = {
   '/reception': ['ADMIN', 'RECEPTION'],
   '/technician': ['ADMIN', 'TECHNICIAN'],
   '/advisor': ['ADMIN', 'ADVISOR'],
+  '/advisor/payments': ['ADMIN', 'ADVISOR'],
   '/analytics': ['ADMIN'],
   '/admin/users': ['ADMIN'],
+  '/admin/settings': ['ADMIN'],
   '/inventory': ['ADMIN', 'ADVISOR'],
+  '/clients': ['ADMIN', 'ADVISOR', 'RECEPTION'],
+  '/qc': ['ADMIN', 'ADVISOR'],
 };
 
 /** Display metadata for each role — labelKey is a translation key */
@@ -65,16 +70,23 @@ export interface AuditLog {
 
 export interface Job {
   id: string;
-  vehicleId: string;
+  workshopId: string; // SaaS Workshop identifier
+  vehicleId: string; // License plate
+  vin?: string;
+  make?: string;
+  model?: string;
+  color?: string;
   clientId: string;         // Client name
   clientPhone?: string;     // WhatsApp number (e.g. "50760001122")
   clientEmail?: string;     // For email notifications
   advisorId: string;
   technicianId?: string;
   status: 'Reception' | 'Diagnosis' | 'Approval' | 'Repair' | 'QC' | 'Ready' | 'Delivered' | 'Approved';
+  symptoms?: string; // Client reported symptoms / reason for entry
   
   // Liability Shield Data
-  receptionImages?: string[]; // Visual evidence of pre-existing damages
+  receptionImages?: string[]; // Base64 data URLs of pre-existing damage photos
+  signatureBase64?: string;   // Client signature as base64 data URL (PNG)
   fluidAudit: {
     oilLevel: 'OK' | 'Low' | 'Empty';
     coolantLevel: 'OK' | 'Low' | 'Empty';
@@ -101,6 +113,7 @@ export interface Job {
     id: string;
     amount: number;
     method: 'Efectivo' | 'Tarjeta' | 'Transferencia' | 'Yape/Plin';
+    reference?: string;
     date: string;
     actorId: string;
   }[];
@@ -115,6 +128,7 @@ export type InventoryCategory = 'Frenos' | 'Motor' | 'Transmisión' | 'Suspensi�
 
 export interface InventoryItem {
   id: string;
+  workshopId: string;           // SaaS Workshop identifier
   sku: string;                  // Internal code e.g. "FRE-001"
   name: string;                 // "Pastillas de Freno Delanteras"
   category: InventoryCategory;
@@ -133,6 +147,7 @@ export type StockMovementType = 'IN' | 'OUT' | 'ADJUSTMENT';
 
 export interface InventoryTransaction {
   id: string;
+  workshopId: string;           // SaaS Workshop identifier
   itemId: string;
   itemName: string;
   type: StockMovementType;

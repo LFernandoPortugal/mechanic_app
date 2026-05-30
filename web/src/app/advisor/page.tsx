@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getJobsForAdvisor, updateJob } from "@/lib/db";
+import { updateJob, getWorkshopSettings } from "@/lib/db";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Job } from "@/types";
@@ -12,18 +12,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Wand2, Copy, ExternalLink, CheckCircle, MessageCircle, Download, Mail } from "lucide-react";
+import { ArrowLeft, Wand2, Copy, ExternalLink, CheckCircle, MessageCircle, Download, Mail } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { openWhatsAppQuote } from "@/lib/whatsapp";
 import { generateQuotePDF } from "@/lib/pdf";
 import { sendQuoteEmail, isEmailConfigured } from "@/lib/email";
+import { useRealtimeJobs } from "@/hooks/useRealtimeJobs";
+import { WorkflowStepper } from "@/components/WorkflowStepper";
 
 export default function AdvisorQuoteBuilder() {
   const { t } = useLanguage();
-  const { user } = useAuth();
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const { user, userProfile } = useAuth();
+  const { jobs, loading } = useRealtimeJobs({ statuses: ["Approval", "Ready", "Approved", "Repair"] });
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [loading, setLoading] = useState(true);
   const [prices, setPrices] = useState<Record<string, number>>({});
   const [baseLaborCost, setBaseLaborCost] = useState(0);
   const [submittedJobId, setSubmittedJobId] = useState<string | null>(null);
@@ -32,19 +33,14 @@ export default function AdvisorQuoteBuilder() {
   const [sendingEmail, setSendingEmail] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentType, setPaymentType] = useState("Efectivo");
+  const [workshopSettings, setWorkshopSettings] = useState<any>(null);
   
   const router = useRouter();
 
   useEffect(() => {
-    fetchJobs();
-  }, []);
-
-  const fetchJobs = async () => {
-    setLoading(true);
-    const fetched = await getJobsForAdvisor();
-    setJobs(fetched);
-    setLoading(false);
-  };
+    if (!userProfile?.workshopId) return;
+    getWorkshopSettings(userProfile.workshopId).then(s => setWorkshopSettings(s));
+  }, [userProfile?.workshopId]);
 
   const calculateTotal = () => {
     const partsTotal = Object.values(prices).reduce((acc, curr) => acc + (curr || 0), 0);
@@ -89,7 +85,7 @@ export default function AdvisorQuoteBuilder() {
       setSelectedJob(null);
       setPrices({});
       setBaseLaborCost(0);
-      fetchJobs();
+      // Real-time listener handles refresh automatically
     } catch (e) {
       toast.error("Error saving quote: " + e);
     }
@@ -119,7 +115,7 @@ export default function AdvisorQuoteBuilder() {
       setSelectedJob({ ...selectedJob, payments: updatedPayments });
       setPaymentAmount("");
       toast.success(t('paymentRegistered') || "Pago registrado correctamente");
-      fetchJobs();
+      // Real-time listener handles refresh automatically
     } catch (e) {
       toast.error("Error: " + e);
     }
@@ -211,7 +207,7 @@ export default function AdvisorQuoteBuilder() {
             <Button
               variant="outline"
               className="w-full border-blue-500/50 text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 h-12"
-              onClick={() => generateQuotePDF(submittedJob, 'advisor')}
+              onClick={() => generateQuotePDF(submittedJob, 'advisor', workshopSettings)}
             >
               <Download className="w-4 h-4 mr-2" />
               {t('downloadPDF')}
@@ -231,57 +227,109 @@ export default function AdvisorQuoteBuilder() {
     );
   }
 
+  // Helper: human-readable relative date
+  const formatJobTime = (date: any): string => {
+    if (!date) return '';
+    const d = date instanceof Date ? date : (date?.toDate ? date.toDate() : new Date(date));
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    const diffHrs = Math.floor(diffMin / 60);
+    if (diffMin < 1) return 'Ahora mismo';
+    if (diffMin < 60) return `Hace ${diffMin} min`;
+    if (diffHrs < 24) return `Hace ${diffHrs}h ${diffMin % 60}m`;
+    return d.toLocaleDateString('es', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  };
+
+  const STATUS_COLOR: Record<string, string> = {
+    Approval: 'text-amber-400 border-amber-500/60',
+    Ready: 'text-cyan-400 border-cyan-500/60',
+    Approved: 'text-emerald-400 border-emerald-500/60',
+    Repair: 'text-purple-400 border-purple-500/60',
+  };
+
   return (
     <ProtectedRoute allowedRoles={['ADMIN', 'ADVISOR']}>
       <div className="min-h-screen page-bg text-foreground px-4 md:px-8 py-6 flex justify-center">
         <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left Sidebar: Pending Jobs (3/12 = 25%) */}
-          <div className="lg:col-span-3 space-y-4">
-            <header className="mb-6">
-              <h1 className="text-2xl font-bold text-blue-500 dark:text-blue-400">{t('advisorArea')}</h1>
-              <p className="text-muted-foreground text-sm">{t('advisorSubtitle')}</p>
+          <div className="lg:col-span-3 flex flex-col">
+            <header className="mb-6 flex flex-col gap-3">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="group self-start gap-1.5 rounded-full border border-border bg-card/45 px-3.5 py-1.5 text-xs text-muted-foreground transition-all duration-300 hover:border-violet-500/50 hover:bg-violet-950/20 hover:text-violet-400"
+                onClick={() => router.push("/")}
+              >
+                <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+                Inicio
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold text-violet-500 dark:text-violet-400">{t('advisorArea')}</h1>
+                <p className="text-muted-foreground text-xs">{t('advisorSubtitle')}</p>
+                <div className="mt-1 text-[10px] text-muted-foreground">
+                  {jobs.length} orden{jobs.length !== 1 ? 'es' : ''} de cotización/reparación
+                </div>
+              </div>
             </header>
 
-            {jobs.length === 0 ? (
-              <p className="text-muted-foreground italic">{t('noPendingQuotes')}</p>
-        ) : (
-          jobs.map(job => (
-            <Card 
-              key={job.id} 
-              className={`glass-panel cursor-pointer transition-colors ${selectedJob?.id === job.id ? 'border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.2)]' : 'hover:border-accent'}`}
-              onClick={() => {
-                setSelectedJob(job);
-                const existingPrices: Record<string, number> = {};
-                job.inspectionItems?.forEach(item => {
-                  if (item.price) existingPrices[item.id] = item.price;
-                });
-                setPrices(existingPrices);
-                setBaseLaborCost(0);
-              }}
-            >
-              <CardHeader className="p-4">
-                <CardTitle className="text-lg flex justify-between items-center">
-                  {t('jobLabel')} {job.vehicleId}
-                  <Badge variant="outline" className={`
-                    ${job.status === 'Approval' ? 'text-amber-500 border-amber-500' : ''}
-                    ${job.status === 'Ready' ? 'text-blue-400 border-blue-400' : ''}
-                    ${job.status === 'Approved' ? 'text-emerald-500 border-emerald-500' : ''}
-                    ${job.status === 'Repair' ? 'text-purple-500 border-purple-500' : ''}
-                  `}>
-                    {t(`status${job.status}` as any) || job.status}
-                  </Badge>
-                </CardTitle>
-                <CardDescription>{t('odometer')}: {job.odometer} km</CardDescription>
-              </CardHeader>
-            </Card>
-          ))
-        )}
-      </div>
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1" style={{ maxHeight: 'calc(100vh - 160px)' }}>
+              {jobs.length === 0 ? (
+                <p className="text-muted-foreground italic text-sm">{t('noPendingQuotes')}</p>
+              ) : (
+                jobs.map(job => {
+                  const isActive = selectedJob?.id === job.id;
+                  const statusColor = STATUS_COLOR[job.status] || 'text-gray-400 border-gray-500/60';
+                  return (
+                    <button
+                      key={job.id}
+                      onClick={() => {
+                        setSelectedJob(job);
+                        const existingPrices: Record<string, number> = {};
+                        job.inspectionItems?.forEach(item => {
+                          if (item.price) existingPrices[item.id] = item.price;
+                        });
+                        setPrices(existingPrices);
+                        setBaseLaborCost(0);
+                      }}
+                      className={`w-full text-left rounded-lg border p-3 transition-all ${
+                        isActive
+                          ? 'border-blue-500 bg-blue-950/20 shadow-[0_0_12px_rgba(59,130,246,0.18)]'
+                          : 'border-border bg-card/60 hover:border-accent hover:bg-accent/5'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm truncate text-foreground">{job.vehicleId}</p>
+                          <p className="text-xs text-muted-foreground truncate">{job.clientId || '—'}</p>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={`shrink-0 text-[10px] px-1.5 py-0 font-medium ${statusColor}`}
+                        >
+                          {t(`status${job.status}` as any) || job.status}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className="text-[10px] text-muted-foreground">{formatJobTime(job.createdAt)}</span>
+                        {job.totalEstimate > 0 && (
+                          <span className="text-[10px] text-muted-foreground/60">· ${job.totalEstimate.toLocaleString()}</span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
 
       {/* Right Content: Quote Builder / Operations (9/12 = 75%) */}
       <div className="lg:col-span-9">
         {selectedJob && selectedJob.status === "Approval" ? (
           <div className="space-y-6">
+            {/* Glowing Stepper Guidance */}
+            <WorkflowStepper currentStatus={selectedJob.status} />
             <Card className="glass-panel">
               <CardHeader className="flex flex-row justify-between items-start">
                 <div>
@@ -379,6 +427,8 @@ export default function AdvisorQuoteBuilder() {
           </div>
         ) : selectedJob ? (
           <div className="space-y-6">
+            {/* Glowing Stepper Guidance */}
+            <WorkflowStepper currentStatus={selectedJob.status} />
             <Card className="glass-panel">
               <CardHeader>
                 <div className="flex justify-between items-start">

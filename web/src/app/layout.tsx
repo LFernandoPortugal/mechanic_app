@@ -6,6 +6,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Header } from "@/components/Header";
 import { MouseEffects } from "@/components/MouseEffects";
+import { ScrollToTop } from "@/components/ScrollToTop";
 import { Toaster } from "sonner";
 
 const geistSans = Geist({
@@ -40,10 +41,12 @@ export default function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning
       >
         <ThemeProvider>
           <LanguageProvider>
             <AuthProvider>
+              <ScrollToTop />
               <MouseEffects />
               <Header />
               {children}
