@@ -20,6 +20,7 @@ import { openWhatsAppStatusUpdate } from "@/lib/whatsapp";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { useRealtimeJobs } from "@/hooks/useRealtimeJobs";
 import { WorkflowStepper } from "@/components/WorkflowStepper";
+import { VehicleIcon } from "@/components/ui/vehicle-icons";
 
 const STATUS_MAP: Record<string, string> = {
   Pass: 'statusPass',
@@ -333,7 +334,10 @@ export default function TechnicianDashboard() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="font-semibold text-sm truncate text-foreground">{job.vehicleId}</p>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <VehicleIcon type={job.vehicleType} className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <p className="font-semibold text-sm truncate text-foreground">{job.vehicleId}</p>
+                      </div>
                       <p className="text-xs text-muted-foreground truncate">{job.clientId || '—'}</p>
                     </div>
                     <Badge
@@ -368,6 +372,7 @@ export default function TechnicianDashboard() {
               <CardContent className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
+                    <VehicleIcon type={selectedJob.vehicleType} className="w-5 h-5 text-muted-foreground shrink-0" />
                     <Badge className="bg-orange-950/40 text-orange-400 border border-orange-500/30 font-mono text-sm">
                       {selectedJob.vehicleId}
                     </Badge>

@@ -4,9 +4,25 @@ service cloud.firestore {
     
     // ─── Users Collection ──────────────────────────────
     match /users/{userId} {
-      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
-      allow create: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && isAdmin();
+      allow read: if request.auth != null && (request.auth.uid == userId || (isAdmin() && isSameWorkshop(resource.data)));
+      allow create: if request.auth != null && request.auth.uid == userId && !request.resource.data.roles.hasAny(['SUPER_ADMIN']);
+      allow update: if request.auth != null && (
+        isSuperAdmin() ||
+        (
+          // User updating their own profile (cannot modify roles or workshopId)
+          request.auth.uid == userId && 
+          request.resource.data.roles == resource.data.roles && 
+          request.resource.data.workshopId == resource.data.workshopId
+        ) ||
+        (
+          // Workshop Admin updating their team member's roles
+          isAdmin() && 
+          resource.data.workshopId == getUserData().workshopId && 
+          request.resource.data.workshopId == resource.data.workshopId && 
+          !request.resource.data.roles.hasAny(['SUPER_ADMIN'])
+        )
+      );
+      allow delete: if request.auth != null && isSuperAdmin();
     }
 
     // ─── Jobs Collection ───────────────────────────────
@@ -20,7 +36,7 @@ service cloud.firestore {
         (hasAnyRole(['TECHNICIAN']) && resource.data.status in ['Reception', 'Diagnosis', 'Approved', 'Repair']) ||
         (hasAnyRole(['ADVISOR']))
       );
-      allow delete: if request.auth != null && isAdmin() && isSameWorkshop(resource.data);
+      allow delete: if request.auth != null && (isSuperAdmin() || (isAdmin() && isSameWorkshop(resource.data) && isResetAllowed(resource.data.workshopId)));
 
       // 2. Public Client Quote Portal (No Auth Required)
       allow read: if resource.data.status in ['Ready', 'Approved', 'Repair', 'QC', 'Delivered'];
@@ -33,22 +49,23 @@ service cloud.firestore {
       allow read: if request.auth != null && isSameWorkshop(resource.data) && hasAnyRole(['ADMIN', 'ADVISOR']);
       allow create: if request.auth != null && request.resource.data.workshopId == getUserData().workshopId && isAdmin();
       allow update: if request.auth != null && isSameWorkshop(resource.data) && request.resource.data.workshopId == getUserData().workshopId && isAdmin();
-      allow delete: if request.auth != null && isAdmin() && isSameWorkshop(resource.data);
+      allow delete: if request.auth != null && (isSuperAdmin() || (isAdmin() && isSameWorkshop(resource.data) && isResetAllowed(resource.data.workshopId)));
     }
 
     // ─── Inventory Transactions Collection ─────────────
     match /inventory_transactions/{txId} {
       allow read: if request.auth != null && isSameWorkshop(resource.data) && isAdmin();
       allow create: if request.auth != null && request.resource.data.workshopId == getUserData().workshopId && hasAnyRole(['ADMIN', 'ADVISOR']);
-      allow update, delete: if request.auth != null && isAdmin() && isSameWorkshop(resource.data);
+      allow update: if request.auth != null && isSameWorkshop(resource.data) && request.resource.data.workshopId == getUserData().workshopId && isAdmin();
+      allow delete: if request.auth != null && (isSuperAdmin() || (isAdmin() && isSameWorkshop(resource.data) && isResetAllowed(resource.data.workshopId)));
     }
 
     // ─── Settings Collection ───────────────────────────
     match /settings/{documentId} {
       // Public read so client quotes can load shop name, address, and logo
       allow read: if true;
-      // Writing requires admin role and matching workshopId
-      allow write: if request.auth != null && isAdmin() && getUserData().workshopId == documentId;
+      // Writing requires admin role and matching workshopId, or super admin
+      allow write: if request.auth != null && (isSuperAdmin() || (isAdmin() && getUserData().workshopId == documentId));
     }
 
     // ─── Helper Functions ──────────────────────────────
@@ -57,16 +74,24 @@ service cloud.firestore {
     }
 
     function isSameWorkshop(resourceData) {
-      return request.auth != null && resourceData.workshopId == getUserData().workshopId;
+      return request.auth != null && (resourceData.workshopId == getUserData().workshopId || isSuperAdmin());
     }
 
     // Reuse getUserData helper for simpler roles rules
     function isAdmin() {
-      return request.auth != null && getUserData().roles.hasAny(['ADMIN']);
+      return request.auth != null && (getUserData().roles.hasAny(['ADMIN']) || isSuperAdmin());
+    }
+
+    function isSuperAdmin() {
+      return request.auth != null && getUserData().roles.hasAny(['SUPER_ADMIN']);
     }
 
     function hasAnyRole(roles) {
-      return request.auth != null && getUserData().roles.hasAny(roles);
+      return request.auth != null && (getUserData().roles.hasAny(roles) || isSuperAdmin());
+    }
+
+    function isResetAllowed(workshopId) {
+      return get(/databases/$(database)/documents/settings/$(workshopId)).data.allowResetData == true;
     }
   }
 }

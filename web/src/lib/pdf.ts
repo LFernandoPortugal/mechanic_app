@@ -6,14 +6,14 @@
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Job } from '@/types';
+import { Job, WorkshopSettings } from '@/types';
 
 const BRAND_COLOR: [number, number, number] = [16, 185, 129];   // Emerald-500
 const DARK_COLOR:  [number, number, number] = [24, 24, 27];     // zinc-900
 const MUTED_COLOR: [number, number, number] = [113, 113, 122];  // zinc-500
 
-function formatMoney(amount: number): string {
-  return `$${amount.toFixed(2)}`;
+function formatMoney(amount: number, symbol = '$'): string {
+  return `${symbol}${amount.toFixed(2)}`;
 }
 
 function getLaborCost(job: Job): number {
@@ -23,11 +23,6 @@ function getLaborCost(job: Job): number {
 
 /**
  * Generates and downloads a professional PDF quote for the given job.
- * @param job  The Job object from Firestore.
- * @param mode 'advisor' = full detail | 'client' = simplified client version
- */
-/**
- * Generates and downloads a professional PDF quote for the given job.
  * @param job       The Job object from Firestore.
  * @param mode      'advisor' = full detail | 'client' = simplified client version
  * @param workshop  Optional workshop settings for dynamic branding
@@ -35,15 +30,16 @@ function getLaborCost(job: Job): number {
 export function generateQuotePDF(
   job: Job,
   mode: 'advisor' | 'client' = 'advisor',
-  workshop?: { name?: string; nit?: string; phone?: string; address?: string; logoUrl?: string } | null
+  workshop?: WorkshopSettings | null
 ): void {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const symbol = workshop?.currencySymbol || '$';
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 16;
   let y = margin;
 
-  const shopName = workshop?.name || 'SGA';
-  const shopSubtitle = workshop?.name ? 'Sistema de Gestión Automotriz' : 'Sistema de Gestión Automotriz';
+  const shopName = workshop?.workshopName || 'SGA Auto';
+  const shopSubtitle = 'Sistema de Gestión Automotriz';
 
   // ── Header Bar ──────────────────────────────────────────────
   doc.setFillColor(...BRAND_COLOR);
@@ -149,7 +145,7 @@ export function generateQuotePDF(
       item.name,
       item.status,
       item.notes || '',
-      item.price && item.price > 0 ? formatMoney(item.price) : 'Sin costo',
+      item.price && item.price > 0 ? formatMoney(item.price, symbol) : 'Sin costo',
       item.approved === false ? 'Declinado' : (item.price ? 'Autorizado' : 'Revisado'),
     ];
   });
@@ -195,27 +191,53 @@ export function generateQuotePDF(
   const approvedTotal = job.approvedAmount || job.totalEstimate || 0;
 
   const summaryX = pageWidth - margin - 70;
+  const taxRate = workshop?.taxRate || 0;
+  const taxName = workshop?.taxName || 'IGV';
+  const total = approvedTotal > 0 ? approvedTotal : job.totalEstimate || 0;
+  const subtotal = taxRate > 0 ? total / (1 + taxRate / 100) : total;
+  const taxAmount = total - subtotal;
 
   doc.setFillColor(24, 24, 27);
-  doc.roundedRect(summaryX - 4, finalY - 5, 74, 32, 2, 2, 'F');
+  if (taxRate > 0) {
+    doc.roundedRect(summaryX - 4, finalY - 5, 74, 45, 2, 2, 'F');
+  } else {
+    doc.roundedRect(summaryX - 4, finalY - 5, 74, 32, 2, 2, 'F');
+  }
 
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.text('Mano de Obra:', summaryX, finalY + 1);
-  doc.text(formatMoney(laborCost), pageWidth - margin, finalY + 1, { align: 'right' });
+  doc.text(formatMoney(laborCost, symbol), pageWidth - margin, finalY + 1, { align: 'right' });
 
-  doc.text('Repuestos:', summaryX, finalY + 8);
-  doc.text(formatMoney(partsCost), pageWidth - margin, finalY + 8, { align: 'right' });
+  doc.text('Repuestos:', summaryX, finalY + 7);
+  doc.text(formatMoney(partsCost, symbol), pageWidth - margin, finalY + 7, { align: 'right' });
 
-  doc.setDrawColor(...BRAND_COLOR);
-  doc.line(summaryX, finalY + 11, pageWidth - margin, finalY + 11);
+  if (taxRate > 0) {
+    doc.text('Subtotal:', summaryX, finalY + 13);
+    doc.text(formatMoney(subtotal, symbol), pageWidth - margin, finalY + 13, { align: 'right' });
 
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.setTextColor(...BRAND_COLOR);
-  doc.text('TOTAL:', summaryX, finalY + 18);
-  doc.text(formatMoney(approvedTotal > 0 ? approvedTotal : job.totalEstimate || 0), pageWidth - margin, finalY + 18, { align: 'right' });
+    doc.text(`${taxName} (${taxRate}%):`, summaryX, finalY + 19);
+    doc.text(formatMoney(taxAmount, symbol), pageWidth - margin, finalY + 19, { align: 'right' });
+
+    doc.setDrawColor(...BRAND_COLOR);
+    doc.line(summaryX, finalY + 22, pageWidth - margin, finalY + 22);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(...BRAND_COLOR);
+    doc.text('TOTAL:', summaryX, finalY + 29);
+    doc.text(formatMoney(total, symbol), pageWidth - margin, finalY + 29, { align: 'right' });
+  } else {
+    doc.setDrawColor(...BRAND_COLOR);
+    doc.line(summaryX, finalY + 11, pageWidth - margin, finalY + 11);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(...BRAND_COLOR);
+    doc.text('TOTAL:', summaryX, finalY + 18);
+    doc.text(formatMoney(total, symbol), pageWidth - margin, finalY + 18, { align: 'right' });
+  }
 
   // ── Status Badge ────────────────────────────────────────────
   const statusLabel = job.status === 'Approved' ? 'APROBADO' : 'PENDIENTE DE APROBACIÓN';
@@ -232,8 +254,8 @@ export function generateQuotePDF(
   doc.setTextColor(...MUTED_COLOR);
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
-  const footerText = workshop?.name
-    ? `Este documento es generado automáticamente por ${workshop.name} — ${shopSubtitle}.`
+  const footerText = workshop?.workshopName
+    ? `Este documento es generado automáticamente por ${workshop.workshopName} — ${shopSubtitle}.`
     : 'Este documento es generado automáticamente por SGA — Sistema de Gestión Automotriz.';
   doc.text(footerText, pageWidth / 2, footerY, { align: 'center' });
 
@@ -253,15 +275,16 @@ export function generateQuotePDF(
  */
 export function generateReceiptPDF(
   job: Job,
-  workshop?: { name?: string; nit?: string; phone?: string; address?: string; logoUrl?: string } | null
+  workshop?: WorkshopSettings | null
 ): void {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const symbol = workshop?.currencySymbol || '$';
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 16;
   let y = margin;
 
-  const shopName = workshop?.name || 'SGA';
-  const shopNit = workshop?.nit || '';
+  const shopName = workshop?.workshopName || 'SGA Auto';
+  const shopNit = workshop?.taxId || '';
   const shopPhone = workshop?.phone || '';
   const shopAddress = workshop?.address || '';
   const dateStr = new Date().toLocaleDateString('es-PA', { year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -336,7 +359,7 @@ export function generateReceiptPDF(
   const serviceRows = approvedItems.map((item) => [
     item.name,
     item.status,
-    item.price ? formatMoney(item.price) : '$0.00',
+    item.price ? formatMoney(item.price, symbol) : `${symbol}0.00`,
   ]);
 
   autoTable(doc, {
@@ -370,30 +393,60 @@ export function generateReceiptPDF(
   const totalPaid = (job.payments || []).reduce((s, p) => s + p.amount, 0);
 
   const summaryX = pageWidth - margin - 80;
+  const taxRate = workshop?.taxRate || 0;
+  const taxName = workshop?.taxName || 'IGV';
+  const total = job.totalEstimate || 0;
+  const subtotal = taxRate > 0 ? total / (1 + taxRate / 100) : total;
+  const taxAmount = total - subtotal;
+
   doc.setFillColor(24, 24, 27);
-  doc.roundedRect(summaryX - 4, y - 3, 84, 40, 2, 2, 'F');
+  if (taxRate > 0) {
+    doc.roundedRect(summaryX - 4, y - 3, 84, 52, 2, 2, 'F');
+  } else {
+    doc.roundedRect(summaryX - 4, y - 3, 84, 40, 2, 2, 'F');
+  }
 
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
 
   doc.text('Repuestos:', summaryX, y + 4);
-  doc.text(formatMoney(partsCost), pageWidth - margin, y + 4, { align: 'right' });
+  doc.text(formatMoney(partsCost, symbol), pageWidth - margin, y + 4, { align: 'right' });
 
-  doc.text('Mano de Obra:', summaryX, y + 11);
-  doc.text(formatMoney(laborCost), pageWidth - margin, y + 11, { align: 'right' });
+  doc.text('Mano de Obra:', summaryX, y + 10);
+  doc.text(formatMoney(laborCost, symbol), pageWidth - margin, y + 10, { align: 'right' });
 
-  doc.setDrawColor(...BRAND_COLOR);
-  doc.line(summaryX, y + 15, pageWidth - margin, y + 15);
+  if (taxRate > 0) {
+    doc.text('Subtotal:', summaryX, y + 16);
+    doc.text(formatMoney(subtotal, symbol), pageWidth - margin, y + 16, { align: 'right' });
 
-  doc.setFont('helvetica', 'bold');
-  doc.text('Total Orden:', summaryX, y + 22);
-  doc.text(formatMoney(job.totalEstimate || 0), pageWidth - margin, y + 22, { align: 'right' });
+    doc.text(`${taxName} (${taxRate}%):`, summaryX, y + 22);
+    doc.text(formatMoney(taxAmount, symbol), pageWidth - margin, y + 22, { align: 'right' });
 
-  doc.setTextColor(16, 185, 129);
-  doc.setFontSize(11);
-  doc.text('TOTAL PAGADO:', summaryX, y + 31);
-  doc.text(formatMoney(totalPaid), pageWidth - margin, y + 31, { align: 'right' });
+    doc.setDrawColor(...BRAND_COLOR);
+    doc.line(summaryX, y + 25, pageWidth - margin, y + 25);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Total Orden:', summaryX, y + 31);
+    doc.text(formatMoney(total, symbol), pageWidth - margin, y + 31, { align: 'right' });
+
+    doc.setTextColor(16, 185, 129);
+    doc.setFontSize(11);
+    doc.text('TOTAL PAGADO:', summaryX, y + 41);
+    doc.text(formatMoney(totalPaid, symbol), pageWidth - margin, y + 41, { align: 'right' });
+  } else {
+    doc.setDrawColor(...BRAND_COLOR);
+    doc.line(summaryX, y + 15, pageWidth - margin, y + 15);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Total Orden:', summaryX, y + 22);
+    doc.text(formatMoney(total, symbol), pageWidth - margin, y + 22, { align: 'right' });
+
+    doc.setTextColor(16, 185, 129);
+    doc.setFontSize(11);
+    doc.text('TOTAL PAGADO:', summaryX, y + 31);
+    doc.text(formatMoney(totalPaid, symbol), pageWidth - margin, y + 31, { align: 'right' });
+  }
 
   // ── PAID Badge ──────────────────────────────────────────────
   doc.setFillColor(16, 185, 129);
@@ -420,7 +473,7 @@ export function generateReceiptPDF(
       new Date(p.date).toLocaleDateString('es-PA'),
       p.method,
       p.reference || '—',
-      formatMoney(p.amount),
+      formatMoney(p.amount, symbol),
     ]);
 
     autoTable(doc, {

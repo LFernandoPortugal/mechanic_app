@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { updateJob, getWorkshopSettings } from "@/lib/db";
+import { updateJob } from "@/lib/db";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Job } from "@/types";
@@ -19,10 +19,11 @@ import { generateQuotePDF } from "@/lib/pdf";
 import { sendQuoteEmail, isEmailConfigured } from "@/lib/email";
 import { useRealtimeJobs } from "@/hooks/useRealtimeJobs";
 import { WorkflowStepper } from "@/components/WorkflowStepper";
+import { VehicleIcon } from "@/components/ui/vehicle-icons";
 
 export default function AdvisorQuoteBuilder() {
   const { t } = useLanguage();
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, workshopSettings } = useAuth();
   const { jobs, loading } = useRealtimeJobs({ statuses: ["Approval", "Ready", "Approved", "Repair"] });
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [prices, setPrices] = useState<Record<string, number>>({});
@@ -33,14 +34,8 @@ export default function AdvisorQuoteBuilder() {
   const [sendingEmail, setSendingEmail] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentType, setPaymentType] = useState("Efectivo");
-  const [workshopSettings, setWorkshopSettings] = useState<any>(null);
   
   const router = useRouter();
-
-  useEffect(() => {
-    if (!userProfile?.workshopId) return;
-    getWorkshopSettings(userProfile.workshopId).then(s => setWorkshopSettings(s));
-  }, [userProfile?.workshopId]);
 
   const calculateTotal = () => {
     const partsTotal = Object.values(prices).reduce((acc, curr) => acc + (curr || 0), 0);
@@ -110,7 +105,7 @@ export default function AdvisorQuoteBuilder() {
       
       await updateJob(selectedJob.id, {
         payments: updatedPayments
-      }, user?.uid || "unknown", `Pago registrado: $${amount} (${paymentType})`);
+      }, user?.uid || "unknown", `Pago registrado: ${workshopSettings?.currencySymbol || "$"}${amount} (${paymentType})`);
 
       setSelectedJob({ ...selectedJob, payments: updatedPayments });
       setPaymentAmount("");
@@ -301,7 +296,10 @@ export default function AdvisorQuoteBuilder() {
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <p className="font-semibold text-sm truncate text-foreground">{job.vehicleId}</p>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <VehicleIcon type={job.vehicleType} className="w-4 h-4 text-muted-foreground shrink-0" />
+                            <p className="font-semibold text-sm truncate text-foreground">{job.vehicleId}</p>
+                          </div>
                           <p className="text-xs text-muted-foreground truncate">{job.clientId || '—'}</p>
                         </div>
                         <Badge
@@ -314,7 +312,7 @@ export default function AdvisorQuoteBuilder() {
                       <div className="flex items-center gap-2 mt-1.5">
                         <span className="text-[10px] text-muted-foreground">{formatJobTime(job.createdAt)}</span>
                         {job.totalEstimate > 0 && (
-                          <span className="text-[10px] text-muted-foreground/60">· ${job.totalEstimate.toLocaleString()}</span>
+                          <span className="text-[10px] text-muted-foreground/60">· {workshopSettings?.currencySymbol || "$"}{job.totalEstimate.toLocaleString()}</span>
                         )}
                       </div>
                     </button>
@@ -333,8 +331,11 @@ export default function AdvisorQuoteBuilder() {
             <Card className="glass-panel">
               <CardHeader className="flex flex-row justify-between items-start">
                 <div>
-                  <CardTitle>{t('quoteBuilder')}</CardTitle>
-                  <CardDescription>{t('quoteBuilderDesc')}</CardDescription>
+                  <CardTitle className="flex items-center gap-2">
+                    <VehicleIcon type={selectedJob.vehicleType} className="w-5 h-5 text-muted-foreground shrink-0" />
+                    {t('quoteBuilder')}
+                  </CardTitle>
+                  <CardDescription>{t('quoteBuilderDesc')} ({selectedJob.vehicleId})</CardDescription>
                 </div>
                 <Button onClick={handleAutoQuote} variant="outline" className="text-blue-500 dark:text-blue-400 border-blue-500/50 hover:bg-blue-50 dark:hover:bg-blue-950/30 flex-shrink-0">
                   <Wand2 className="w-4 h-4 mr-2" />
@@ -406,12 +407,18 @@ export default function AdvisorQuoteBuilder() {
                         onChange={(e) => setBaseLaborCost(parseFloat(e.target.value) || 0)}
                       />
                    </div>
-                   <div className="text-right">
-                     <p className="text-muted-foreground text-sm mb-1">{t('estimatedTotal')}</p>
-                     <p className="text-4xl font-mono text-emerald-600 dark:text-emerald-400 font-bold drop-shadow-[0_0_10px_rgba(52,211,153,0.5)]">
-                       ${calculateTotal().toFixed(2)}
-                     </p>
-                   </div>
+                    <div className="text-right">
+                      <p className="text-muted-foreground text-sm mb-1">{t('estimatedTotal')}</p>
+                      <p className="text-4xl font-mono text-emerald-600 dark:text-emerald-400 font-bold drop-shadow-[0_0_10px_rgba(52,211,153,0.5)]">
+                        {workshopSettings?.currencySymbol || "$"}{calculateTotal().toFixed(2)}
+                      </p>
+                      {workshopSettings && workshopSettings.taxRate > 0 && (
+                        <div className="text-xs text-muted-foreground mt-2 space-y-0.5">
+                          <div>Subtotal: {workshopSettings.currencySymbol}{(calculateTotal() / (1 + workshopSettings.taxRate / 100)).toFixed(2)}</div>
+                          <div>{workshopSettings.taxName} ({workshopSettings.taxRate}%): {workshopSettings.currencySymbol}{(calculateTotal() - (calculateTotal() / (1 + workshopSettings.taxRate / 100))).toFixed(2)}</div>
+                        </div>
+                      )}
+                    </div>
                 </div>
 
               </CardContent>
@@ -433,31 +440,41 @@ export default function AdvisorQuoteBuilder() {
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
-                    <CardTitle>Detalles del Servicio</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                      <VehicleIcon type={selectedJob.vehicleType} className="w-5 h-5 text-muted-foreground shrink-0" />
+                      Detalles del Servicio
+                    </CardTitle>
                     <CardDescription>Vehículo: {selectedJob.vehicleId}</CardDescription>
                   </div>
                   <Badge className="bg-emerald-600">{t(`status${selectedJob.status}` as any) || selectedJob.status}</Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                
-                {/* Visualizar Total */}
-                <div className="bg-secondary/50 dark:bg-black/40 p-4 rounded-lg border border-border flex justify-between items-center">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Monto Total Aprobado</p>
-                    <p className="text-3xl font-mono text-emerald-600 dark:text-emerald-400 font-bold">
-                      ${selectedJob.approvedAmount?.toFixed(2) || selectedJob.totalEstimate?.toFixed(2) || "0.00"}
-                    </p>
+                            {/* Visualizar Total */}
+                <div className="bg-secondary/50 dark:bg-black/40 p-4 rounded-lg border border-border flex flex-col gap-3">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Monto Total Aprobado</p>
+                      <p className="text-3xl font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                        {workshopSettings?.currencySymbol || "$"}{(selectedJob.approvedAmount || selectedJob.totalEstimate || 0).toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-muted-foreground">Saldo Pendiente</p>
+                      <p className="text-2xl font-mono text-amber-500 font-bold">
+                        {workshopSettings?.currencySymbol || ""}{(
+                          (selectedJob.approvedAmount || selectedJob.totalEstimate || 0) - 
+                          (selectedJob.payments?.reduce((acc, p) => acc + p.amount, 0) || 0)
+                        ).toFixed(2)}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Saldo Pendiente</p>
-                    <p className="text-2xl font-mono text-amber-500 font-bold">
-                      ${(
-                        (selectedJob.approvedAmount || selectedJob.totalEstimate || 0) - 
-                        (selectedJob.payments?.reduce((acc, p) => acc + p.amount, 0) || 0)
-                      ).toFixed(2)}
-                    </p>
-                  </div>
+                  {workshopSettings && workshopSettings.taxRate > 0 && (
+                    <div className="text-xs text-muted-foreground border-t border-border/30 pt-2 flex justify-between">
+                      <span>Subtotal (Neto): {workshopSettings.currencySymbol}{((selectedJob.approvedAmount || selectedJob.totalEstimate || 0) / (1 + workshopSettings.taxRate / 100)).toFixed(2)}</span>
+                      <span>{workshopSettings.taxName} ({workshopSettings.taxRate}%): {workshopSettings.currencySymbol}{((selectedJob.approvedAmount || selectedJob.totalEstimate || 0) - (selectedJob.approvedAmount || selectedJob.totalEstimate || 0) / (1 + workshopSettings.taxRate / 100)).toFixed(2)}</span>
+                    </div>
+                  )}
                 </div>
 
                 <hr className="border-border" />
@@ -475,7 +492,7 @@ export default function AdvisorQuoteBuilder() {
                             <p className="font-medium">{p.method}</p>
                             <p className="text-xs text-muted-foreground">{new Date(p.date).toLocaleString()}</p>
                           </div>
-                          <span className="font-mono text-lg text-emerald-500">+${p.amount.toFixed(2)}</span>
+                          <span className="font-mono text-lg text-emerald-500">+{workshopSettings?.currencySymbol || "$"}{p.amount.toFixed(2)}</span>
                         </div>
                       ))}
                     </div>
@@ -491,7 +508,7 @@ export default function AdvisorQuoteBuilder() {
                       <Input 
                         type="number" 
                         min="0"
-                        placeholder="0.00"
+                        placeholder={`0.00 (${workshopSettings?.currencySymbol || "$"})`}
                         className="bg-background border-border font-mono"
                         value={paymentAmount}
                         onChange={(e) => setPaymentAmount(e.target.value)}

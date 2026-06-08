@@ -29,7 +29,7 @@ import {
 export default function ClientsPage() {
   const { t } = useLanguage();
   const router = useRouter();
-  const { userProfile, loading: authLoading } = useAuth();
+  const { userProfile, loading: authLoading, workshopSettings } = useAuth();
   const [clients, setClients] = useState<ClientSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -70,8 +70,10 @@ export default function ClientsPage() {
   const totalVisitsAll = clients.reduce((s, c) => s + c.totalVisits, 0);
   const totalRevenueAll = clients.reduce((s, c) => s + c.totalSpent, 0);
 
-  const formatCurrency = (n: number) =>
-    new Intl.NumberFormat("es-PA", { style: "currency", currency: "USD" }).format(n);
+  const formatCurrency = (n: number) => {
+    const symbol = workshopSettings?.currencySymbol || "$";
+    return `${symbol}${n.toFixed(2)}`;
+  };
 
   const formatDate = (d: Date | null) => {
     if (!d) return "—";

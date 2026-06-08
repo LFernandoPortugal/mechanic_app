@@ -37,6 +37,7 @@ import {
   ListTodo,
 } from "lucide-react";
 import { WorkflowStepper } from "@/components/WorkflowStepper";
+import { VehicleIcon } from "@/components/ui/vehicle-icons";
 
 export default function QualityControlPage() {
   const { t } = useLanguage();
@@ -262,7 +263,7 @@ export default function QualityControlPage() {
                       >
                         <div className="min-w-0 flex-1">
                           <p className="font-bold text-sm text-foreground flex items-center gap-1.5">
-                            <Car className={`w-3.5 h-3.5 ${selectedJobId === job.id ? 'text-pink-400' : 'text-muted-foreground'}`} />
+                            <VehicleIcon type={job.vehicleType} className={`w-4 h-4 shrink-0 ${selectedJobId === job.id ? 'text-pink-400' : 'text-muted-foreground'}`} />
                             {job.vehicleId}
                           </p>
                           <p className="text-xs truncate mt-0.5">{job.clientId}</p>
@@ -295,9 +296,12 @@ export default function QualityControlPage() {
                         key={job.id}
                         className="flex items-center justify-between p-2.5 bg-zinc-950/20 rounded-lg border border-border/30 text-xs"
                       >
-                        <div className="min-w-0">
-                          <p className="font-semibold text-foreground">{job.vehicleId}</p>
-                          <p className="text-[10px] text-muted-foreground truncate">{job.clientId}</p>
+                        <div className="min-w-0 flex items-center gap-2">
+                          <VehicleIcon type={job.vehicleType} className="w-4 h-4 text-muted-foreground shrink-0" />
+                          <div>
+                            <p className="font-semibold text-foreground">{job.vehicleId}</p>
+                            <p className="text-[10px] text-muted-foreground truncate">{job.clientId}</p>
+                          </div>
                         </div>
                         <Badge
                           variant="outline"
@@ -382,6 +386,7 @@ export default function QualityControlPage() {
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                           <div>
                             <CardTitle className="text-xl font-extrabold text-foreground flex items-center gap-2">
+                              <VehicleIcon type={selectedJob.vehicleType} className="w-5 h-5 text-muted-foreground shrink-0" />
                               Vehículo: {selectedJob.vehicleId}
                             </CardTitle>
                             <CardDescription className="mt-1 text-sm text-muted-foreground">

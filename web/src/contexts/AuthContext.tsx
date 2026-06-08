@@ -3,46 +3,75 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { getUserProfile } from "@/lib/db";
-import { UserProfile, UserRole } from "@/types";
+import { getUserProfile, getWorkshopSettings } from "@/lib/db";
+import { UserProfile, UserRole, WorkshopSettings } from "@/types";
 
 interface AuthContextType {
   user: User | null;
   userProfile: UserProfile | null;
+  workshopSettings: WorkshopSettings | null;
   loading: boolean;
+  trialExpired: boolean;
   signOut: () => Promise<void>;
   hasRole: (role: UserRole) => boolean;
   hasAnyRole: (roles: UserRole[]) => boolean;
   refreshProfile: () => Promise<void>;
+  refreshSettings: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   userProfile: null,
+  workshopSettings: null,
   loading: true,
+  trialExpired: false,
   signOut: async () => {},
   hasRole: () => false,
   hasAnyRole: () => false,
   refreshProfile: async () => {},
+  refreshSettings: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [workshopSettings, setWorkshopSettings] = useState<WorkshopSettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [trialExpired, setTrialExpired] = useState(false);
 
-  const fetchProfile = async (uid: string) => {
+  const fetchProfileAndSettings = async (uid: string) => {
     const profile = await getUserProfile(uid);
     setUserProfile(profile);
+    
+    let settings: WorkshopSettings | null = null;
+    if (profile?.workshopId) {
+      settings = await getWorkshopSettings(profile.workshopId);
+    } else {
+      settings = await getWorkshopSettings("demo-workshop");
+    }
+    setWorkshopSettings(settings);
+
+    // Check expiration if not a SUPER_ADMIN
+    const isSuperAdmin = profile?.roles.includes('SUPER_ADMIN');
+    if (settings && settings.expiresAt && !isSuperAdmin) {
+      const expirationDate = new Date(settings.expiresAt);
+      if (new Date() > expirationDate) {
+        setTrialExpired(true);
+        return;
+      }
+    }
+    setTrialExpired(false);
   };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
-        await fetchProfile(firebaseUser.uid);
+        await fetchProfileAndSettings(firebaseUser.uid);
       } else {
         setUserProfile(null);
+        setWorkshopSettings(null);
+        setTrialExpired(false);
       }
       setLoading(false);
     });
@@ -53,26 +82,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await firebaseSignOut(auth);
     setUserProfile(null);
+    setWorkshopSettings(null);
+    setTrialExpired(false);
   };
 
   const hasRole = (role: UserRole): boolean => {
     if (!userProfile) return false;
-    return userProfile.roles.includes(role);
+    return userProfile.roles.includes('SUPER_ADMIN') || userProfile.roles.includes(role);
   };
 
   const hasAnyRole = (roles: UserRole[]): boolean => {
     if (!userProfile) return false;
-    return roles.some((role) => userProfile.roles.includes(role));
+    return userProfile.roles.includes('SUPER_ADMIN') || roles.some((role) => userProfile.roles.includes(role));
   };
 
   const refreshProfile = async () => {
     if (user) {
-      await fetchProfile(user.uid);
+      const profile = await getUserProfile(user.uid);
+      setUserProfile(profile);
+      
+      const isSuperAdmin = profile?.roles.includes('SUPER_ADMIN');
+      if (workshopSettings && workshopSettings.expiresAt && !isSuperAdmin) {
+        if (new Date() > new Date(workshopSettings.expiresAt)) {
+          setTrialExpired(true);
+          return;
+        }
+      }
+      setTrialExpired(false);
     }
   };
 
+  const refreshSettings = async () => {
+    const wId = userProfile?.workshopId || "demo-workshop";
+    const settings = await getWorkshopSettings(wId);
+    setWorkshopSettings(settings);
+    
+    const isSuperAdmin = userProfile?.roles.includes('SUPER_ADMIN');
+    if (settings && settings.expiresAt && !isSuperAdmin) {
+      if (new Date() > new Date(settings.expiresAt)) {
+        setTrialExpired(true);
+        return;
+      }
+    }
+    setTrialExpired(false);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, signOut, hasRole, hasAnyRole, refreshProfile }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      userProfile, 
+      workshopSettings, 
+      loading, 
+      trialExpired,
+      signOut, 
+      hasRole, 
+      hasAnyRole, 
+      refreshProfile, 
+      refreshSettings 
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Wand2, AlertTriangle, CheckCircle, Download } from "lucide-react";
 import { generateQuotePDF } from "@/lib/pdf";
+import { VehicleIcon } from "@/components/ui/vehicle-icons";
 
 export default function ClientQuoteView() {
   const { t } = useLanguage();
@@ -144,8 +145,9 @@ export default function ClientQuoteView() {
           {settings?.logoUrl && <img src={settings.logoUrl} alt="Logo" className="w-auto h-20 mb-4 object-contain rounded-md" />}
           <h1 className="text-3xl font-bold text-amber-500">{settings?.name ? `${settings.name} - ` : ''}{t('clientPortal')}</h1>
           <p className="text-muted-foreground text-sm mt-2">{settings?.address || t('clientSubtitle')}</p>
-          <div className="mt-4 p-2 bg-secondary dark:bg-zinc-950 inline-block rounded-full px-4 border border-border">
-            <span className="text-muted-foreground mr-2">{t('vehicleIdLabel')}</span>
+          <div className="mt-4 p-2 bg-secondary dark:bg-zinc-950 inline-flex items-center rounded-full px-4 border border-border gap-1.5">
+            <VehicleIcon type={job.vehicleType} className="w-4 h-4 text-muted-foreground shrink-0" />
+            <span className="text-muted-foreground mr-1">{t('vehicleIdLabel')}</span>
             <span className="text-foreground font-mono font-medium">{job.vehicleId}</span>
           </div>
         </header>

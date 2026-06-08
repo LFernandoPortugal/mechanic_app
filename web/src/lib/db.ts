@@ -1,6 +1,6 @@
 import { db } from "./firebase";
 import { collection, addDoc, Timestamp, doc, getDoc, getDocs, query, where, updateDoc, deleteDoc, setDoc, orderBy, limit as firestoreLimit, increment } from "firebase/firestore";
-import { Job, UserProfile, UserRole, AuditLog, InventoryItem, InventoryTransaction, StockMovementType } from "@/types";
+import { Job, UserProfile, UserRole, AuditLog, InventoryItem, InventoryTransaction, StockMovementType, WorkshopSettings } from "@/types";
 
 // ─── User Profile Functions (RBAC) ──────────────────────
 
@@ -10,12 +10,37 @@ export async function createUserProfile(uid: string, email: string, displayName?
     const existing = await getDoc(userRef);
     if (existing.exists()) return existing.data() as UserProfile;
 
+    let finalWorkshopId = "demo-workshop";
+    let finalRoles = roles || ['RECEPTION'];
+
+    // Auto-promote to SUPER_ADMIN if email matches configuration
+    const superAdminEmail = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL || "admin@demo.com";
+    if (email === superAdminEmail) {
+      finalRoles = ['SUPER_ADMIN'];
+      finalWorkshopId = "master-control";
+    } else {
+      // Auto-onboard if this email is registered in settings as a workshop admin
+      try {
+        const settingsRef = collection(db, "settings");
+        const q = query(settingsRef, where("adminEmail", "==", email));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const settingsDoc = snap.docs[0];
+          finalWorkshopId = settingsDoc.id;
+          finalRoles = ['ADMIN'];
+          console.log(`Auto-onboarding invited admin: ${email} for workshop ${finalWorkshopId}`);
+        }
+      } catch (inviteError) {
+        console.error("Error checking invitations:", inviteError);
+      }
+    }
+
     const profile: Omit<UserProfile, 'createdAt' | 'updatedAt'> & { createdAt: any; updatedAt: any } = {
       uid,
       email,
       displayName: displayName || email.split('@')[0],
-      roles: roles || ['RECEPTION'],
-      workshopId: "demo-workshop", // Default workshop for SaaS demo / friend
+      roles: finalRoles,
+      workshopId: finalWorkshopId,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     };
@@ -63,6 +88,56 @@ export async function getAllUsers(): Promise<UserProfile[]> {
   } catch (e) {
     console.error("Error fetching all users:", e);
     return [];
+  }
+}
+
+export async function getUsersByWorkshop(workshopId: string): Promise<UserProfile[]> {
+  try {
+    const usersRef = collection(db, "users");
+    const q = query(usersRef, where("workshopId", "==", workshopId));
+    const snap = await getDocs(q);
+    const users: UserProfile[] = [];
+    snap.forEach((document) => {
+      users.push(document.data() as UserProfile);
+    });
+    return users;
+  } catch (e) {
+    console.error("Error fetching users by workshop:", e);
+    return [];
+  }
+}
+
+export async function deleteUserProfile(uid: string) {
+  try {
+    const userRef = doc(db, "users", uid);
+    await deleteDoc(userRef);
+  } catch (e) {
+    console.error("Error deleting user profile:", e);
+    throw e;
+  }
+}
+
+export async function createWorkshopTester(workshopId: string, name: string, adminEmail: string, expiresAt: string) {
+  try {
+    const settingsRef = doc(db, "settings", workshopId);
+    await setDoc(settingsRef, {
+      workshopName: name,
+      logoUrl: "",
+      address: "Av. Principal 123",
+      phone: "",
+      taxId: "",
+      termsAndConditions: "Al firmar, el cliente autoriza los diagnósticos y reparaciones presupuestadas.",
+      demoMode: true,
+      currencySymbol: "$",
+      taxRate: 0,
+      taxName: "IVA",
+      expiresAt,
+      allowResetData: false,
+      adminEmail,
+    });
+  } catch (e) {
+    console.error("Error creating workshop tester:", e);
+    throw e;
   }
 }
 
@@ -459,30 +534,40 @@ export async function searchInventoryItems(workshopId: string, term: string, lim
   }
 }
 
-export async function getWorkshopSettings(workshopId: string) {
+export async function getWorkshopSettings(workshopId: string): Promise<WorkshopSettings | null> {
   try {
     const docRef = doc(db, "settings", workshopId);
     const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      return docSnap.data();
-    }
-    // Default settings if they don't exist yet
-    return {
-      workshopName: "Taller Automotriz",
+    const defaults: WorkshopSettings = {
+      workshopName: "SGA Auto",
       logoUrl: "",
-      address: "",
-      phone: "",
-      taxId: "",
+      address: "Av. Principal 123, Lima",
+      phone: "+51 900 123 456",
+      taxId: "20123456789", // Default Peruvian RUC
       termsAndConditions: "Al firmar, el cliente autoriza los diagnósticos y reparaciones presupuestadas.",
-      demoMode: true
+      demoMode: true,
+      currencySymbol: "S/.",
+      taxRate: 18,
+      taxName: "IGV"
     };
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return {
+        ...defaults,
+        ...data,
+        workshopName: data.workshopName || data.name || defaults.workshopName,
+        taxId: data.taxId || data.nit || defaults.taxId
+      } as WorkshopSettings;
+    }
+    return defaults;
   } catch (e) {
     console.error("Error fetching settings:", e);
     return null;
   }
 }
 
-export async function updateWorkshopSettings(workshopId: string, data: any) {
+export async function updateWorkshopSettings(workshopId: string, data: Partial<WorkshopSettings>) {
   try {
     const docRef = doc(db, "settings", workshopId);
     await setDoc(docRef, data, { merge: true });
@@ -542,6 +627,31 @@ export async function resetWorkshopData(workshopId: string): Promise<{ jobsDelet
     return { jobsDeleted, inventoryDeleted, transactionsDeleted };
   } catch (e) {
     console.error("Error resetting workshop data:", e);
+    throw e;
+  }
+}
+
+export async function getAllWorkshops(): Promise<{ id: string; workshopName: string; expiresAt?: string; allowResetData?: boolean; adminEmail?: string; [key: string]: any }[]> {
+  try {
+    const ref = collection(db, "settings");
+    const snap = await getDocs(ref);
+    const workshops: any[] = [];
+    snap.forEach((doc) => {
+      workshops.push({ id: doc.id, ...doc.data() });
+    });
+    return workshops;
+  } catch (e) {
+    console.error("Error fetching all workshops:", e);
+    return [];
+  }
+}
+
+export async function deleteWorkshopSettings(workshopId: string) {
+  try {
+    const docRef = doc(db, "settings", workshopId);
+    await deleteDoc(docRef);
+  } catch (e) {
+    console.error("Error deleting workshop settings:", e);
     throw e;
   }
 }

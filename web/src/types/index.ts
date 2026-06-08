@@ -1,5 +1,5 @@
 // ─── RBAC Types ──────────────────────────────────────────
-export type UserRole = 'ADMIN' | 'RECEPTION' | 'TECHNICIAN' | 'ADVISOR';
+export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'RECEPTION' | 'TECHNICIAN' | 'ADVISOR';
 
 export interface UserProfile {
   uid: string;
@@ -23,10 +23,12 @@ export const ROLE_ROUTE_MAP: Record<string, UserRole[]> = {
   '/inventory': ['ADMIN', 'ADVISOR'],
   '/clients': ['ADMIN', 'ADVISOR', 'RECEPTION'],
   '/qc': ['ADMIN', 'ADVISOR'],
+  '/super-admin': ['SUPER_ADMIN'],
 };
 
 /** Display metadata for each role — labelKey is a translation key */
 export const ROLE_META: Record<UserRole, { labelKey: string; emoji: string; color: string }> = {
+  SUPER_ADMIN: { labelKey: 'roleSuperAdmin', emoji: '👑', color: 'text-red-400 border-red-500/50 bg-red-950/30' },
   ADMIN: { labelKey: 'roleAdmin', emoji: '🛡️', color: 'text-purple-400 border-purple-500/50 bg-purple-950/30' },
   RECEPTION: { labelKey: 'roleReception', emoji: '📋', color: 'text-emerald-400 border-emerald-500/50 bg-emerald-950/30' },
   TECHNICIAN: { labelKey: 'roleTechnician', emoji: '🔧', color: 'text-orange-400 border-orange-500/50 bg-orange-950/30' },
@@ -34,6 +36,8 @@ export const ROLE_META: Record<UserRole, { labelKey: string; emoji: string; colo
 };
 
 // ─── Domain Types ────────────────────────────────────────
+export type VehicleType = 'auto' | 'suv' | 'pickup' | 'minivan' | 'truck' | 'moto' | 'ebike' | 'parts' | 'other';
+
 export interface Vehicle {
   vin: string;
   make: string;
@@ -41,6 +45,7 @@ export interface Vehicle {
   year: number;
   licensePlate: string;
   ownerId: string;
+  vehicleType?: VehicleType;
 }
 
 export interface Client {
@@ -83,6 +88,7 @@ export interface Job {
   technicianId?: string;
   status: 'Reception' | 'Diagnosis' | 'Approval' | 'Repair' | 'QC' | 'Ready' | 'Delivered' | 'Approved';
   symptoms?: string; // Client reported symptoms / reason for entry
+  vehicleType?: VehicleType;
   
   // Liability Shield Data
   receptionImages?: string[]; // Base64 data URLs of pre-existing damage photos
@@ -158,3 +164,21 @@ export interface InventoryTransaction {
   actorId: string;
   createdAt: Date;
 }
+
+// ─── Settings Types ──────────────────────────────────────
+export interface WorkshopSettings {
+  workshopName: string;
+  logoUrl: string;
+  address: string;
+  phone: string;
+  taxId: string; // NIT / RUC / RUT
+  termsAndConditions: string;
+  demoMode: boolean;
+  currencySymbol: string; // e.g. "S/.", "$", "€"
+  taxRate: number; // e.g. 18 for 18% IGV, 15 for 15% IVA
+  taxName: string; // e.g. "IGV", "IVA", "Impuesto"
+  expiresAt?: string; // Trial / subscription expiration ISO date
+  allowResetData?: boolean; // Controls if workshop ADMIN can reset their data
+  adminEmail?: string; // Tester email for invite-only onboarding
+}
+

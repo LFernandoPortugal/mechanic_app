@@ -15,7 +15,7 @@ import { Activity, CircleDollarSign, Wrench, Users, TrendingUp, Calendar, ArrowL
 export default function OwnerAnalytics() {
   const router = useRouter();
   const { t } = useLanguage();
-  const { userProfile, loading: authLoading } = useAuth();
+  const { userProfile, loading: authLoading, workshopSettings } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -155,7 +155,7 @@ export default function OwnerAnalytics() {
                 </div>
               </div>
               <div className="text-3xl font-black tracking-tight text-foreground font-mono">
-                ${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {workshopSettings?.currencySymbol || "$"}{totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
               <p className="text-[10px] text-muted-foreground mt-2">Ingresos acumulados históricos</p>
             </CardContent>
@@ -257,7 +257,7 @@ export default function OwnerAnalytics() {
                       <g className="opacity-0 group-hover/node:opacity-100 transition-opacity duration-200 pointer-events-none">
                         <rect x={p.x - 35} y={p.y - 30} width="70" height="20" rx="4" fill="#000000" fillOpacity="0.85" />
                         <text x={p.x} y={p.y - 16} fill="#ffffff" fontSize="9" fontWeight="bold" textAnchor="middle" fontFamily="monospace">
-                          ${p.value.toFixed(0)}
+                          {workshopSettings?.currencySymbol || "$"}{p.value.toFixed(0)}
                         </text>
                       </g>
                     </g>
@@ -338,9 +338,9 @@ export default function OwnerAnalytics() {
                       <span className="text-xs text-muted-foreground font-normal">({job.clientId})</span>
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5 font-light">
-                      Presupuesto: <strong className="font-mono text-foreground">${job.totalEstimate?.toFixed(2) || '0.00'}</strong> 
+                      Presupuesto: <strong className="font-mono text-foreground">{workshopSettings?.currencySymbol || "$"}{job.totalEstimate?.toFixed(2) || '0.00'}</strong> 
                       {" · "} 
-                      Aprobado: <strong className="font-mono text-emerald-400">${job.approvedAmount?.toFixed(2) || '0.00'}</strong>
+                      Aprobado: <strong className="font-mono text-emerald-400">{workshopSettings?.currencySymbol || "$"}{job.approvedAmount?.toFixed(2) || '0.00'}</strong>
                     </p>
                   </div>
                   <div className="flex items-center gap-3">

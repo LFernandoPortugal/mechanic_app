@@ -15,14 +15,18 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { userProfile, loading: authLoading } = useAuth();
+  const { userProfile, loading: authLoading, refreshSettings } = useAuth();
   const [settings, setSettings] = useState({
     name: "SGA Auto",
     nit: "123456789-0",
     phone: "+1 234 567 890",
     address: "123 Mechanic St, Auto City",
     logoUrl: "",
-    demoMode: false
+    demoMode: false,
+    currencySymbol: "S/.",
+    taxRate: 18,
+    taxName: "IGV",
+    allowResetData: false
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,12 +51,16 @@ export default function SettingsPage() {
       const data = await getWorkshopSettings(wId);
       if (data) {
         setSettings({
-          name: data.name || data.workshopName || "SGA Auto",
-          nit: data.nit || data.taxId || "123456789-0",
+          name: data.workshopName,
+          nit: data.taxId,
           phone: data.phone || "+1 234 567 890",
           address: data.address || "123 Mechanic St, Auto City",
           logoUrl: data.logoUrl || "",
-          demoMode: data.demoMode || false
+          demoMode: data.demoMode || false,
+          currencySymbol: data.currencySymbol || "S/.",
+          taxRate: typeof data.taxRate === 'number' ? data.taxRate : 18,
+          taxName: data.taxName || "IGV",
+          allowResetData: data.allowResetData || false
         });
       }
       setLoading(false);
@@ -74,10 +82,26 @@ export default function SettingsPage() {
         urlToSave = await uploadJobImage(logoFile, "settings", "logo");
       }
       
-      const newSettings = { ...settings, logoUrl: urlToSave };
+      const newSettings = { 
+        workshopName: settings.name,
+        taxId: settings.nit,
+        phone: settings.phone,
+        address: settings.address,
+        logoUrl: urlToSave,
+        demoMode: settings.demoMode,
+        currencySymbol: settings.currencySymbol,
+        taxRate: Number(settings.taxRate),
+        taxName: settings.taxName,
+        allowResetData: settings.allowResetData
+      };
+      
       await updateWorkshopSettings(userProfile.workshopId, newSettings);
-      setSettings(newSettings);
+      setSettings({
+        ...settings,
+        logoUrl: urlToSave
+      });
       setLogoFile(null);
+      await refreshSettings(); // Sync state globally in context!
       toast.success("Configuración del taller guardada exitosamente.");
     } catch (err) {
       toast.error("Error al guardar la configuración.");
@@ -195,6 +219,47 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
+                <div className="space-y-4 pt-4 border-t border-border">
+                  <h3 className="text-sm font-semibold text-violet-400">Configuración Financiera e Impuestos</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="currencySymbol">Divisa / Símbolo</Label>
+                      <Input 
+                        id="currencySymbol"
+                        value={settings.currencySymbol}
+                        onChange={e => setSettings({...settings, currencySymbol: e.target.value})}
+                        placeholder="Ej. S/. o $"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="taxName">Nombre del Impuesto</Label>
+                      <Input 
+                        id="taxName"
+                        value={settings.taxName}
+                        onChange={e => setSettings({...settings, taxName: e.target.value})}
+                        placeholder="Ej. IGV, IVA"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="taxRate">Tasa de Impuesto (%)</Label>
+                      <Input 
+                        id="taxRate"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        value={settings.taxRate}
+                        onChange={e => setSettings({...settings, taxRate: parseFloat(e.target.value) || 0})}
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="space-y-2 pt-4 border-t border-border">
                   <Label>Logotipo del Taller (PNG/JPG)</Label>
                   <div className="flex items-center gap-4">
@@ -253,93 +318,95 @@ export default function SettingsPage() {
           </Card>
 
           {/* Danger Zone */}
-          <Card className="glass-panel border-red-500/20 bg-red-950/5 mt-8 overflow-hidden transition-all duration-300 hover:border-red-500/30">
-            <CardHeader className="border-b border-red-500/10 bg-red-950/10">
-              <CardTitle className="text-red-500 flex items-center gap-2 text-lg font-bold">
-                <AlertTriangle className="w-5 h-5 text-red-500 animate-pulse" />
-                Zona de Peligro (Restablecer SaaS / Taller)
-              </CardTitle>
-              <CardDescription className="text-red-400/80 text-xs">
-                Acciones irreversibles de limpieza y restauración para pruebas o inicios oficiales.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-6 space-y-4">
-              <div className="flex flex-col gap-2 text-foreground">
-                <p className="text-sm font-semibold">
-                  Limpiar todos los datos del Taller: <span className="font-mono text-xs bg-red-500/10 px-1.5 py-0.5 rounded text-red-400 border border-red-500/20">{userProfile?.workshopId || "demo-workshop"}</span>
-                </p>
-                <p className="text-muted-foreground text-xs leading-relaxed">
-                  Esta acción eliminará de forma permanente e irreversible de la base de datos:
-                </p>
-                <ul className="list-disc pl-5 text-xs text-muted-foreground space-y-1">
-                  <li>Todas las <strong>Órdenes de Trabajo (Jobs)</strong> registradas.</li>
-                  <li>Todos los <strong>Productos del Inventario</strong>.</li>
-                  <li>Todo el <strong>Historial de Movimientos de Stock (Transacciones)</strong>.</li>
-                </ul>
-                <p className="text-amber-500/90 text-xs font-semibold mt-1">
-                  Nota: Tus usuarios de taller, roles, contraseñas y la configuración básica de este taller NO se verán afectados.
-                </p>
-              </div>
-
-              {!showResetConfirm ? (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  className="w-full bg-red-600 hover:bg-red-700 hover:shadow-red-500/20 hover:shadow-md text-white font-medium transition-all duration-300"
-                  onClick={() => setShowResetConfirm(true)}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Iniciar Restablecimiento de Datos
-                </Button>
-              ) : (
-                <div className="space-y-4 p-4 border border-red-500/20 bg-black/30 rounded-lg animate-fade-in">
-                  <div className="space-y-2">
-                    <Label htmlFor="confirm-reset" className="text-red-400 font-semibold text-xs flex items-center gap-1.5">
-                      Confirmación de Seguridad Obligatoria
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Para confirmar que entiendes que esto es irreversible y deseas borrar todo, escribe la palabra <span className="font-bold text-red-500 select-none">ELIMINAR</span> a continuación:
-                    </p>
-                    <Input
-                      id="confirm-reset"
-                      value={resetConfirmText}
-                      onChange={(e) => setResetConfirmText(e.target.value)}
-                      placeholder="Escribe ELIMINAR para continuar..."
-                      className="border-red-500/30 focus-visible:ring-red-500 bg-background text-red-500 font-semibold tracking-wider text-center"
-                      autoFocus
-                    />
-                  </div>
-                  <div className="flex gap-3">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="flex-1 text-muted-foreground hover:bg-secondary border border-border"
-                      onClick={() => {
-                        setShowResetConfirm(false);
-                        setResetConfirmText("");
-                      }}
-                      disabled={resetting}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold"
-                      disabled={resetConfirmText.trim().toUpperCase() !== "ELIMINAR" || resetting}
-                      onClick={handleResetData}
-                    >
-                      {resetting ? (
-                        <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Borrando...</>
-                      ) : (
-                        <><Trash2 className="w-4 h-4 mr-2" /> Sí, borrar todo permanentemente</>
-                      )}
-                    </Button>
-                  </div>
+          {settings.allowResetData && (
+            <Card className="glass-panel border-red-500/20 bg-red-950/5 mt-8 overflow-hidden transition-all duration-300 hover:border-red-500/30">
+              <CardHeader className="border-b border-red-500/10 bg-red-950/10">
+                <CardTitle className="text-red-500 flex items-center gap-2 text-lg font-bold">
+                  <AlertTriangle className="w-5 h-5 text-red-500 animate-pulse" />
+                  Zona de Peligro (Restablecer SaaS / Taller)
+                </CardTitle>
+                <CardDescription className="text-red-400/80 text-xs">
+                  Acciones irreversibles de limpieza y restauración para pruebas o inicios oficiales.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                <div className="flex flex-col gap-2 text-foreground">
+                  <p className="text-sm font-semibold">
+                    Limpiar todos los datos del Taller: <span className="font-mono text-xs bg-red-500/10 px-1.5 py-0.5 rounded text-red-400 border border-red-500/20">{userProfile?.workshopId || "demo-workshop"}</span>
+                  </p>
+                  <p className="text-muted-foreground text-xs leading-relaxed">
+                    Esta acción eliminará de forma permanente e irreversible de la base de datos:
+                  </p>
+                  <ul className="list-disc pl-5 text-xs text-muted-foreground space-y-1">
+                    <li>Todas las <strong>Órdenes de Trabajo (Jobs)</strong> registradas.</li>
+                    <li>Todos los <strong>Productos del Inventario</strong>.</li>
+                    <li>Todo el <strong>Historial de Movimientos de Stock (Transacciones)</strong>.</li>
+                  </ul>
+                  <p className="text-amber-500/90 text-xs font-semibold mt-1">
+                    Nota: Tus usuarios de taller, roles, contraseñas y la configuración básica de este taller NO se verán afectados.
+                  </p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+
+                {!showResetConfirm ? (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="w-full bg-red-600 hover:bg-red-700 hover:shadow-red-500/20 hover:shadow-md text-white font-medium transition-all duration-300"
+                    onClick={() => setShowResetConfirm(true)}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Iniciar Restablecimiento de Datos
+                  </Button>
+                ) : (
+                  <div className="space-y-4 p-4 border border-red-500/20 bg-black/30 rounded-lg animate-fade-in">
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm-reset" className="text-red-400 font-semibold text-xs flex items-center gap-1.5">
+                        Confirmación de Seguridad Obligatoria
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Para confirmar que entiendes que esto es irreversible y deseas borrar todo, escribe la palabra <span className="font-bold text-red-500 select-none">ELIMINAR</span> a continuación:
+                      </p>
+                      <Input
+                        id="confirm-reset"
+                        value={resetConfirmText}
+                        onChange={(e) => setResetConfirmText(e.target.value)}
+                        placeholder="Escribe ELIMINAR para continuar..."
+                        className="border-red-500/30 focus-visible:ring-red-500 bg-background text-red-500 font-semibold tracking-wider text-center"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="flex gap-3">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="flex-1 text-muted-foreground hover:bg-secondary border border-border"
+                        onClick={() => {
+                          setShowResetConfirm(false);
+                          setResetConfirmText("");
+                        }}
+                        disabled={resetting}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold"
+                        disabled={resetConfirmText.trim().toUpperCase() !== "ELIMINAR" || resetting}
+                        onClick={handleResetData}
+                      >
+                        {resetting ? (
+                          <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Borrando...</>
+                        ) : (
+                          <><Trash2 className="w-4 h-4 mr-2" /> Sí, borrar todo permanentemente</>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </ProtectedRoute>

@@ -14,16 +14,20 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user, userProfile, loading, hasAnyRole } = useAuth();
+  const { user, userProfile, loading, hasAnyRole, trialExpired } = useAuth();
   const { t } = useLanguage();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+    if (!loading) {
+      if (!user) {
+        router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+      } else if (trialExpired && pathname !== '/expired') {
+        router.push('/expired');
+      }
     }
-  }, [user, loading, router, pathname]);
+  }, [user, loading, trialExpired, router, pathname]);
 
   if (loading) {
     return (
@@ -33,7 +37,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     );
   }
 
-  if (!user) {
+  if (!user || (trialExpired && pathname !== '/expired')) {
     return null;
   }
 

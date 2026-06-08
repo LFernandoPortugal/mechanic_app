@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { registerPayment, PaymentInput, getWorkshopSettings } from "@/lib/db";
+import { registerPayment, PaymentInput } from "@/lib/db";
 import { generateReceiptPDF } from "@/lib/pdf";
 import { useRealtimeJobs } from "@/hooks/useRealtimeJobs";
 import { Job } from "@/types";
@@ -63,14 +63,14 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
   const handlePay = async () => {
     const amt = parseFloat(amount);
     if (isNaN(amt) || amt <= 0) { toast.error("Ingresa un monto válido."); return; }
-    if (amt > balance + 0.01)   { toast.error(`El monto supera el saldo ($${balance.toFixed(2)}).`); return; }
+    if (amt > balance + 0.01)   { toast.error(`El monto supera el saldo (${workshopSettings?.currencySymbol || "$"}${balance.toFixed(2)}).`); return; }
 
     setLoading(true);
     try {
       await registerPayment(job.id, { amount: amt, method, reference, actorId: user!.uid });
       toast.success(amt >= balance
         ? `✅ Pago completo. Vehículo marcado como Entregado.`
-        : `💰 Abono registrado: $${amt.toFixed(2)}`
+        : `💰 Abono registrado: ${workshopSettings?.currencySymbol || "$"}${amt.toFixed(2)}`
       );
       setAmount(""); setRef("");
       onPaymentRegistered();
@@ -103,9 +103,9 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
             </Badge>
           </div>
           <CardDescription className="mt-1 text-xs">
-            Total: <span className="font-semibold text-foreground">${(job.totalEstimate || 0).toFixed(2)}</span>
-            {" · "}Pagado: <span className="font-semibold text-emerald-400">${paid.toFixed(2)}</span>
-            {" · "}Saldo: <span className={`font-semibold ${balance > 0 ? "text-amber-400" : "text-emerald-400"}`}>${balance.toFixed(2)}</span>
+            Total: <span className="font-semibold text-foreground">{workshopSettings?.currencySymbol || "$"}{(job.totalEstimate || 0).toFixed(2)}</span>
+            {" · "}Pagado: <span className="font-semibold text-emerald-400">{workshopSettings?.currencySymbol || "$"}{paid.toFixed(2)}</span>
+            {" · "}Saldo: <span className={`font-semibold ${balance > 0 ? "text-amber-400" : "text-emerald-400"}`}>{workshopSettings?.currencySymbol || "$"}{balance.toFixed(2)}</span>
           </CardDescription>
 
           {/* Progress bar */}
@@ -134,7 +134,7 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
                     <span className="font-medium">{p.method}</span>
                     {p.reference && <span className="text-muted-foreground text-xs">· {p.reference}</span>}
                   </span>
-                  <span className="font-bold text-emerald-400">${p.amount.toFixed(2)}</span>
+                  <span className="font-bold text-emerald-400">{workshopSettings?.currencySymbol || "$"}{p.amount.toFixed(2)}</span>
                 </div>
               ))}
             </div>
@@ -162,21 +162,23 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
                   </button>
                 ))}
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Monto ($)</Label>
-                  <div className="relative">
+                  <Label className="text-xs">Monto ({workshopSettings?.currencySymbol || "$"})</Label>
+                  <div className="relative flex items-center">
+                    {/* Render symbol dynamically inside the input container */}
+                    <span className="absolute left-3 text-xs font-mono font-semibold text-muted-foreground select-none">
+                      {workshopSettings?.currencySymbol || "$"}
+                    </span>
                     <Input
                       type="number"
-                      placeholder={`Saldo: $${balance.toFixed(2)}`}
+                      placeholder={`Saldo: ${workshopSettings?.currencySymbol || "$"}${balance.toFixed(2)}`}
                       value={amount}
                       onChange={e => setAmount(e.target.value)}
-                      className="pl-8 bg-background border-border font-mono"
+                      className="pl-10 bg-background border-border font-mono"
                       min={0}
                       step={0.01}
                     />
-                    <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                   </div>
                 </div>
                 <div className="space-y-1.5">
@@ -198,7 +200,7 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
                 >
                   {loading
                     ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Procesando…</>
-                    : <><DollarSign className="w-4 h-4 mr-2" /> Registrar Pago</>
+                    : <>Registrar Pago</>
                   }
                 </Button>
                 {balance > 0 && (
@@ -245,14 +247,8 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
 
 export default function PaymentsPage() {
   const router = useRouter();
-  const { userProfile } = useAuth();
+  const { userProfile, workshopSettings } = useAuth();
   const { jobs, loading } = useRealtimeJobs({ statuses: ["Ready", "Approved", "Delivered", "QC"] });
-  const [workshopSettings, setWorkshopSettings] = useState<any>(null);
-
-  useEffect(() => {
-    if (!userProfile?.workshopId) return;
-    getWorkshopSettings(userProfile.workshopId).then(s => setWorkshopSettings(s));
-  }, [userProfile?.workshopId]);
 
   // Sort: pending first, then delivered
   const sorted = [...jobs].sort((a, b) => {
@@ -308,7 +304,7 @@ export default function PaymentsPage() {
             </div>
             {pending.length > 0 && (
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-sm font-medium">
-                ${pending.reduce((s, j) => s + (j.totalEstimate || 0) - totalPaid(j), 0).toFixed(2)} por cobrar
+                {workshopSettings?.currencySymbol || "$"}{pending.reduce((s, j) => s + (j.totalEstimate || 0) - totalPaid(j), 0).toFixed(2)} por cobrar
               </div>
             )}
           </div>

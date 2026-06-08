@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { AlertCircle, Lock, Shield, Wrench, ClipboardList, DollarSign } from "lucide-react";
+import { AlertCircle, Lock, Shield, Wrench, ClipboardList, DollarSign, UserPlus, LogIn } from "lucide-react";
 import { UserRole } from "@/types";
 
 function LoginForm() {
@@ -19,6 +19,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') || '/';
 
+  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -26,36 +27,42 @@ function LoginForm() {
   const [demoRoles, setDemoRoles] = useState<UserRole[] | null>(null);
 
   const DEMO_ROLE_MAP: Record<string, UserRole[]> = {
-    'admin@demo.com': ['ADMIN', 'RECEPTION', 'TECHNICIAN', 'ADVISOR'],
+    'demo-admin@demo.com': ['ADMIN', 'RECEPTION', 'TECHNICIAN', 'ADVISOR'],
     'tech@demo.com': ['TECHNICIAN'],
     'reception@demo.com': ['RECEPTION'],
     'advisor@demo.com': ['ADVISOR', 'RECEPTION'],
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      const cred = await signInWithEmailAndPassword(auth, email, password);
-      // Ensure profile exists for existing accounts (e.g. demo accounts after a reset)
-      const roles = demoRoles || DEMO_ROLE_MAP[email] || ['RECEPTION'];
-      await createUserProfile(cred.user.uid, cred.user.email || email, undefined, roles);
-      router.push(redirectTo);
-    } catch (err: any) {
-      console.log("Login failed. Attempting automatic registration for prototype...", err.code);
-      try {
+      if (isSignUp) {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         const roles = demoRoles || DEMO_ROLE_MAP[email] || ['RECEPTION'];
         await createUserProfile(cred.user.uid, cred.user.email || email, undefined, roles);
         router.push(redirectTo);
-      } catch (createErr: any) {
-        if (createErr.code === 'auth/email-already-in-use') {
-          setError(t('wrongPassword'));
-        } else {
-          setError(createErr.message || t('authError'));
-        }
+      } else {
+        const cred = await signInWithEmailAndPassword(auth, email, password);
+        // Ensure profile is synced/exists
+        const roles = demoRoles || DEMO_ROLE_MAP[email] || ['RECEPTION'];
+        await createUserProfile(cred.user.uid, cred.user.email || email, undefined, roles);
+        router.push(redirectTo);
+      }
+    } catch (err: any) {
+      console.error("Authentication failed:", err.code);
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        setError(t('wrongPassword'));
+      } else if (err.code === 'auth/email-already-in-use') {
+        setError("Este correo ya está registrado.");
+      } else if (err.code === 'auth/weak-password') {
+        setError("La contraseña debe tener al menos 6 caracteres.");
+      } else if (err.code === 'auth/user-not-found') {
+        setError("Usuario no registrado. Regístrate usando el enlace de abajo.");
+      } else {
+        setError(err.message || t('authError'));
       }
     } finally {
       setLoading(false);
@@ -63,6 +70,7 @@ function LoginForm() {
   };
 
   const fillDemo = (demoEmail: string) => {
+    setIsSignUp(false);
     setEmail(demoEmail);
     setPassword("password123");
     setDemoRoles(DEMO_ROLE_MAP[demoEmail] || ['RECEPTION']);
@@ -70,7 +78,7 @@ function LoginForm() {
 
   const demoAccounts: { email: string; labelKey: string; rolesKey: string; icon: React.ReactNode; color: string }[] = [
     {
-      email: "admin@demo.com",
+      email: "demo-admin@demo.com",
       labelKey: "demoAdmin",
       rolesKey: "demoFullAccess",
       icon: <Shield className="w-4 h-4" />,
@@ -101,18 +109,24 @@ function LoginForm() {
 
   return (
     <div className="min-h-screen page-bg flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8">
+      <div className="w-full max-w-md space-y-8 animate-fade-in">
         <div className="text-center">
           <div className="mx-auto w-16 h-16 bg-emerald-100 dark:bg-emerald-950/50 rounded-full flex items-center justify-center border border-emerald-500/30 mb-4 shadow-[0_0_15px_rgba(52,211,153,0.1)]">
             <Lock className="w-8 h-8 text-emerald-500 dark:text-emerald-400" />
           </div>
-          <h2 className="text-3xl font-extrabold text-foreground">{t('loginTitle')}</h2>
-          <p className="mt-2 text-muted-foreground text-sm">{t('loginSubtitle')}</p>
+          <h2 className="text-3xl font-extrabold text-foreground">
+            {isSignUp ? "Crear Cuenta (Registro)" : t('loginTitle')}
+          </h2>
+          <p className="mt-2 text-muted-foreground text-sm">
+            {isSignUp 
+              ? "Regístrate para unirte a un taller o acceder a tu taller invitado." 
+              : "Ingresa tus credenciales para acceder a las herramientas."}
+          </p>
         </div>
 
         <Card className="glass-panel">
           <CardContent className="pt-6">
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleAuth} className="space-y-4">
               {error && (
                 <div className="bg-red-100 dark:bg-red-950/50 border border-red-300 dark:border-red-900/50 text-red-600 dark:text-red-500 p-3 rounded flex items-center gap-2 text-sm">
                   <AlertCircle className="w-4 h-4" />
@@ -147,33 +161,51 @@ function LoginForm() {
 
               <Button 
                 type="submit" 
-                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white h-12 mt-6"
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white h-12 mt-6 font-semibold"
                 disabled={loading}
               >
-                {loading ? t('processing') : t('loginButton')}
+                {loading ? t('processing') : (isSignUp ? "Registrarse" : t('loginButton'))}
               </Button>
             </form>
+
+            <div className="mt-6 text-center">
+              <button
+                onClick={() => {
+                  setIsSignUp(!isSignUp);
+                  setError("");
+                }}
+                className="text-xs text-emerald-500 hover:text-emerald-400 font-medium transition-colors inline-flex items-center gap-1"
+              >
+                {isSignUp ? (
+                  <><LogIn className="w-3.5 h-3.5" /> ¿Ya tienes cuenta? Inicia Sesión</>
+                ) : (
+                  <><UserPlus className="w-3.5 h-3.5" /> ¿No tienes cuenta? Regístrate gratis</>
+                )}
+              </button>
+            </div>
           </CardContent>
         </Card>
 
-        <div className="space-y-3">
-          <p className="text-center text-muted-foreground text-sm">{t('demoAccountsLabel')}</p>
-          <div className="grid grid-cols-2 gap-2">
-            {demoAccounts.map((acc) => (
-              <button
-                key={acc.email}
-                onClick={() => fillDemo(acc.email)}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border bg-card/50 transition-all text-left ${acc.color}`}
-              >
-                {acc.icon}
-                <div>
-                  <p className="text-sm font-medium">{t(acc.labelKey)}</p>
-                  <p className="text-[11px] text-muted-foreground">{t(acc.rolesKey)}</p>
-                </div>
-              </button>
-            ))}
+        {!isSignUp && (
+          <div className="space-y-3">
+            <p className="text-center text-muted-foreground text-sm">{t('demoAccountsLabel')}</p>
+            <div className="grid grid-cols-2 gap-2">
+              {demoAccounts.map((acc) => (
+                <button
+                  key={acc.email}
+                  onClick={() => fillDemo(acc.email)}
+                  className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border bg-card/50 transition-all text-left ${acc.color}`}
+                >
+                  {acc.icon}
+                  <div>
+                    <p className="text-sm font-medium">{t(acc.labelKey)}</p>
+                    <p className="text-[11px] text-muted-foreground">{t(acc.rolesKey)}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

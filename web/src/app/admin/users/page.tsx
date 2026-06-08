@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAllUsers, updateUserRoles } from "@/lib/db";
+import { getUsersByWorkshop, updateUserRoles } from "@/lib/db";
 import { toast } from "sonner";
 import { UserProfile, UserRole, ROLE_META } from "@/types";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -9,11 +9,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ShieldCheck, Save, RefreshCw, CheckCircle2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ALL_ROLES: UserRole[] = ['ADMIN', 'RECEPTION', 'TECHNICIAN', 'ADVISOR'];
 
 export default function AdminUsersPage() {
   const { t } = useLanguage();
+  const { userProfile, loading: authLoading } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingRoles, setEditingRoles] = useState<Record<string, UserRole[]>>({});
@@ -21,12 +23,18 @@ export default function AdminUsersPage() {
   const [saved, setSaved] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    if (!authLoading && userProfile) {
+      fetchUsers();
+    }
+  }, [authLoading, userProfile]);
 
   const fetchUsers = async () => {
+    if (!userProfile?.workshopId) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
-    const fetched = await getAllUsers();
+    const fetched = await getUsersByWorkshop(userProfile.workshopId);
     setUsers(fetched);
     const initialRoles: Record<string, UserRole[]> = {};
     fetched.forEach((u) => {

@@ -113,7 +113,7 @@ const allCards: NavCard[] = [
 
 export default function Home() {
   const { t } = useLanguage();
-  const { user, userProfile, hasAnyRole, hasRole, loading } = useAuth();
+  const { user, userProfile, workshopSettings, hasAnyRole, hasRole, loading } = useAuth();
   
   const isAdmin = hasRole('ADMIN');
   const { jobs } = useRealtimeJobs({ all: isAdmin });
@@ -169,7 +169,7 @@ export default function Home() {
               <div>
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Ingresos de Hoy</p>
                 <h3 className="text-3xl font-black text-emerald-400 mt-2 font-mono">
-                  ${(() => {
+                  {workshopSettings?.currencySymbol || "$"}{(() => {
                     const todayStr = new Date().toISOString().split('T')[0];
                     return jobs.reduce((sum, job) => {
                       if (!job.payments) return sum;

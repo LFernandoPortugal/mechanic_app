@@ -43,9 +43,6 @@ function jobDate(job: Job): Date | null {
     : new Date(job.createdAt as unknown as string);
 }
 
-const fmtCurrency = (n: number) =>
-  new Intl.NumberFormat("es-PA", { style: "currency", currency: "USD" }).format(n);
-
 const fmtDate = (d: Date | null) => {
   if (!d) return "—";
   return d.toLocaleDateString("es-PA", { day: "2-digit", month: "short", year: "numeric" });
@@ -84,8 +81,13 @@ export default function ClientDetailPage() {
   const { t } = useLanguage();
   const router = useRouter();
   const params = useParams();
-  const { userProfile, loading: authLoading } = useAuth();
+  const { userProfile, loading: authLoading, workshopSettings } = useAuth();
   const clientName = decodeURIComponent(params.id as string);
+
+  const fmtCurrency = (n: number) => {
+    const symbol = workshopSettings?.currencySymbol || "$";
+    return `${symbol}${n.toFixed(2)}`;
+  };
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);

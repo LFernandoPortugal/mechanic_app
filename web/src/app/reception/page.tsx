@@ -16,14 +16,15 @@ import { SignatureCanvas } from "@/components/SignatureCanvas";
 import { ArrowLeft, Wand2, Fuel } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Job } from "@/types";
+import { Job, VehicleType } from "@/types";
 import { WorkflowStepper } from "@/components/WorkflowStepper";
+import VehicleTypeSelector from "@/components/ui/VehicleTypeSelector";
 
 export default function Reception() {
   const { t } = useLanguage();
   const { user, userProfile } = useAuth();
   
-  const [vehicle, setVehicle] = useState({ vin: "", make: "", model: "", plate: "", color: "" });
+  const [vehicle, setVehicle] = useState<{ vin: string; make: string; model: string; plate: string; color: string; type: VehicleType }>({ vin: "", make: "", model: "", plate: "", color: "", type: "auto" });
   const [client, setClient] = useState({ name: "", phone: "", email: "" });
   const [fluids, setFluids] = useState({ oil: "OK", coolant: "OK", brake: "OK" });
   const [valuables, setValuables] = useState({ lockNut: false, sunglasses: false, documents: false, other: "" });
@@ -83,6 +84,7 @@ export default function Reception() {
       make: last.make || prev.make,
       model: last.model || prev.model,
       color: last.color || prev.color,
+      type: last.vehicleType || prev.type,
     }));
     setClient({
       name: last.clientId || "",
@@ -93,7 +95,7 @@ export default function Reception() {
   };
 
   const handleAutoFill = () => {
-    setVehicle({ vin: "1HGBH41JXMN109186", make: "Toyota", model: "Corolla", plate: "ABC-123", color: "Rojo" });
+    setVehicle({ vin: "1HGBH41JXMN109186", make: "Toyota", model: "Corolla", plate: "ABC-123", color: "Rojo", type: "auto" });
     setClient({ name: "Juan Perez", phone: "555-0102", email: "juan@example.com" });
     setFluids({ oil: "OK", coolant: "OK", brake: "LOW" });
     setValuables({ lockNut: true, sunglasses: true, documents: false, other: "" });
@@ -145,6 +147,7 @@ export default function Reception() {
         make: vehicle.make.trim() || undefined,
         model: vehicle.model.trim() || undefined,
         color: vehicle.color.trim() || undefined,
+        vehicleType: vehicle.type,
         clientId: client.name,
         clientPhone: client.phone.trim() || undefined,
         clientEmail: client.email.trim() || undefined,
@@ -202,7 +205,7 @@ export default function Reception() {
              <Button onClick={() => router.push('/technician')} className="w-full bg-emerald-600 hover:bg-emerald-700 h-12 text-lg text-white">
                 {t('goToTechnician')}
              </Button>
-             <Button onClick={() => { setCreatedJobId(null); setVehicle({ vin: "", make: "", model: "", plate: "", color: "" }); setClient({ name: "", phone: "", email: "" }); setSignatureDataUrl(null); setOdometer(""); setFuelLevel(50); setPhotos([]); }} variant="outline" className="w-full border-border text-muted-foreground h-10">
+             <Button onClick={() => { setCreatedJobId(null); setVehicle({ vin: "", make: "", model: "", plate: "", color: "", type: "auto" }); setClient({ name: "", phone: "", email: "" }); setSignatureDataUrl(null); setOdometer(""); setFuelLevel(50); setPhotos([]); }} variant="outline" className="w-full border-border text-muted-foreground h-10">
                 {t('registerAnother')}
              </Button>
           </div>
@@ -292,6 +295,13 @@ export default function Reception() {
                     Auto-completar datos de {pastJobs[0].clientId}
                   </Button>
                 )}
+
+                <div className="pt-4 border-t border-border/40">
+                  <VehicleTypeSelector
+                    value={vehicle.type}
+                    onChange={(type) => setVehicle({ ...vehicle, type })}
+                  />
+                </div>
               </CardContent>
             </Card>
 
