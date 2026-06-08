@@ -57,7 +57,20 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
     const userRef = doc(db, "users", uid);
     const snap = await getDoc(userRef);
     if (snap.exists()) {
-      return snap.data() as UserProfile;
+      const data = snap.data() as UserProfile;
+      const superAdminEmail = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL || "admin@demo.com";
+      if (data.email === superAdminEmail && !data.roles.includes('SUPER_ADMIN')) {
+        console.log(`Auto-promoting existing user: ${data.email} to SUPER_ADMIN`);
+        const updatedRoles: UserRole[] = ['SUPER_ADMIN'];
+        await updateDoc(userRef, { 
+          roles: updatedRoles, 
+          workshopId: "master-control", 
+          updatedAt: Timestamp.now() 
+        });
+        data.roles = updatedRoles;
+        data.workshopId = "master-control";
+      }
+      return data;
     }
     return null;
   } catch (e) {
