@@ -10,13 +10,15 @@ export async function createUserProfile(uid: string, email: string, displayName?
     const existing = await getDoc(userRef);
     if (existing.exists()) return existing.data() as UserProfile;
 
+    const normalizedEmail = email.trim().toLowerCase();
+
     let finalWorkshopId = "demo-workshop";
     let finalRoles = roles || ['RECEPTION'];
     let isAuthorized = false;
 
     // Auto-promote to SUPER_ADMIN if email matches configuration
-    const superAdminEmail = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL || "admin@demo.com";
-    if (email === superAdminEmail) {
+    const superAdminEmail = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL || "admin@demo.com").trim().toLowerCase();
+    if (normalizedEmail === superAdminEmail) {
       finalRoles = ['SUPER_ADMIN'];
       finalWorkshopId = "master-control";
       isAuthorized = true;
@@ -24,14 +26,16 @@ export async function createUserProfile(uid: string, email: string, displayName?
       // Auto-onboard if this email is registered in settings as a workshop admin
       try {
         const settingsRef = collection(db, "settings");
-        const q = query(settingsRef, where("adminEmail", "==", email));
+        const q = query(settingsRef, where("adminEmail", "==", normalizedEmail));
         const snap = await getDocs(q);
         if (!snap.empty) {
           const settingsDoc = snap.docs[0];
           finalWorkshopId = settingsDoc.id;
           finalRoles = ['ADMIN'];
           isAuthorized = true;
-          console.log(`Auto-onboarding invited admin: ${email} for workshop ${finalWorkshopId}`);
+          console.log(`Auto-onboarding invited admin: ${normalizedEmail} for workshop ${finalWorkshopId}`);
+        } else {
+          console.log(`Auto-onboarding check failed: email ${normalizedEmail} not found in settings adminEmail list`);
         }
       } catch (inviteError) {
         console.error("Error checking invitations:", inviteError);
@@ -40,18 +44,18 @@ export async function createUserProfile(uid: string, email: string, displayName?
 
     // Check if it's a demo account
     const demoEmails = ["demo-admin@demo.com", "tech@demo.com", "reception@demo.com", "advisor@demo.com"];
-    if (demoEmails.includes(email)) {
+    if (demoEmails.includes(normalizedEmail)) {
       isAuthorized = true;
     }
 
     if (!isAuthorized) {
-      throw new Error("Acceso denegado: Esta cuenta no está autorizada o su acceso ha sido revocado por el administrador.");
+      throw new Error(`Acceso denegado: Esta cuenta (${normalizedEmail}) no está registrada como autorizada o su acceso fue revocado.`);
     }
 
     const profile: Omit<UserProfile, 'createdAt' | 'updatedAt'> & { createdAt: any; updatedAt: any } = {
       uid,
-      email,
-      displayName: displayName || email.split('@')[0],
+      email: normalizedEmail,
+      displayName: displayName || normalizedEmail.split('@')[0],
       roles: finalRoles,
       workshopId: finalWorkshopId,
       createdAt: Timestamp.now(),
