@@ -103,14 +103,15 @@ export default function SuperAdminPage() {
       // 1. Create Firebase Auth account
       await createFirebaseAuthAccount(newEmail.trim().toLowerCase(), newPassword);
 
-      // 2. Create workshop settings (auto-onboarding by adminEmail)
+      // 2. Create workshop settings (auto-onboarding by adminEmail + store password)
       const expiration = new Date();
       expiration.setDate(expiration.getDate() + trialDays);
       await createWorkshopTester(
         newId.trim().toLowerCase(),
         newName.trim(),
         newEmail.trim().toLowerCase(),
-        expiration.toISOString()
+        expiration.toISOString(),
+        newPassword
       );
 
       toast.success(`Taller "${newName}" y cuenta de admin creados. Trial: ${trialDays} días.`);
@@ -412,8 +413,26 @@ export default function SuperAdminPage() {
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                              <span>Admin: <span className="text-foreground">{ws.adminEmail || "—"}</span></span>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                              <span>Admin: <span className="text-foreground font-mono">{ws.adminEmail || "—"}</span></span>
+                              {ws.tempPassword && (
+                                <span className="flex items-center gap-1">
+                                  <span>Clave:</span>
+                                  <span className="text-foreground font-mono bg-secondary/50 px-1 py-0.5 rounded border border-border/30">{ws.tempPassword}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => copyToClipboard(ws.tempPassword, `temp-pass-${ws.id}`)}
+                                    className="text-muted-foreground hover:text-foreground inline-flex ml-0.5 shrink-0"
+                                    title="Copiar contraseña"
+                                  >
+                                    {copiedField === `temp-pass-${ws.id}` ? (
+                                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                    ) : (
+                                      <Copy className="w-3.5 h-3.5" />
+                                    )}
+                                  </button>
+                                </span>
+                              )}
                               <span>·</span>
                               <button
                                 onClick={() => setExpandedWorkshop(isExpanded ? null : ws.id)}

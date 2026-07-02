@@ -130,7 +130,7 @@ export async function deleteUserProfile(uid: string) {
   }
 }
 
-export async function createWorkshopTester(workshopId: string, name: string, adminEmail: string, expiresAt: string) {
+export async function createWorkshopTester(workshopId: string, name: string, adminEmail: string, expiresAt: string, tempPassword?: string) {
   try {
     const settingsRef = doc(db, "settings", workshopId);
     await setDoc(settingsRef, {
@@ -147,6 +147,7 @@ export async function createWorkshopTester(workshopId: string, name: string, adm
       expiresAt,
       allowResetData: false,
       adminEmail,
+      tempPassword: tempPassword || "",
     });
   } catch (e) {
     console.error("Error creating workshop tester:", e);

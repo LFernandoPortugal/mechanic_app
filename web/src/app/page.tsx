@@ -134,7 +134,7 @@ export default function Home() {
         if (!requiredRoles) return true;
         return hasAnyRole(requiredRoles);
       })
-    : allCards;
+    : allCards.filter((card) => card.href !== '/super-admin');
 
   return (
     <div className="min-h-screen page-bg text-foreground flex flex-col items-center justify-center px-4 py-12">
