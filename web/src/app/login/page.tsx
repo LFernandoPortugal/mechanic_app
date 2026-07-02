@@ -10,8 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { AlertCircle, Lock, Shield, Wrench, ClipboardList, DollarSign, UserPlus, LogIn } from "lucide-react";
+import { AlertCircle, Lock, Shield, Wrench, ClipboardList, DollarSign, LogIn } from "lucide-react";
 import { UserRole } from "@/types";
+
+const IS_DEV = process.env.NODE_ENV !== "production";
 
 function LoginForm() {
   const { t } = useLanguage();
@@ -19,12 +21,10 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') || '/';
 
-  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [demoRoles, setDemoRoles] = useState<UserRole[] | null>(null);
 
   const DEMO_ROLE_MAP: Record<string, UserRole[]> = {
     'demo-admin@demo.com': ['ADMIN', 'RECEPTION', 'TECHNICIAN', 'ADVISOR'],
@@ -33,34 +33,23 @@ function LoginForm() {
     'advisor@demo.com': ['ADVISOR', 'RECEPTION'],
   };
 
-  const handleAuth = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      if (isSignUp) {
-        const cred = await createUserWithEmailAndPassword(auth, email, password);
-        const roles = demoRoles || DEMO_ROLE_MAP[email] || ['RECEPTION'];
-        await createUserProfile(cred.user.uid, cred.user.email || email, undefined, roles);
-        router.push(redirectTo);
-      } else {
-        const cred = await signInWithEmailAndPassword(auth, email, password);
-        // Ensure profile is synced/exists
-        const roles = demoRoles || DEMO_ROLE_MAP[email] || ['RECEPTION'];
-        await createUserProfile(cred.user.uid, cred.user.email || email, undefined, roles);
-        router.push(redirectTo);
-      }
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      // Ensure profile is synced/exists (only creates if not already present)
+      const roles = DEMO_ROLE_MAP[email] || ['RECEPTION'];
+      await createUserProfile(cred.user.uid, cred.user.email || email, undefined, roles);
+      router.push(redirectTo);
     } catch (err: any) {
       console.error("Authentication failed:", err.code);
       if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setError(t('wrongPassword'));
-      } else if (err.code === 'auth/email-already-in-use') {
-        setError("Este correo ya está registrado.");
-      } else if (err.code === 'auth/weak-password') {
-        setError("La contraseña debe tener al menos 6 caracteres.");
       } else if (err.code === 'auth/user-not-found') {
-        setError("Usuario no registrado. Regístrate usando el enlace de abajo.");
+        setError("Usuario no registrado. Contacta al administrador para obtener acceso.");
       } else {
         setError(err.message || t('authError'));
       }
@@ -70,10 +59,8 @@ function LoginForm() {
   };
 
   const fillDemo = (demoEmail: string) => {
-    setIsSignUp(false);
     setEmail(demoEmail);
     setPassword("password123");
-    setDemoRoles(DEMO_ROLE_MAP[demoEmail] || ['RECEPTION']);
   };
 
   const demoAccounts: { email: string; labelKey: string; rolesKey: string; icon: React.ReactNode; color: string }[] = [
@@ -115,18 +102,16 @@ function LoginForm() {
             <Lock className="w-8 h-8 text-emerald-500 dark:text-emerald-400" />
           </div>
           <h2 className="text-3xl font-extrabold text-foreground">
-            {isSignUp ? "Crear Cuenta (Registro)" : t('loginTitle')}
+            {t('loginTitle')}
           </h2>
           <p className="mt-2 text-muted-foreground text-sm">
-            {isSignUp 
-              ? "Regístrate para unirte a un taller o acceder a tu taller invitado." 
-              : "Ingresa tus credenciales para acceder a las herramientas."}
+            Ingresa tus credenciales para acceder a las herramientas.
           </p>
         </div>
 
         <Card className="glass-panel">
           <CardContent className="pt-6">
-            <form onSubmit={handleAuth} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-4">
               {error && (
                 <div className="bg-red-100 dark:bg-red-950/50 border border-red-300 dark:border-red-900/50 text-red-600 dark:text-red-500 p-3 rounded flex items-center gap-2 text-sm">
                   <AlertCircle className="w-4 h-4" />
@@ -164,31 +149,25 @@ function LoginForm() {
                 className="w-full bg-emerald-600 hover:bg-emerald-500 text-white h-12 mt-6 font-semibold"
                 disabled={loading}
               >
-                {loading ? t('processing') : (isSignUp ? "Registrarse" : t('loginButton'))}
+                {loading ? t('processing') : t('loginButton')}
               </Button>
             </form>
 
-            <div className="mt-6 text-center">
-              <button
-                onClick={() => {
-                  setIsSignUp(!isSignUp);
-                  setError("");
-                }}
-                className="text-xs text-emerald-500 hover:text-emerald-400 font-medium transition-colors inline-flex items-center gap-1"
-              >
-                {isSignUp ? (
-                  <><LogIn className="w-3.5 h-3.5" /> ¿Ya tienes cuenta? Inicia Sesión</>
-                ) : (
-                  <><UserPlus className="w-3.5 h-3.5" /> ¿No tienes cuenta? Regístrate gratis</>
-                )}
-              </button>
+            <div className="mt-4 text-center">
+              <p className="text-[11px] text-muted-foreground">
+                ¿No tienes cuenta? Contacta al administrador del taller.
+              </p>
             </div>
           </CardContent>
         </Card>
 
-        {!isSignUp && (
+        {/* Demo accounts — only visible in development, never in production */}
+        {IS_DEV && (
           <div className="space-y-3">
-            <p className="text-center text-muted-foreground text-sm">{t('demoAccountsLabel')}</p>
+            <p className="text-center text-muted-foreground text-sm">
+              <span className="bg-amber-500/10 text-amber-500 text-[10px] px-2 py-0.5 rounded-full border border-amber-500/30 mr-1">DEV</span>
+              {t('demoAccountsLabel')}
+            </p>
             <div className="grid grid-cols-2 gap-2">
               {demoAccounts.map((acc) => (
                 <button

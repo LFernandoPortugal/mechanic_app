@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { getClientJobs } from "@/lib/clients";
@@ -80,9 +80,9 @@ const inspectionStatusIcon: Record<string, React.ReactNode> = {
 export default function ClientDetailPage() {
   const { t } = useLanguage();
   const router = useRouter();
-  const params = useParams();
+  const searchParams = useSearchParams();
   const { userProfile, loading: authLoading, workshopSettings } = useAuth();
-  const clientName = decodeURIComponent(params.id as string);
+  const clientName = decodeURIComponent((searchParams.get("id") || searchParams.get("name") || "") as string);
 
   const fmtCurrency = (n: number) => {
     const symbol = workshopSettings?.currencySymbol || "$";

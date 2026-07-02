@@ -1,0 +1,10 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Deny all access by default — the app stores images as base64 in Firestore,
+    // so Firebase Storage should not be used. This prevents abuse.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

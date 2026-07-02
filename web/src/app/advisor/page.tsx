@@ -121,7 +121,7 @@ export default function AdvisorQuoteBuilder() {
   }
 
   if (submittedJobId && submittedJob) {
-    const quoteUrl = typeof window !== 'undefined' ? `${window.location.origin}/quote/${submittedJobId}` : `/quote/${submittedJobId}`;
+    const quoteUrl = typeof window !== 'undefined' ? `${window.location.origin}/quote/view?id=${submittedJobId}` : `/quote/view?id=${submittedJobId}`;
     const hasPhone = Boolean(submittedJob.clientPhone);
     const hasEmail = Boolean(submittedJob.clientEmail) && isEmailConfigured();
 
@@ -209,7 +209,7 @@ export default function AdvisorQuoteBuilder() {
             </Button>
 
             <div className="flex gap-3 pt-2">
-              <Button onClick={() => router.push(`/quote/${submittedJobId}`)} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
+              <Button onClick={() => router.push(`/quote/view?id=${submittedJobId}`)} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
                 <ExternalLink className="w-4 h-4 mr-2" /> {t('openClientView')}
               </Button>
               <Button onClick={() => { setSubmittedJobId(null); setSubmittedJob(null); }} variant="ghost" className="flex-1 text-muted-foreground hover:text-foreground">
@@ -534,7 +534,7 @@ export default function AdvisorQuoteBuilder() {
                 </div>
 
                 <div className="pt-4 flex gap-4">
-                  <Button onClick={() => router.push(`/quote/${selectedJob.id}`)} variant="outline" className="flex-1 border-blue-500/50 text-blue-500">
+                  <Button onClick={() => router.push(`/quote/view?id=${selectedJob.id}`)} variant="outline" className="flex-1 border-blue-500/50 text-blue-500">
                     <ExternalLink className="w-4 h-4 mr-2" /> Ver Vista del Cliente
                   </Button>
                 </div>

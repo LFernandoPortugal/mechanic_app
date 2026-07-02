@@ -1,32 +1,14 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { NextRequest } from "next/server";
+/**
+ * Client-side AI Diagnosis Engine for SGA.
+ * 
+ * Uses a deterministic keyword-matching rules engine to provide automotive
+ * diagnostic suggestions. This runs entirely in the browser — no API calls,
+ * no server needed, no API key exposure.
+ * 
+ * For production, this can be enhanced with a Cloud Function if needed.
+ */
 
-const SYSTEM_PROMPT = `Eres el asistente de diagnóstico automotriz de SGA (Sistema de Gestión Automotriz).
-Tu rol es analizar los síntomas de un vehículo y devolver un diagnóstico estructurado.
-
-REGLAS:
-1. Responde SIEMPRE en español.
-2. Sé conciso pero completo. El técnico es un profesional — usa terminología mecánica correcta.
-3. Prioriza la seguridad: si hay un riesgo inmediato (frenos, dirección, estructura), indícalo claramente.
-4. Devuelve SOLO un objeto JSON válido, sin markdown, sin texto adicional, con esta estructura exacta:
-
-{
-  "diagnosis": "Descripción clara del problema probable",
-  "severity": "Crítico | Alto | Medio | Bajo",
-  "confidence": "Alta | Media | Baja",
-  "likelyCauses": ["causa 1", "causa 2"],
-  "recommendedParts": ["parte 1", "parte 2"],
-  "estimatedHours": 2.5,
-  "safetyWarning": "Advertencia si hay riesgo de seguridad, o null"
-}`;
-
-// ─── Diagnostic rule definitions ──────────────────────────────────────────────
-type DiagRule = {
-  keywords: string[];
-  result: DiagResult;
-};
-
-type DiagResult = {
+export type DiagResult = {
   diagnosis: string;
   severity: string;
   confidence: string;
@@ -34,6 +16,11 @@ type DiagResult = {
   recommendedParts: string[];
   estimatedHours: number;
   safetyWarning: string | null;
+};
+
+type DiagRule = {
+  keywords: string[];
+  result: DiagResult;
 };
 
 const DIAG_RULES: DiagRule[] = [
@@ -261,14 +248,11 @@ const DIAG_RULES: DiagRule[] = [
 ];
 
 /**
- * Local deterministic fallback engine v2.
- * Uses a scored keyword-matching approach: scores each rule by the number
- * of matching keywords found in the symptom text, then picks the highest-scoring
- * match. Falls back to a dynamic generic diagnosis if no rule scores > 0.
+ * Runs the local diagnostic engine against the given symptoms.
+ * Uses scored keyword-matching: the rule with the most keyword hits wins.
  */
-function getLocalDiagnosis(symptoms: string, vehicleInfo: string): DiagResult {
+export function getLocalDiagnosis(symptoms: string): DiagResult {
   if (!symptoms || symptoms.trim().length < 3) {
-    // No useful symptom input at all — return a general inspection prompt
     return {
       diagnosis: "Inspección general preventiva del vehículo. Sin síntomas específicos reportados por el cliente.",
       severity: "Bajo",
@@ -292,7 +276,6 @@ function getLocalDiagnosis(symptoms: string, vehicleInfo: string): DiagResult {
 
   const s = symptoms.toLowerCase();
 
-  // Score each rule by how many of its keywords appear in the symptom string
   let bestScore = 0;
   let bestResult: DiagResult | null = null;
 
@@ -305,7 +288,6 @@ function getLocalDiagnosis(symptoms: string, vehicleInfo: string): DiagResult {
   }
 
   if (bestResult && bestScore > 0) {
-    // Adjust confidence based on how many keywords matched
     const boosted = { ...bestResult };
     if (bestScore >= 3) boosted.confidence = "Alta";
     else if (bestScore === 2) boosted.confidence = "Media";
@@ -313,7 +295,6 @@ function getLocalDiagnosis(symptoms: string, vehicleInfo: string): DiagResult {
     return boosted;
   }
 
-  // Dynamic generic fallback that at least echoes the symptom back
   const cleanSymptom = symptoms.trim().charAt(0).toUpperCase() + symptoms.trim().slice(1);
   return {
     diagnosis: `Diagnóstico inicial requerido para: "${cleanSymptom}". Se necesita inspección física y lectura de códigos OBD-II para confirmar la causa raíz.`,
@@ -334,111 +315,26 @@ function getLocalDiagnosis(symptoms: string, vehicleInfo: string): DiagResult {
   };
 }
 
-export async function POST(req: NextRequest) {
-  const apiKey = process.env.GEMINI_API_KEY;
-
-  let symptoms: string;
-  let vehicleInfo: string;
-
-  try {
-    const body = await req.json();
-    symptoms    = body.symptoms?.trim();
-    vehicleInfo = body.vehicleInfo?.trim() || "Vehículo no especificado";
-    if (!symptoms) throw new Error("symptoms requerido");
-  } catch {
-    return new Response(
-      JSON.stringify({ error: "Body inválido. Se requiere { symptoms, vehicleInfo }" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
-    );
-  }
-
-  const encoder = new TextEncoder();
-
-  // If API key is missing, empty, or placeholder, fall back directly to the local offline engine
-  if (!apiKey || apiKey === "YOUR_GEMINI_API_KEY_HERE" || apiKey.trim() === "") {
-    console.log("No GEMINI_API_KEY found, running local diagnostic fallback.");
-    return streamLocalDiagnosis(symptoms, vehicleInfo, encoder);
-  }
-
-  try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
-      systemInstruction: SYSTEM_PROMPT,
-      generationConfig: {
-        responseMimeType: "application/json",
-        temperature: 0.3,
-        maxOutputTokens: 512,
-      },
-    });
-
-    const userMessage = `Vehículo: ${vehicleInfo}\nSíntomas reportados: ${symptoms}`;
-
-    // Try generating via Gemini stream
-    const result = await model.generateContentStream(userMessage);
-
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          for await (const chunk of result.stream) {
-            const text = chunk.text();
-            if (text) {
-              controller.enqueue(encoder.encode(text));
-            }
-          }
-          controller.close();
-        } catch (err: any) {
-          console.error("Error during active Gemini streaming, switching to local fallback:", err);
-          // If stream fails halfway or at start (e.g. quota limit 429), recover via local engine stream!
-          const localData = getLocalDiagnosis(symptoms, vehicleInfo);
-          const jsonStr = JSON.stringify(localData, null, 2);
-          controller.enqueue(encoder.encode(jsonStr));
-          controller.close();
-        }
-      },
-    });
-
-    return new Response(stream, {
-      headers: {
-        "Content-Type": "text/plain; charset=utf-8",
-        "Transfer-Encoding": "chunked",
-        "X-Content-Type-Options": "nosniff",
-      },
-    });
-  } catch (err: any) {
-    console.error("Gemini connection error (Quota/429/Network), falling back to offline diagnostic:", err);
-    // If Gemini fails to connect, stream the local rules engine response
-    return streamLocalDiagnosis(symptoms, vehicleInfo, encoder);
-  }
-}
-
 /**
- * Streams the local diagnosis response character-by-character to perfectly
- * simulate the visual typing/streaming animation effect on the client frontend.
+ * Simulates a streaming AI response for the UI animation effect.
+ * Calls the callback repeatedly with progressively longer text.
  */
-function streamLocalDiagnosis(symptoms: string, vehicleInfo: string, encoder: TextEncoder) {
-  const localData = getLocalDiagnosis(symptoms, vehicleInfo);
-  const jsonStr = JSON.stringify(localData, null, 2);
-
-  const stream = new ReadableStream({
-    async start(controller) {
-      const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
-      const chunkSize = 8; // stream 8 characters at a time for natural speed
-
-      for (let i = 0; i < jsonStr.length; i += chunkSize) {
-        const chunk = jsonStr.substring(i, i + chunkSize);
-        controller.enqueue(encoder.encode(chunk));
-        await delay(12); // smooth 12ms typing delay
-      }
-      controller.close();
-    },
-  });
-
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/plain; charset=utf-8",
-      "Transfer-Encoding": "chunked",
-      "X-Content-Type-Options": "nosniff",
-    },
-  });
+export async function streamDiagnosis(
+  symptoms: string,
+  onChunk: (accumulated: string) => void
+): Promise<DiagResult> {
+  const result = getLocalDiagnosis(symptoms);
+  const jsonStr = JSON.stringify(result, null, 2);
+  
+  const chunkSize = 8;
+  const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+  
+  let accumulated = "";
+  for (let i = 0; i < jsonStr.length; i += chunkSize) {
+    accumulated += jsonStr.substring(i, i + chunkSize);
+    onChunk(accumulated);
+    await delay(12);
+  }
+  
+  return result;
 }

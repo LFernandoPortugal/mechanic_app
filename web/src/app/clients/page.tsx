@@ -181,7 +181,7 @@ export default function ClientsPage() {
                 <Card
                   key={client.name}
                   className="glass-panel group cursor-pointer transition-all duration-200 hover:border-cyan-500/40 hover:shadow-[0_0_20px_rgba(6,182,212,0.08)]"
-                  onClick={() => router.push(`/clients/${encodeURIComponent(client.name)}`)}
+                  onClick={() => router.push(`/clients/detail?id=${encodeURIComponent(client.name)}`)}
                 >
                   <CardContent className="py-4">
                     <div className="flex items-center justify-between gap-4">

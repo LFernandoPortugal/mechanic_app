@@ -94,64 +94,38 @@ export default function TechnicianDashboard() {
     }
   };
 
-  /** Streams a real Gemini AI diagnosis for the selected job's symptoms. */
+  /** Runs the client-side AI diagnosis engine for the selected job's symptoms. */
   const handleAutoDiagnose = async () => {
     if (!selectedJob) return;
     setAiLoading(true);
     setAiDiagnosis("");
     setAiError(null);
 
-    const vehicleInfo = `${selectedJob.vehicleId}`;
     const symptoms = selectedJob.symptoms || newItemNotes || newItemName || "Inspección general del vehículo";
 
     try {
-      const res = await fetch("/api/ai/diagnose", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symptoms, vehicleInfo }),
+      const { streamDiagnosis } = await import("@/lib/diagnosis");
+      const result = await streamDiagnosis(symptoms, (accumulated) => {
+        setAiDiagnosis(accumulated);
       });
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || `HTTP ${res.status}`);
-      }
-
-      // Stream tokens in real time
-      const reader = res.body!.getReader();
-      const decoder = new TextDecoder();
-      let accumulated = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        accumulated += chunk;
-        setAiDiagnosis(accumulated);
-      }
-
-      // Try parsing the final JSON and auto-populate the form
-      try {
-        const cleanedAccumulated = accumulated.replace(/```json/gi, "").replace(/```/g, "").trim();
-        const parsed = JSON.parse(cleanedAccumulated);
-        if (parsed.diagnosis) {
-          setNewItemName(parsed.diagnosis);
-          setNewItemNotes(
-            [parsed.likelyCauses?.join(" | "), parsed.safetyWarning]
-              .filter(Boolean).join("\n")
-          );
-          if (parsed.severity === "Crítico" || parsed.severity === "Alto") {
-            setNewItemStatus("Critical");
-          } else if (parsed.severity === "Medio") {
-            setNewItemStatus("Fail");
-          } else {
-            setNewItemStatus("Recommended");
-          }
+      // Auto-populate the form with the diagnosis result
+      if (result.diagnosis) {
+        setNewItemName(result.diagnosis);
+        setNewItemNotes(
+          [result.likelyCauses?.join(" | "), result.safetyWarning]
+            .filter(Boolean).join("\n")
+        );
+        if (result.severity === "Crítico" || result.severity === "Alto") {
+          setNewItemStatus("Critical");
+        } else if (result.severity === "Medio") {
+          setNewItemStatus("Fail");
+        } else {
+          setNewItemStatus("Recommended");
         }
-      } catch {
-        // Streaming produced non-JSON — show as-is, let technician decide
       }
     } catch (err: any) {
-      setAiError(err.message || "Error al conectar con la IA.");
+      setAiError(err.message || "Error al ejecutar el diagnóstico.");
       toast.error("Error de IA: " + (err.message || "Desconocido"));
     } finally {
       setAiLoading(false);

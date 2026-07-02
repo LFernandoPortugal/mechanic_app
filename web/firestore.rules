@@ -4,7 +4,11 @@ service cloud.firestore {
     
     // ─── Users Collection ──────────────────────────────
     match /users/{userId} {
-      allow read: if request.auth != null && (request.auth.uid == userId || (isAdmin() && isSameWorkshop(resource.data)));
+      allow read: if request.auth != null && (
+        request.auth.uid == userId || 
+        isSuperAdmin() ||
+        (isAdmin() && isSameWorkshop(resource.data))
+      );
       allow create: if request.auth != null && request.auth.uid == userId && !request.resource.data.roles.hasAny(['SUPER_ADMIN']);
       allow update: if request.auth != null && (
         isSuperAdmin() ||
@@ -39,9 +43,14 @@ service cloud.firestore {
       allow delete: if request.auth != null && (isSuperAdmin() || (isAdmin() && isSameWorkshop(resource.data) && isResetAllowed(resource.data.workshopId)));
 
       // 2. Public Client Quote Portal (No Auth Required)
-      allow read: if resource.data.status in ['Ready', 'Approved', 'Repair', 'QC', 'Delivered'];
+      // SECURITY: Only allow reading jobs in specific statuses AND only expose non-sensitive data
+      // The client accesses via a direct job ID link — enumeration is mitigated by random Firestore IDs
+      // Using 'get' instead of 'read' to prevent unauthenticated listing of all jobs.
+      allow get: if resource.data.status in ['Ready', 'Approved', 'Repair', 'QC', 'Delivered'];
+      // Only allow client to approve a Ready quote (status change only)
       allow update: if resource.data.status == 'Ready' 
-                     && request.resource.data.status == 'Approved';
+                     && request.resource.data.status == 'Approved'
+                     && request.resource.data.workshopId == resource.data.workshopId;
     }
 
     // ─── Inventory Collection ──────────────────────────
@@ -62,8 +71,9 @@ service cloud.firestore {
 
     // ─── Settings Collection ───────────────────────────
     match /settings/{documentId} {
-      // Public read so client quotes can load shop name, address, and logo
-      allow read: if true;
+      // Public read restricted to 'get' only (single doc by ID), preventing listing/scraping.
+      allow get: if true;
+      allow list: if request.auth != null;
       // Writing requires admin role and matching workshopId, or super admin
       allow write: if request.auth != null && (isSuperAdmin() || (isAdmin() && getUserData().workshopId == documentId));
     }

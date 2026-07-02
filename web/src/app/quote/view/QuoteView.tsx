@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { getJobById, updateJob, getWorkshopSettings } from "@/lib/db";
 import { toast } from "sonner";
 import { Job } from "@/types";
@@ -15,8 +15,8 @@ import { VehicleIcon } from "@/components/ui/vehicle-icons";
 
 export default function ClientQuoteView() {
   const { t } = useLanguage();
-  const params = useParams();
-  const jobId = params.id as string;
+  const searchParams = useSearchParams();
+  const jobId = searchParams.get("id") as string;
   
   const [job, setJob] = useState<Job | null>(null);
   const [settings, setSettings] = useState<any>(null);
