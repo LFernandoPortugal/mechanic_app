@@ -199,13 +199,14 @@ export default function SuperAdminPage() {
   const handleRoleChange = async (uid: string, role: UserRole, hasRole: boolean) => {
     const user = users.find((u) => u.uid === uid);
     if (!user) return;
-    if (role === "ADMIN" && !hasRole && user.roles.length === 1) {
+    const currentRoles: UserRole[] = Array.isArray(user.roles) ? user.roles : [];
+    if (role === "ADMIN" && !hasRole && currentRoles.length === 1) {
       toast.error("El usuario debe tener al menos un rol.");
       return;
     }
     const newRoles: UserRole[] = hasRole
-      ? (user.roles.filter((r) => r !== role) as UserRole[])
-      : ([...user.roles, role] as UserRole[]);
+      ? (currentRoles.filter((r) => r !== role) as UserRole[])
+      : ([...currentRoles, role] as UserRole[]);
     if (newRoles.length === 0) { toast.error("El usuario debe tener al menos un rol."); return; }
     setActionLoading(`role-${uid}-${role}`);
     try {
@@ -481,7 +482,7 @@ export default function SuperAdminPage() {
                                   <Shield className="w-3 h-3" /> Usuarios del taller
                                 </p>
                                 {wsUsers.map((u) => (
-                                  <div key={u.uid} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2 border-b border-border/20 last:border-0">
+                                  <div key={u.uid ?? u.email} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-2 border-b border-border/20 last:border-0">
                                     <div className="min-w-0">
                                       <p className="text-xs font-medium text-foreground truncate">{u.displayName || "Sin nombre"}</p>
                                       <p className="text-[10px] text-muted-foreground truncate">{u.email}</p>
@@ -489,12 +490,13 @@ export default function SuperAdminPage() {
                                     <div className="flex items-center gap-2 flex-wrap">
                                       {/* Role toggles */}
                                       {ROLE_OPTIONS.map((role) => {
-                                        const hasRole = u.roles.includes(role);
+                                        const userRoles: UserRole[] = Array.isArray(u.roles) ? u.roles : [];
+                                        const hasRole = userRoles.includes(role);
                                         return (
                                           <button
                                             key={role}
                                             onClick={() => handleRoleChange(u.uid, role, hasRole)}
-                                            disabled={actionLoading !== null || u.roles.includes("SUPER_ADMIN")}
+                                            disabled={actionLoading !== null || userRoles.includes("SUPER_ADMIN")}
                                             className={`text-[10px] px-2 py-0.5 rounded-[4px] border font-semibold transition-colors ${
                                               hasRole
                                                 ? role === "ADMIN"
@@ -568,7 +570,7 @@ export default function SuperAdminPage() {
                           </td>
                           <td className="py-3 px-4">
                             <div className="flex flex-wrap gap-1">
-                              {u.roles.map((r) => (
+                              {u.roles && u.roles.map((r) => (
                                 <span key={r} className={`px-1.5 py-0.5 rounded-[4px] text-[9px] border font-semibold ${
                                   r === "SUPER_ADMIN" ? "bg-red-950/20 text-red-400 border-red-500/20"
                                   : r === "ADMIN" ? "bg-purple-950/20 text-purple-400 border-purple-500/20"
