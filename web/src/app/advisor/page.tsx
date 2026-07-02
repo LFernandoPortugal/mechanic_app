@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ArrowLeft, Wand2, Copy, ExternalLink, CheckCircle, MessageCircle, Download, Mail } from "lucide-react";
+import { ArrowLeft, ArrowRight, DollarSign, Wand2, Copy, ExternalLink, CheckCircle, MessageCircle, Download, Mail } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { openWhatsAppQuote } from "@/lib/whatsapp";
 import { generateQuotePDF } from "@/lib/pdf";
@@ -417,6 +417,7 @@ export default function AdvisorQuoteBuilder() {
                               className="bg-background border-border text-right text-emerald-600 dark:text-emerald-400 font-mono"
                               value={prices[item.id] === undefined ? '' : prices[item.id]}
                               onChange={(e) => setPrices({...prices, [item.id]: parseFloat(e.target.value) || 0})}
+                              readOnly={selectedJob.status !== 'Approval'}
                             />
                           </div>
                         )}
@@ -530,7 +531,7 @@ export default function AdvisorQuoteBuilder() {
                   )}
                 </div>
 
-                {/* Registrar Pago */}
+                {/* Registrar Pago rápido */}
                 <div className="bg-secondary/50 p-4 rounded-lg border border-border mt-4">
                   <h3 className="font-semibold text-foreground mb-4">Registrar Nuevo Pago (Abono)</h3>
                   <div className="flex gap-4">
@@ -562,17 +563,31 @@ export default function AdvisorQuoteBuilder() {
                    <Button onClick={handleAddPayment} className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white">
                     Procesar Abono
                   </Button>
-                  <div className="mt-3 text-center text-xs text-muted-foreground">
-                    ¿Deseas gestionar la caja completa, ver el vuelto o emitir recibos PDF?{" "}
-                    <button 
-                      type="button"
-                      onClick={() => router.push("/advisor/payments")} 
-                      className="text-cyan-400 hover:underline font-semibold"
-                    >
-                      Ir a Caja / Pagos →
-                    </button>
-                  </div>
                 </div>
+
+                {/* ── CTA Banner: Ir a Módulo de Caja ── */}
+                <button
+                  type="button"
+                  onClick={() => router.push("/advisor/payments")}
+                  className="w-full mt-2 group flex items-center gap-4 rounded-xl border border-cyan-500/40 bg-cyan-950/20 p-4 text-left transition-all duration-200 hover:border-cyan-400/70 hover:bg-cyan-950/35 hover:shadow-[0_0_20px_rgba(34,211,238,0.12)]"
+                >
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-cyan-500/20 ring-1 ring-cyan-500/40 group-hover:bg-cyan-500/30 transition-colors">
+                    <DollarSign className="w-5 h-5 text-cyan-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-cyan-300 text-sm group-hover:text-cyan-200">
+                      {selectedJob.status === 'Ready'
+                        ? '✅ Vehículo listo — Ve a Caja para cerrar el cobro'
+                        : selectedJob.status === 'QC'
+                        ? '🔍 En QC — Prepara el cobro en Módulo de Caja'
+                        : 'Módulo de Caja / Pagos Completo'}
+                    </p>
+                    <p className="text-xs text-cyan-500/80 mt-0.5 group-hover:text-cyan-400/90 truncate">
+                      Historial de abonos, vuelto, recibos PDF y cierre de caja
+                    </p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-cyan-500 group-hover:text-cyan-300 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                </button>
 
                 <div className="pt-4 flex gap-4">
                   <Button onClick={() => router.push(`/quote/view?id=${selectedJob.id}`)} variant="outline" className="flex-1 border-blue-500/50 text-blue-500">

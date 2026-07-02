@@ -132,12 +132,13 @@ export default function SuperAdminPage() {
         newPassword
       );
 
-      // 3. Immediately create the User Profile in Firestore
+      // 3. Immediately create the User Profile in Firestore with explicit workshopId
       await createUserProfile(
         uid,
         newEmail.trim().toLowerCase(),
         newName.trim() + " Admin",
-        ['ADMIN']
+        ['ADMIN'],
+        newId.trim().toLowerCase()  // explicit workshopId — no auto-lookup needed
       );
 
       toast.success(`Taller "${newName}" y cuenta de admin creados y activados. Trial: ${trialDays} días.`);

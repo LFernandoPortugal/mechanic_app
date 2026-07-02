@@ -22,7 +22,7 @@ export const ROLE_ROUTE_MAP: Record<string, UserRole[]> = {
   '/admin/settings': ['ADMIN'],
   '/inventory': ['ADMIN', 'ADVISOR'],
   '/clients': ['ADMIN', 'ADVISOR', 'RECEPTION'],
-  '/qc': ['ADMIN', 'ADVISOR'],
+  '/qc': ['ADMIN', 'ADVISOR', 'TECHNICIAN'],
   '/super-admin': ['SUPER_ADMIN'],
 };
 

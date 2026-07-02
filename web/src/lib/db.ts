@@ -4,7 +4,7 @@ import { Job, UserProfile, UserRole, AuditLog, InventoryItem, InventoryTransacti
 
 // ─── User Profile Functions (RBAC) ──────────────────────
 
-export async function createUserProfile(uid: string, email: string, displayName?: string, roles?: UserRole[]) {
+export async function createUserProfile(uid: string, email: string, displayName?: string, roles?: UserRole[], workshopIdOverride?: string) {
   try {
     const userRef = doc(db, "users", uid);
     const existing = await getDoc(userRef);
@@ -16,40 +16,47 @@ export async function createUserProfile(uid: string, email: string, displayName?
     let finalRoles = roles || ['RECEPTION'];
     let isAuthorized = false;
 
-    // Auto-promote to SUPER_ADMIN if email matches configuration
-    const superAdminEmail = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL || "admin@demo.com").trim().toLowerCase();
-    if (normalizedEmail === superAdminEmail) {
-      finalRoles = ['SUPER_ADMIN'];
-      finalWorkshopId = "master-control";
+    // If workshopId is explicitly provided (e.g. from super-admin panel), skip auto-lookup
+    if (workshopIdOverride) {
+      finalWorkshopId = workshopIdOverride;
+      finalRoles = roles || ['ADMIN'];
       isAuthorized = true;
     } else {
-      // Auto-onboard if this email is registered in settings as a workshop admin
-      try {
-        const settingsRef = collection(db, "settings");
-        const q = query(settingsRef, where("adminEmail", "==", normalizedEmail));
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          const settingsDoc = snap.docs[0];
-          finalWorkshopId = settingsDoc.id;
-          finalRoles = ['ADMIN'];
-          isAuthorized = true;
-          console.log(`Auto-onboarding invited admin: ${normalizedEmail} for workshop ${finalWorkshopId}`);
-        } else {
-          console.log(`Auto-onboarding check failed: email ${normalizedEmail} not found in settings adminEmail list`);
+      // Auto-promote to SUPER_ADMIN if email matches configuration
+      const superAdminEmail = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL || "admin@demo.com").trim().toLowerCase();
+      if (normalizedEmail === superAdminEmail) {
+        finalRoles = ['SUPER_ADMIN'];
+        finalWorkshopId = "master-control";
+        isAuthorized = true;
+      } else {
+        // Auto-onboard if this email is registered in settings as a workshop admin
+        try {
+          const settingsRef = collection(db, "settings");
+          const q = query(settingsRef, where("adminEmail", "==", normalizedEmail));
+          const snap = await getDocs(q);
+          if (!snap.empty) {
+            const settingsDoc = snap.docs[0];
+            finalWorkshopId = settingsDoc.id;
+            finalRoles = ['ADMIN'];
+            isAuthorized = true;
+            console.log(`Auto-onboarding invited admin: ${normalizedEmail} for workshop ${finalWorkshopId}`);
+          } else {
+            console.log(`Auto-onboarding check failed: email ${normalizedEmail} not found in settings adminEmail list`);
+          }
+        } catch (inviteError) {
+          console.error("Error checking invitations:", inviteError);
         }
-      } catch (inviteError) {
-        console.error("Error checking invitations:", inviteError);
       }
-    }
 
-    // Check if it's a demo account
-    const demoEmails = ["demo-admin@demo.com", "tech@demo.com", "reception@demo.com", "advisor@demo.com"];
-    if (demoEmails.includes(normalizedEmail)) {
-      isAuthorized = true;
-    }
+      // Check if it's a demo account
+      const demoEmails = ["demo-admin@demo.com", "tech@demo.com", "reception@demo.com", "advisor@demo.com"];
+      if (demoEmails.includes(normalizedEmail)) {
+        isAuthorized = true;
+      }
 
-    if (!isAuthorized) {
-      throw new Error(`Acceso denegado: Esta cuenta (${normalizedEmail}) no está registrada como autorizada o su acceso fue revocado.`);
+      if (!isAuthorized) {
+        throw new Error(`Acceso denegado: Esta cuenta (${normalizedEmail}) no está registrada como autorizada o su acceso fue revocado.`);
+      }
     }
 
     const profile: Omit<UserProfile, 'createdAt' | 'updatedAt'> & { createdAt: any; updatedAt: any } = {
@@ -495,6 +502,11 @@ export async function registerPayment(jobId: string, payment: PaymentInput): Pro
     const data = jobSnap.data();
     const existingPayments: any[] = data?.payments || [];
     const totalEstimate: number = data?.totalEstimate || 0;
+    // approvedAmount = what the client agreed to pay (set when client approves quote).
+    // If it hasn't been set yet, fall back to totalEstimate.
+    const clientApprovedTotal: number = data?.approvedAmount && data.approvedAmount > 0
+      ? data.approvedAmount
+      : totalEstimate;
 
     const newPayment = {
       id: `pay_${Date.now()}`,
@@ -507,7 +519,7 @@ export async function registerPayment(jobId: string, payment: PaymentInput): Pro
 
     const allPayments = [...existingPayments, newPayment];
     const totalPaid = allPayments.reduce((sum: number, p: any) => sum + p.amount, 0);
-    const isFullyPaid = totalPaid >= totalEstimate;
+    const isFullyPaid = totalPaid >= clientApprovedTotal;
 
     const existingLog: any[] = data?.auditLog || [];
     const auditEntry = createAuditEntry(
@@ -518,7 +530,7 @@ export async function registerPayment(jobId: string, payment: PaymentInput): Pro
 
     const updates: any = {
       payments: allPayments,
-      approvedAmount: totalPaid,
+      // Do NOT overwrite approvedAmount here — it's set by the client approval flow
       auditLog: [...existingLog, auditEntry],
     };
 
