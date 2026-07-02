@@ -9,7 +9,7 @@ service cloud.firestore {
         (request.auth.uid != userId && isSuperAdmin()) ||
         (request.auth.uid != userId && isAdmin() && isSameWorkshop(resource.data))
       );
-      allow create: if request.auth != null && request.auth.uid == userId && !request.resource.data.roles.hasAny(['SUPER_ADMIN']);
+      allow create: if request.auth != null && (request.auth.uid == userId || isSuperAdmin()) && !request.resource.data.roles.hasAny(['SUPER_ADMIN']);
       allow update: if request.auth != null && (
         (
           // User updating their own profile (cannot modify roles or workshopId)

@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { getAllWorkshops, getAllUsers, createWorkshopTester, updateWorkshopSettings, resetWorkshopData, deleteUserProfile, deleteWorkshopSettings, updateUserRoles } from "@/lib/db";
+import { getAllWorkshops, getAllUsers, createWorkshopTester, updateWorkshopSettings, resetWorkshopData, deleteUserProfile, deleteWorkshopSettings, updateUserRoles, createUserProfile } from "@/lib/db";
 import { toast } from "sonner";
 import {
   Crown, Building2, Users, Trash2, Calendar, ShieldAlert,
@@ -101,7 +101,7 @@ export default function SuperAdminPage() {
     setCreating(true);
     try {
       // 1. Create Firebase Auth account
-      await createFirebaseAuthAccount(newEmail.trim().toLowerCase(), newPassword);
+      const uid = await createFirebaseAuthAccount(newEmail.trim().toLowerCase(), newPassword);
 
       // 2. Create workshop settings (auto-onboarding by adminEmail + store password)
       const expiration = new Date();
@@ -114,7 +114,15 @@ export default function SuperAdminPage() {
         newPassword
       );
 
-      toast.success(`Taller "${newName}" y cuenta de admin creados. Trial: ${trialDays} días.`);
+      // 3. Immediately create the User Profile in Firestore
+      await createUserProfile(
+        uid,
+        newEmail.trim().toLowerCase(),
+        newName.trim() + " Admin",
+        ['ADMIN']
+      );
+
+      toast.success(`Taller "${newName}" y cuenta de admin creados y activados. Trial: ${trialDays} días.`);
       setNewId(""); setNewName(""); setNewEmail(""); setNewPassword(""); setTrialDays(7);
       loadWorkshops();
       loadUsers();
