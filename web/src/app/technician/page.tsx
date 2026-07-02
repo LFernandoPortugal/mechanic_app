@@ -88,7 +88,7 @@ export default function TechnicianDashboard() {
       setNewItemStatus("Pass");
       setNewItemPhotos([]);
     } catch (e) {
-      toast.error("Error uploading evidence");
+      toast.error("Error al subir la evidencia");
     } finally {
       setIsLogging(false);
     }
@@ -162,20 +162,20 @@ export default function TechnicianDashboard() {
       await updateJob(selectedJob.id, {
         inspectionItems: selectedJob.inspectionItems || [],
         status: "Approval"
-      }, user?.uid || "unknown", "Diagnosis Submitted");
+      }, user?.uid || "unknown", "Diagnóstico Enviado");
       setSubmittedJob(selectedJob);  // save for WhatsApp
       setSubmittedJobId(selectedJob.vehicleId);
       setSelectedJob(null);
       // Real-time listener handles refresh automatically
     } catch (e) {
-      toast.error("Error saving: " + e);
+      toast.error("Error al guardar: " + e);
     }
   };
 
   const handleStartRepair = async () => {
     if (!selectedJob) return;
     try {
-      await updateJob(selectedJob.id, { status: "Repair" }, user?.uid || "unknown", "Repair Started");
+      await updateJob(selectedJob.id, { status: "Repair" }, user?.uid || "unknown", "Reparación Iniciada");
       toast.success("Reparación iniciada");
       setSelectedJob({ ...selectedJob, status: "Repair" } as Job);
       // Real-time listener handles refresh automatically
@@ -187,7 +187,7 @@ export default function TechnicianDashboard() {
   const handleSendToQC = async () => {
     if (!selectedJob) return;
     try {
-      await updateJob(selectedJob.id, { status: "QC" }, user?.uid || "unknown", "Sent to QC");
+      await updateJob(selectedJob.id, { status: "QC" }, user?.uid || "unknown", "Enviado a QC");
       toast.success("Vehículo enviado a control de calidad");
       setSelectedJob(null);
       // Real-time listener handles refresh automatically

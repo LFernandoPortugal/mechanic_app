@@ -121,16 +121,22 @@ export default function QualityControlPage() {
         ? `QC Aprobado por ${userProfile?.displayName || "Inspector"}: ${inspectorNotes}`
         : `QC Aprobado por ${userProfile?.displayName || "Inspector"}`;
 
+      const totalPaid = (selectedJob.payments || []).reduce((sum, p) => sum + p.amount, 0);
+      const isFullyPaid = totalPaid >= (selectedJob.approvedAmount || selectedJob.totalEstimate || 0);
+
       await updateJob(
         selectedJob.id,
         {
-          status: "Ready",
+          status: isFullyPaid ? "Delivered" : "Ready",
         },
         user?.uid || "unknown",
         comment
       );
 
-      toast.success(`✅ Vehículo ${selectedJob.vehicleId} aprobado y listo para entrega!`);
+      toast.success(isFullyPaid
+        ? `✅ Vehículo ${selectedJob.vehicleId} aprobado y entregado (pago completo)!`
+        : `✅ Vehículo ${selectedJob.vehicleId} aprobado y listo para entrega!`
+      );
       setSelectedJobId(null);
     } catch (e) {
       console.error("Error approving QC:", e);

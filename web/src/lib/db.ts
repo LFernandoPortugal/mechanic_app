@@ -12,12 +12,14 @@ export async function createUserProfile(uid: string, email: string, displayName?
 
     let finalWorkshopId = "demo-workshop";
     let finalRoles = roles || ['RECEPTION'];
+    let isAuthorized = false;
 
     // Auto-promote to SUPER_ADMIN if email matches configuration
     const superAdminEmail = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL || "admin@demo.com";
     if (email === superAdminEmail) {
       finalRoles = ['SUPER_ADMIN'];
       finalWorkshopId = "master-control";
+      isAuthorized = true;
     } else {
       // Auto-onboard if this email is registered in settings as a workshop admin
       try {
@@ -28,11 +30,22 @@ export async function createUserProfile(uid: string, email: string, displayName?
           const settingsDoc = snap.docs[0];
           finalWorkshopId = settingsDoc.id;
           finalRoles = ['ADMIN'];
+          isAuthorized = true;
           console.log(`Auto-onboarding invited admin: ${email} for workshop ${finalWorkshopId}`);
         }
       } catch (inviteError) {
         console.error("Error checking invitations:", inviteError);
       }
+    }
+
+    // Check if it's a demo account
+    const demoEmails = ["demo-admin@demo.com", "tech@demo.com", "reception@demo.com", "advisor@demo.com"];
+    if (demoEmails.includes(email)) {
+      isAuthorized = true;
+    }
+
+    if (!isAuthorized) {
+      throw new Error("Acceso denegado: Esta cuenta no está autorizada o su acceso ha sido revocado por el administrador.");
     }
 
     const profile: Omit<UserProfile, 'createdAt' | 'updatedAt'> & { createdAt: any; updatedAt: any } = {
@@ -213,7 +226,7 @@ export async function assignTechnician(jobId: string, technicianUid: string) {
       status: "Diagnosis",
       auditLog: [
         ...existingLog,
-        createAuditEntry("Diagnosis Started", technicianUid, "Technician assigned"),
+        createAuditEntry("Diagnóstico Iniciado", technicianUid, "Técnico asignado"),
       ],
     });
   } catch (e) {
@@ -505,7 +518,7 @@ export async function registerPayment(jobId: string, payment: PaymentInput): Pro
       auditLog: [...existingLog, auditEntry],
     };
 
-    if (isFullyPaid) {
+    if (isFullyPaid && (data?.status === "Ready" || data?.status === "QC")) {
       updates.status = "Delivered";
       updates.auditLog = [
         ...existingLog,
