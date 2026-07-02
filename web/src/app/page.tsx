@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLE_ROUTE_MAP, ROLE_META } from '@/types';
-import { ClipboardList, Wrench, DollarSign, BarChart3, ShieldCheck, Package, ArrowRight, Settings, Users2, Wand2 } from 'lucide-react';
+import { ClipboardList, Wrench, DollarSign, BarChart3, ShieldCheck, Package, ArrowRight, Settings, Users2, Wand2, Crown } from 'lucide-react';
 import { useRealtimeJobs } from '@/hooks/useRealtimeJobs';
 
 interface NavCard {
@@ -108,6 +108,16 @@ const allCards: NavCard[] = [
     hoverShadow: 'hover:shadow-[0_0_30px_rgba(244,63,94,0.12)]',
     titleColor: 'text-pink-400',
     accentBg: 'bg-pink-500/10 group-hover:bg-pink-500/20',
+  },
+  {
+    href: '/super-admin',
+    titleKey: 'superAdmin',
+    descKey: 'superAdminDesc',
+    icon: <Crown className="w-7 h-7 text-red-500" />,
+    hoverBorder: 'hover:border-red-500/60',
+    hoverShadow: 'hover:shadow-[0_0_30px_rgba(239,68,68,0.12)]',
+    titleColor: 'text-red-500',
+    accentBg: 'bg-red-500/10 group-hover:bg-red-500/20',
   },
 ];
 

@@ -6,27 +6,28 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if request.auth != null && (
         request.auth.uid == userId || 
-        isSuperAdmin() ||
-        (isAdmin() && isSameWorkshop(resource.data))
+        (request.auth.uid != userId && isSuperAdmin()) ||
+        (request.auth.uid != userId && isAdmin() && isSameWorkshop(resource.data))
       );
       allow create: if request.auth != null && request.auth.uid == userId && !request.resource.data.roles.hasAny(['SUPER_ADMIN']);
       allow update: if request.auth != null && (
-        isSuperAdmin() ||
         (
           // User updating their own profile (cannot modify roles or workshopId)
           request.auth.uid == userId && 
           request.resource.data.roles == resource.data.roles && 
           request.resource.data.workshopId == resource.data.workshopId
         ) ||
+        (request.auth.uid != userId && isSuperAdmin()) ||
         (
           // Workshop Admin updating their team member's roles
+          request.auth.uid != userId && 
           isAdmin() && 
           resource.data.workshopId == getUserData().workshopId && 
           request.resource.data.workshopId == resource.data.workshopId && 
           !request.resource.data.roles.hasAny(['SUPER_ADMIN'])
         )
       );
-      allow delete: if request.auth != null && isSuperAdmin();
+      allow delete: if request.auth != null && request.auth.uid != userId && isSuperAdmin();
     }
 
     // ─── Jobs Collection ───────────────────────────────

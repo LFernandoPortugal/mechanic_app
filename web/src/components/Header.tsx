@@ -2,7 +2,7 @@
 
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Sun, Moon, Globe, LogOut, Users } from "lucide-react";
+import { Sun, Moon, Globe, LogOut, Users, Crown } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { ROLE_META } from "@/types";
@@ -19,7 +19,8 @@ export function Header() {
     router.push('/login');
   };
 
-  const primaryRole = userProfile?.roles?.includes('ADMIN') ? 'ADMIN'
+  const primaryRole = userProfile?.roles?.includes('SUPER_ADMIN') ? 'SUPER_ADMIN'
+    : userProfile?.roles?.includes('ADMIN') ? 'ADMIN'
     : userProfile?.roles?.includes('ADVISOR') ? 'ADVISOR'
     : userProfile?.roles?.includes('TECHNICIAN') ? 'TECHNICIAN'
     : userProfile?.roles?.includes('RECEPTION') ? 'RECEPTION'
@@ -40,6 +41,17 @@ export function Header() {
 
         {/* Right controls */}
         <div className="flex items-center gap-2">
+          {/* Super Admin link */}
+          {user && hasRole('SUPER_ADMIN') && (
+            <Link
+              href="/super-admin"
+              className="header-tool-btn w-9 h-9 hover:text-red-400 hover:border-red-500/40 hover:shadow-[0_0_10px_rgba(239,68,68,0.15)] text-red-400/80"
+              title="Super Admin"
+            >
+              <Crown size={16} />
+            </Link>
+          )}
+
           {/* Admin users link */}
           {user && hasRole('ADMIN') && (
             <Link

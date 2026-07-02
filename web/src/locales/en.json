@@ -13,6 +13,8 @@
   "clientDesc": "Interactive quote review and electronic approval.",
   "analytics": "Owner Analytics",
   "analyticsDesc": "High-level overview of workshop performance.",
+  "superAdmin": "Creator Dashboard (Super Admin)",
+  "superAdminDesc": "Global management of trial workshops and tester access.",
 
   "clientDatabase": "Client Database",
   "clientDatabaseDesc": "Client history, vehicles, and previous visits.",

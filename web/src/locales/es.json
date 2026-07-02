@@ -13,6 +13,8 @@
   "clientDesc": "Revisión interactiva de cotización y aprobación electrónica.",
   "analytics": "Analíticas del Dueño",
   "analyticsDesc": "Vista de alto nivel del rendimiento del taller.",
+  "superAdmin": "Panel de Creador (Super Admin)",
+  "superAdminDesc": "Administración global de talleres de prueba y accesos de testers.",
 
   "clientDatabase": "Base de Datos de Clientes",
   "clientDatabaseDesc": "Historial de clientes, vehículos y visitas anteriores.",
