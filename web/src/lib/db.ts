@@ -494,7 +494,7 @@ export async function registerPayment(jobId: string, payment: PaymentInput): Pro
 
     const existingLog: any[] = data?.auditLog || [];
     const auditEntry = createAuditEntry(
-      "Payment Registered",
+      "Pago Registrado",
       payment.actorId,
       `${payment.method} $${payment.amount.toFixed(2)}${payment.reference ? ` — Ref: ${payment.reference}` : ""}`
     );
@@ -510,7 +510,7 @@ export async function registerPayment(jobId: string, payment: PaymentInput): Pro
       updates.auditLog = [
         ...existingLog,
         auditEntry,
-        createAuditEntry("Delivered", payment.actorId, "Fully paid — vehicle delivered"),
+        createAuditEntry("Entregado", payment.actorId, "Pago total — vehículo entregado"),
       ];
     }
 

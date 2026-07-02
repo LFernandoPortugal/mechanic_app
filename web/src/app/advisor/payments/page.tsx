@@ -63,15 +63,31 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
   const handlePay = async () => {
     const amt = parseFloat(amount);
     if (isNaN(amt) || amt <= 0) { toast.error("Ingresa un monto válido."); return; }
-    if (amt > balance + 0.01)   { toast.error(`El monto supera el saldo (${workshopSettings?.currencySymbol || "$"}${balance.toFixed(2)}).`); return; }
+    
+    let appliedAmount = amt;
+    let change = 0;
+    
+    if (amt > balance + 0.01) {
+      if (method === "Efectivo") {
+        appliedAmount = balance;
+        change = amt - balance;
+      } else {
+        toast.error(`El monto supera el saldo (${workshopSettings?.currencySymbol || "$"}${balance.toFixed(2)}).`); 
+        return; 
+      }
+    }
 
     setLoading(true);
     try {
-      await registerPayment(job.id, { amount: amt, method, reference, actorId: user!.uid });
-      toast.success(amt >= balance
-        ? `✅ Pago completo. Vehículo marcado como Entregado.`
-        : `💰 Abono registrado: ${workshopSettings?.currencySymbol || "$"}${amt.toFixed(2)}`
-      );
+      await registerPayment(job.id, { amount: appliedAmount, method, reference, actorId: user!.uid });
+      if (change > 0) {
+        toast.success(`✅ Pago completo. Vuelto a entregar: ${workshopSettings?.currencySymbol || "$"}${change.toFixed(2)}`);
+      } else {
+        toast.success(appliedAmount >= balance
+          ? `✅ Pago completo. Vehículo marcado como Entregado.`
+          : `💰 Abono registrado: ${workshopSettings?.currencySymbol || "$"}${appliedAmount.toFixed(2)}`
+        );
+      }
       setAmount(""); setRef("");
       onPaymentRegistered();
     } catch {
@@ -213,6 +229,13 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
                   </Button>
                 )}
               </div>
+
+              {parseFloat(amount) > balance && method === "Efectivo" && (
+                <div className="flex items-center gap-2 text-sm text-amber-400 bg-amber-950/30 border border-amber-600/30 rounded-lg px-3 py-2">
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                  <span>Vuelto a entregar: <strong>{workshopSettings?.currencySymbol || "$"}{(parseFloat(amount) - balance).toFixed(2)}</strong></span>
+                </div>
+              )}
 
               {parseFloat(amount) >= balance && balance > 0 && (
                 <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-950/30 border border-emerald-600/30 rounded-lg px-3 py-2">

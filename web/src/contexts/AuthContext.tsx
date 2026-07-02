@@ -2,7 +2,8 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { doc, onSnapshot } from "firebase/firestore";
 import { getUserProfile, getWorkshopSettings } from "@/lib/db";
 import { UserProfile, UserRole, WorkshopSettings } from "@/types";
 
@@ -64,19 +65,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    let unsubscribeProfile: (() => void) | null = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
-        await fetchProfileAndSettings(firebaseUser.uid);
+        // Listen in real-time. If profile doc is deleted, evict session immediately.
+        const userRef = doc(db, "users", firebaseUser.uid);
+        unsubscribeProfile = onSnapshot(userRef, async (docSnap) => {
+          if (!docSnap.exists()) {
+            console.log("User profile deleted. Evicting session...");
+            await firebaseSignOut(auth);
+            setUserProfile(null);
+            setWorkshopSettings(null);
+            setTrialExpired(false);
+            setLoading(false);
+            return;
+          }
+          const profile = docSnap.data() as UserProfile;
+          setUserProfile(profile);
+
+          let settings: WorkshopSettings | null = null;
+          if (profile?.workshopId) {
+            settings = await getWorkshopSettings(profile.workshopId);
+          } else {
+            settings = await getWorkshopSettings("demo-workshop");
+          }
+          setWorkshopSettings(settings);
+
+          const isSuperAdmin = profile?.roles?.includes('SUPER_ADMIN');
+          if (settings && settings.expiresAt && !isSuperAdmin) {
+            const expirationDate = new Date(settings.expiresAt);
+            if (new Date() > expirationDate) {
+              setTrialExpired(true);
+              setLoading(false);
+              return;
+            }
+          }
+          setTrialExpired(false);
+          setLoading(false);
+        }, (err) => {
+          console.error("Error listening to user profile:", err);
+          if (err.code === "permission-denied") {
+            firebaseSignOut(auth);
+          }
+          setLoading(false);
+        });
       } else {
+        if (unsubscribeProfile) {
+          unsubscribeProfile();
+          unsubscribeProfile = null;
+        }
         setUserProfile(null);
         setWorkshopSettings(null);
         setTrialExpired(false);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeProfile) unsubscribeProfile();
+    };
   }, []);
 
   const signOut = async () => {

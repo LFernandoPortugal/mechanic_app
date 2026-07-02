@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { updateJob } from "@/lib/db";
+import { updateJob, registerPayment } from "@/lib/db";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Job } from "@/types";
@@ -91,26 +91,57 @@ export default function AdvisorQuoteBuilder() {
     const amount = parseFloat(paymentAmount);
     if (isNaN(amount) || amount <= 0) return;
 
+    // Calculate current balance
+    const paid = (selectedJob.payments || []).reduce((s, p) => s + p.amount, 0);
+    const balance = (selectedJob.approvedAmount || selectedJob.totalEstimate || 0) - paid;
+
+    let appliedAmount = amount;
+    let change = 0;
+
+    if (amount > balance + 0.01) {
+      if (paymentType === "Efectivo") {
+        appliedAmount = balance;
+        change = amount - balance;
+      } else {
+        toast.error(`El monto supera el saldo (${workshopSettings?.currencySymbol || "$"}${balance.toFixed(2)}).`);
+        return;
+      }
+    }
+
     try {
-      const newPayment = {
+      await registerPayment(selectedJob.id, {
+        amount: appliedAmount,
+        method: paymentType as any,
+        actorId: user?.uid || "unknown"
+      });
+
+      // Update local state to reflect payment in real-time
+      const updatedPayments = [...(selectedJob.payments || []), {
         id: Math.random().toString(36).substring(7),
-        amount,
-        method: paymentType as 'Efectivo' | 'Tarjeta' | 'Transferencia' | 'Yape/Plin',
+        amount: appliedAmount,
+        method: paymentType as any,
         date: new Date().toISOString(),
         actorId: user?.uid || "unknown"
-      };
-
-      const existingPayments = selectedJob.payments || [];
-      const updatedPayments = [...existingPayments, newPayment];
+      }];
       
-      await updateJob(selectedJob.id, {
-        payments: updatedPayments
-      }, user?.uid || "unknown", `Pago registrado: ${workshopSettings?.currencySymbol || "$"}${amount} (${paymentType})`);
+      const newPaid = updatedPayments.reduce((s, p) => s + p.amount, 0);
+      const isFullyPaid = newPaid >= (selectedJob.approvedAmount || selectedJob.totalEstimate || 0);
 
-      setSelectedJob({ ...selectedJob, payments: updatedPayments });
+      setSelectedJob({
+        ...selectedJob,
+        payments: updatedPayments,
+        status: isFullyPaid ? 'Delivered' : selectedJob.status
+      });
+
       setPaymentAmount("");
-      toast.success(t('paymentRegistered') || "Pago registrado correctamente");
-      // Real-time listener handles refresh automatically
+      if (change > 0) {
+        toast.success(`✅ Pago completo. Vuelto a entregar: ${workshopSettings?.currencySymbol || "$"}${change.toFixed(2)}`);
+      } else {
+        toast.success(appliedAmount >= balance
+          ? `✅ Pago completo. Vehículo marcado como Entregado.`
+          : `💰 Abono registrado: ${workshopSettings?.currencySymbol || "$"}${appliedAmount.toFixed(2)}`
+        );
+      }
     } catch (e) {
       toast.error("Error: " + e);
     }
@@ -528,9 +559,19 @@ export default function AdvisorQuoteBuilder() {
                       </select>
                     </div>
                   </div>
-                  <Button onClick={handleAddPayment} className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white">
+                   <Button onClick={handleAddPayment} className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white">
                     Procesar Abono
                   </Button>
+                  <div className="mt-3 text-center text-xs text-muted-foreground">
+                    ¿Deseas gestionar la caja completa, ver el vuelto o emitir recibos PDF?{" "}
+                    <button 
+                      type="button"
+                      onClick={() => router.push("/advisor/payments")} 
+                      className="text-cyan-400 hover:underline font-semibold"
+                    >
+                      Ir a Caja / Pagos →
+                    </button>
+                  </div>
                 </div>
 
                 <div className="pt-4 flex gap-4">

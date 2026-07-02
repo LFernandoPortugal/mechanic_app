@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ArrowLeft, Wand2, MessageCircle, Mic, MicOff, Loader2, Bot, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Wand2, MessageCircle, Mic, MicOff, Loader2, Bot, AlertTriangle, CheckCircle } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { openWhatsAppStatusUpdate } from "@/lib/whatsapp";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
@@ -134,6 +134,8 @@ export default function TechnicianDashboard() {
 
   const handleSelectJob = async (job: Job) => {
     setSelectedJob(job);
+    setAiDiagnosis("");
+    setAiError(null);
     // Assign this technician to the job if not already assigned
     if (!job.technicianId && user) {
       try {
@@ -383,13 +385,15 @@ export default function TechnicianDashboard() {
                 </div>
                 <Button
                   onClick={handleAutoDiagnose}
-                  disabled={aiLoading}
+                  disabled={aiLoading || Boolean(aiDiagnosis)}
                   variant="outline"
                   className="text-orange-500 dark:text-orange-400 border-orange-500/50 hover:bg-orange-50 dark:hover:bg-orange-950/30 flex-shrink-0"
                 >
                   {aiLoading
                     ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Analizando…</>
-                    : <><Bot className="w-4 h-4 mr-2" /><span className="hidden sm:inline">Diagnóstico IA</span><span className="sm:hidden text-xs">IA</span></>}
+                    : aiDiagnosis
+                      ? <><CheckCircle className="w-4 h-4 mr-2 text-emerald-400" /><span className="hidden sm:inline">Diagnóstico Listo</span><span className="sm:hidden text-xs">Listo</span></>
+                      : <><Bot className="w-4 h-4 mr-2" /><span className="hidden sm:inline">Diagnóstico IA</span><span className="sm:hidden text-xs">IA</span></>}
                 </Button>
               </CardHeader>
               <CardContent className="space-y-6">
