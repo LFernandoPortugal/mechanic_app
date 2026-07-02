@@ -19,7 +19,7 @@ import { UserProfile, UserRole } from "@/types";
 const FIREBASE_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY!;
 
 async function createFirebaseAuthAccount(email: string, password: string): Promise<string> {
-  const res = await fetch(
+  const signUpRes = await fetch(
     `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`,
     {
       method: "POST",
@@ -27,12 +27,30 @@ async function createFirebaseAuthAccount(email: string, password: string): Promi
       body: JSON.stringify({ email, password, returnSecureToken: false }),
     }
   );
-  const data = await res.json();
-  if (!res.ok) {
-    const msg = data?.error?.message || "Error al crear cuenta";
-    throw new Error(msg === "EMAIL_EXISTS" ? "Este email ya tiene una cuenta en Firebase Auth." : msg);
+  const signUpData = await signUpRes.json();
+  if (signUpRes.ok) {
+    return signUpData.localId as string;
   }
-  return data.localId as string;
+
+  if (signUpData?.error?.message === "EMAIL_EXISTS") {
+    console.log("Email exists in Auth. Recovering UID...");
+    const signInRes = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, returnSecureToken: false }),
+      }
+    );
+    const signInData = await signInRes.json();
+    if (signInRes.ok) {
+      return signInData.localId as string;
+    }
+    const msg = signInData?.error?.message || "Error al autenticar cuenta existente";
+    throw new Error(msg === "INVALID_PASSWORD" ? "El email ya existe con otra contraseña en Firebase Auth." : msg);
+  }
+
+  throw new Error(signUpData?.error?.message || "Error al crear cuenta");
 }
 
 const ROLE_OPTIONS: UserRole[] = ["ADMIN", "RECEPTION", "TECHNICIAN", "ADVISOR"];
