@@ -22,17 +22,23 @@
 
 ## Deploy
 
+### Vercel (Frontend)
+El despliegue de la aplicación web se realiza de forma automática al hacer push a la rama `main` en GitHub. Vercel detecta los cambios, compila y despliega de manera nativa.
+
 ```bash
-# 1. Build
-cd web
-npm run build
+git add -A
+git commit -m "feat: nuevos cambios"
+git push origin main
+```
 
-# 2. Deploy todo (hosting + rules + indexes)
-firebase deploy --project mechanic-app-7d459
+### Firebase (Reglas de Seguridad e Índices)
+Solo cuando se modifiquen reglas de Firestore, almacenamiento o índices, ejecuta:
 
-# O deploy selectivo:
-firebase deploy --only hosting --project mechanic-app-7d459
-firebase deploy --only firestore:rules --project mechanic-app-7d459
+```bash
+# Deploy de reglas de base de datos e índices
+firebase deploy --only firestore --project mechanic-app-7d459
+
+# Deploy de reglas de almacenamiento
 firebase deploy --only storage --project mechanic-app-7d459
 ```
 

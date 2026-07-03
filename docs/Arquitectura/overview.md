@@ -69,6 +69,6 @@ Reception → Diagnosis → Approval → [Ready] → Approved → Repair → QC 
 - El SuperAdmin tiene `workshopId: "master-control"` y acceso cross-tenant
 
 ## Hosting
-- **Modelo**: Firebase Hosting (static export)
-- **Build**: `next build` con `output: 'export'` → genera `out/`
-- **API routes**: No disponibles en static export. La IA usa motor local client-side.
+- **Modelo**: Vercel (Next.js Nativo)
+- **Build**: Compilación nativa en Vercel disparada automáticamente mediante push a la rama `main` en GitHub.
+- **API routes**: No se requiere exportación estática.
