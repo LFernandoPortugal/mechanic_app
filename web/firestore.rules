@@ -47,9 +47,9 @@ service cloud.firestore {
       // SECURITY: Only allow reading jobs in specific statuses AND only expose non-sensitive data
       // The client accesses via a direct job ID link — enumeration is mitigated by random Firestore IDs
       // Using 'get' instead of 'read' to prevent unauthenticated listing of all jobs.
-      allow get: if resource.data.status in ['Ready', 'Approved', 'Repair', 'QC', 'Delivered'];
-      // Only allow client to approve a Ready quote (status change only)
-      allow update: if resource.data.status == 'Ready' 
+      allow get: if resource.data.status in ['Approval', 'Approved', 'Repair', 'QC', 'Ready', 'Delivered'];
+      // Only allow client to approve an Approval or Ready quote (status change only)
+      allow update: if resource.data.status in ['Approval', 'Ready'] 
                      && request.resource.data.status == 'Approved'
                      && request.resource.data.workshopId == resource.data.workshopId;
     }

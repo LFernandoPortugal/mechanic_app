@@ -24,7 +24,7 @@ import { VehicleIcon } from "@/components/ui/vehicle-icons";
 export default function AdvisorQuoteBuilder() {
   const { t } = useLanguage();
   const { user, userProfile, workshopSettings } = useAuth();
-  const { jobs, loading } = useRealtimeJobs({ statuses: ["Approval", "Ready", "Approved", "Repair"] });
+  const { jobs, loading } = useRealtimeJobs({ statuses: ["Approval", "Approved", "Repair"] });
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [prices, setPrices] = useState<Record<string, number>>({});
   const [baseLaborCost, setBaseLaborCost] = useState(0);
@@ -66,14 +66,14 @@ export default function AdvisorQuoteBuilder() {
       await updateJob(selectedJob.id, {
         inspectionItems: updatedInspectionItems,
         totalEstimate: calculateTotal(),
-        status: "Ready"
+        status: "Approval"  // Awaiting client approval — NOT Ready
       }, user?.uid || "unknown", "Quote Generated");
       // Keep the full job object for PDF/WhatsApp/Email
       const savedJob: Job = {
         ...selectedJob,
         inspectionItems: updatedInspectionItems,
         totalEstimate: calculateTotal(),
-        status: "Ready",
+        status: "Approval",
       };
       setSubmittedJob(savedJob);
       setSubmittedJobId(selectedJob.id);
