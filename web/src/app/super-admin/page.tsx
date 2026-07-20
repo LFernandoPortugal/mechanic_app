@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { getAllWorkshops, getAllUsers, createWorkshopTester, updateWorkshopSettings, resetWorkshopData, deleteUserProfile, deleteWorkshopSettings, updateUserRoles, createUserProfile } from "@/lib/db";
+import { getAllWorkshops, getAllUsers, createWorkshopTester, updateWorkshopSettings, resetWorkshopData, deleteUserProfile, deleteWorkshopSettings, updateUserRoles, createUserProfile, getActiveJobCountByWorkshop, clearTempPassword } from "@/lib/db";
 import { toast } from "sonner";
 import {
   Crown, Building2, Users, Trash2, Calendar, ShieldAlert,
@@ -62,6 +62,7 @@ export default function SuperAdminPage() {
   const [loadingWorkshops, setLoadingWorkshops] = useState(true);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [expandedWorkshop, setExpandedWorkshop] = useState<string | null>(null);
+  const [activeJobCounts, setActiveJobCounts] = useState<Record<string, number>>({});
 
   // Form: create workshop + admin account
   const [newId, setNewId] = useState("");
@@ -88,6 +89,12 @@ export default function SuperAdminPage() {
     const data = await getAllWorkshops();
     setWorkshops(data);
     setLoadingWorkshops(false);
+    // Load active job counts per workshop in background
+    const counts: Record<string, number> = {};
+    await Promise.all(data.map(async (ws) => {
+      counts[ws.id] = await getActiveJobCountByWorkshop(ws.id);
+    }));
+    setActiveJobCounts(counts);
   };
 
   const loadUsers = async () => {
@@ -206,6 +213,18 @@ export default function SuperAdminPage() {
       await deleteWorkshopSettings(wId);
       toast.success("Taller eliminado.");
       loadWorkshops(); loadUsers();
+    } catch (err: any) {
+      toast.error("Error: " + err.message);
+    } finally { setActionLoading(null); }
+  };
+
+  const handleClearTempPassword = async (wId: string) => {
+    if (!window.confirm(`¿Eliminar la contraseña temporal del taller "${wId}"? Asegúrate de haberla entregado al cliente.`)) return;
+    setActionLoading(`clear-pass-${wId}`);
+    try {
+      await clearTempPassword(wId);
+      toast.success("Contraseña temporal eliminada.");
+      loadWorkshops();
     } catch (err: any) {
       toast.error("Error: " + err.message);
     } finally { setActionLoading(null); }
@@ -432,8 +451,19 @@ export default function SuperAdminPage() {
                                     : "bg-blue-950/20 text-blue-400 border-blue-500/30"
                               }`}>
                                 <Calendar className="w-3 h-3" />
-                                {isExpired ? "Expirado" : expiration ? `Activo hasta ${expiration.toLocaleDateString()}` : "Sin límite"}
+                                {isExpired ? "Expirado" : expiration
+                                  ? (() => {
+                                      const daysLeft = Math.ceil((expiration.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                                      return `Activo · ${daysLeft}d restante${daysLeft !== 1 ? 's' : ''}`;
+                                    })()
+                                  : "Sin límite"}
                               </span>
+                              {/* Active jobs badge */}
+                              {(activeJobCounts[ws.id] ?? 0) > 0 && (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full border bg-violet-950/20 text-violet-400 border-violet-500/30 flex items-center gap-1">
+                                  {activeJobCounts[ws.id]} OT activa{(activeJobCounts[ws.id] ?? 0) !== 1 ? 's' : ''}
+                                </span>
+                              )}
                               {ws.allowResetData && (
                                 <span className="text-[10px] px-2 py-0.5 rounded-full border bg-amber-950/20 text-amber-400 border-amber-500/30 flex items-center gap-1">
                                   <ShieldAlert className="w-3 h-3" /> Danger On
@@ -506,6 +536,15 @@ export default function SuperAdminPage() {
                               disabled={actionLoading !== null}>
                               Borrar Datos
                             </Button>
+                            {ws.tempPassword && (
+                              <Button size="xs" variant="outline"
+                                className="text-[10px] h-7 px-2 border-amber-500/20 text-amber-500/70 hover:text-amber-400 hover:bg-amber-950/20"
+                                onClick={() => handleClearTempPassword(ws.id)}
+                                disabled={actionLoading !== null}
+                                title="Eliminar contraseña temporal (ya fue entregada al cliente)">
+                                <KeyRound className="w-3 h-3 mr-1" /> Limpiar Clave
+                              </Button>
+                            )}
                             <Button size="xs" variant="outline"
                               className="text-[10px] h-7 px-2 border-red-500/20 text-red-500/70 hover:bg-red-950/20"
                               onClick={() => handleDeleteWorkshop(ws.id)}

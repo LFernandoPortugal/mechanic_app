@@ -699,3 +699,31 @@ export async function deleteWorkshopSettings(workshopId: string) {
   }
 }
 
+/** Returns the count of active (non-Delivered) jobs for a given workshop */
+export async function getActiveJobCountByWorkshop(workshopId: string): Promise<number> {
+  try {
+    const jobsRef = collection(db, "jobs");
+    const q = query(
+      jobsRef,
+      where("workshopId", "==", workshopId),
+      where("status", "in", ["Reception", "Diagnosis", "Approval", "Approved", "Repair", "QC", "Ready"])
+    );
+    const snap = await getDocs(q);
+    return snap.size;
+  } catch (e) {
+    console.error("Error counting active jobs:", e);
+    return 0;
+  }
+}
+
+/** Clears the tempPassword field in a workshop's settings document */
+export async function clearTempPassword(workshopId: string): Promise<void> {
+  try {
+    const docRef = doc(db, "settings", workshopId);
+    await updateDoc(docRef, { tempPassword: "" });
+  } catch (e) {
+    console.error("Error clearing temp password:", e);
+    throw e;
+  }
+}
+

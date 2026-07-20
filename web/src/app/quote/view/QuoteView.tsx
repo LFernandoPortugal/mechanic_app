@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Wand2, AlertTriangle, CheckCircle, Download } from "lucide-react";
+import { Wand2, AlertTriangle, CheckCircle, Download, Wrench, ShieldCheck, Coins, ClipboardList, Clock } from "lucide-react";
 import { generateQuotePDF } from "@/lib/pdf";
 import { VehicleIcon } from "@/components/ui/vehicle-icons";
 
@@ -121,20 +121,107 @@ export default function ClientQuoteView() {
      );
   }
 
-  if (job.status === 'Approved') {
-     return (
-       <div className="min-h-screen page-bg flex flex-col items-center justify-center p-4">
-         <div className="text-center space-y-4 max-w-md w-full glass-panel p-8 rounded-xl border-emerald-500/50">
-            <CheckCircle className="w-16 h-16 text-emerald-500 mx-auto mb-4 drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
-            <h1 className="text-3xl font-bold text-emerald-500 dark:text-emerald-400">{t('quoteApproved')}</h1>
-            <p className="text-muted-foreground">{t('quoteApprovedDesc')}</p>
-            <div className="bg-secondary dark:bg-black/50 p-4 rounded-lg mt-6 border border-border">
-               <span className="text-muted-foreground text-sm block mb-1">{t('totalAuthorized')}</span>
-               <span className="text-2xl font-mono text-emerald-500 dark:text-emerald-400 font-bold">${job.approvedAmount?.toFixed(2)}</span>
+  const statusToTrackIndex: Record<string, number> = {
+    Approved: 0,
+    Repair: 1,
+    QC: 2,
+    Ready: 3,
+    Delivered: 4,
+  };
+  const TRACK_STEPS = [
+    { label: "Reparación", icon: Wrench, desc: "Los técnicos trabajan en tu vehículo." },
+    { label: "Control de Calidad", icon: ShieldCheck, desc: "Inspeccionamos que todo esté perfecto." },
+    { label: "Listo", icon: ClipboardList, desc: "Tu vehículo superó la inspección." },
+    { label: "Entregado", icon: Coins, desc: "¡Vehículo entregado con éxito!" },
+  ];
+
+  const isPostApproval = ['Approved','Repair','QC','Ready','Delivered'].includes(job.status);
+  if (isPostApproval) {
+    const trackIdx = statusToTrackIndex[job.status] ?? 0;
+    const isDelivered = job.status === 'Delivered';
+    const currencySymbol = settings?.currencySymbol || '$';
+    return (
+      <div className="min-h-screen page-bg flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-5">
+          {/* Header card */}
+          <div className="glass-panel rounded-2xl border border-emerald-500/30 p-6 text-center">
+            <div className="flex items-center justify-center mb-3">
+              <div className="p-4 rounded-full bg-emerald-950/40 border border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                <CheckCircle className="w-12 h-12 text-emerald-400 drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+              </div>
             </div>
-         </div>
-       </div>
-     );
+            {settings?.logoUrl && (
+              <img src={settings.logoUrl} alt="Logo" className="w-auto h-12 mx-auto mb-3 object-contain rounded" />
+            )}
+            <h1 className="text-2xl font-bold text-emerald-400">
+              {isDelivered ? '¡Vehículo Entregado!' : '¡Cotización Aprobada!'}
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              {isDelivered
+                ? 'Gracias por confiar en nosotros. ¡Hasta pronto!'
+                : 'Tu aprobación fue registrada. El taller ya está trabajando en tu vehículo.'
+              }
+            </p>
+            <div className="mt-4 bg-black/30 rounded-xl p-3 border border-border/40">
+              <span className="text-muted-foreground text-xs block mb-0.5">Monto autorizado</span>
+              <span className="text-3xl font-mono font-bold text-emerald-400">
+                {currencySymbol}{job.approvedAmount?.toFixed(2) ?? '—'}
+              </span>
+            </div>
+          </div>
+
+          {/* Progress tracker */}
+          <div className="glass-panel rounded-2xl border border-border/40 p-5">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" /> Estado de tu vehículo
+            </p>
+            <div className="space-y-3">
+              {TRACK_STEPS.map((step, idx) => {
+                const Icon = step.icon;
+                const isDone = idx < trackIdx;
+                const isCurrent = idx === trackIdx - (isDelivered ? 0 : 0);
+                return (
+                  <div key={step.label} className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-300 ${
+                    isDone
+                      ? 'border-emerald-500/30 bg-emerald-950/20'
+                      : trackIdx > idx
+                        ? 'border-emerald-500/30 bg-emerald-950/20'
+                        : trackIdx === idx
+                          ? 'border-violet-500/40 bg-violet-950/20'
+                          : 'border-border/20 bg-secondary/10 opacity-40'
+                  }`}>
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+                      trackIdx > idx || isDelivered
+                        ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-500/40'
+                        : trackIdx === idx
+                          ? 'bg-violet-950/40 text-violet-400 border border-violet-500/40 shadow-[0_0_10px_rgba(139,92,246,0.3)]'
+                          : 'bg-secondary/40 text-muted-foreground/40 border border-border/20'
+                    }`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className={`text-sm font-semibold ${
+                        trackIdx > idx || isDelivered ? 'text-emerald-400' : trackIdx === idx ? 'text-violet-400' : 'text-muted-foreground/40'
+                      }`}>{step.label}
+                        {(trackIdx > idx || isDelivered) && <span className="ml-1 text-xs">✓</span>}
+                        {trackIdx === idx && !isDelivered && <span className="ml-1 text-xs animate-pulse">⟳</span>}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground/60">{step.desc}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Vehicle info */}
+          <div className="glass-panel rounded-xl border border-border/30 px-4 py-3 flex items-center justify-between text-xs text-muted-foreground">
+            <span>Vehículo: <span className="text-foreground font-mono font-medium">{job.vehicleId}</span></span>
+            <span>Cliente: <span className="text-foreground font-medium">{job.clientId}</span></span>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

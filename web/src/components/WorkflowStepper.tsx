@@ -1,13 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { 
-  ClipboardList, 
-  SearchCode, 
-  Calculator, 
-  Wrench, 
-  ShieldCheck, 
-  Coins 
+import {
+  ClipboardList,
+  SearchCode,
+  Calculator,
+  Wrench,
+  ShieldCheck,
+  Coins,
 } from "lucide-react";
 
 interface WorkflowStepperProps {
@@ -19,85 +20,93 @@ const STEPS = [
     key: "Reception",
     label: "Recepción",
     icon: ClipboardList,
-    color: "from-emerald-500 to-teal-400",
     glow: "shadow-emerald-500/30 border-emerald-500/60 text-emerald-400",
     bgGlow: "bg-emerald-950/20",
-    statuses: ["Reception"]
+    statuses: ["Reception"],
+    role: "Recepcionista",
+    description: "Se registra el vehículo: datos del cliente, odómetro, fluidos, fotos de daños previos y firma digital.",
   },
   {
     key: "Diagnosis",
     label: "Diagnóstico",
     icon: SearchCode,
-    color: "from-blue-500 to-indigo-400",
     glow: "shadow-blue-500/30 border-blue-500/60 text-blue-400",
     bgGlow: "bg-blue-950/20",
-    statuses: ["Diagnosis"]
+    statuses: ["Diagnosis"],
+    role: "Técnico",
+    description: "El técnico inspecciona el vehículo y registra hallazgos (Pass / Fail / Crítico / Recomendado) con fotos como evidencia.",
   },
   {
     key: "Approval",
     label: "Presupuesto",
     icon: Calculator,
-    color: "from-violet-500 to-purple-400",
     glow: "shadow-violet-500/30 border-violet-500/60 text-violet-400",
     bgGlow: "bg-violet-950/20",
-    statuses: ["Approval", "Approved"]
+    statuses: ["Approval", "Approved"],
+    role: "Asesor → Cliente",
+    description: "El asesor asigna precios y genera el link de cotización. El cliente lo revisa, selecciona qué aprobar y firma.",
   },
   {
     key: "Repair",
     label: "Reparación",
     icon: Wrench,
-    color: "from-orange-500 to-amber-400",
     glow: "shadow-orange-500/30 border-orange-500/60 text-orange-400",
     bgGlow: "bg-orange-950/20",
-    statuses: ["Repair"]
+    statuses: ["Repair"],
+    role: "Técnico",
+    description: "El técnico ejecuta los trabajos aprobados por el cliente. Al terminar, envía el vehículo a Control de Calidad.",
   },
   {
     key: "QC",
-    label: "Inspección (QC)",
+    label: "Control de Calidad",
     icon: ShieldCheck,
-    color: "from-pink-500 to-rose-400",
     glow: "shadow-pink-500/30 border-pink-500/60 text-pink-400",
     bgGlow: "bg-pink-950/20",
-    statuses: ["QC"]
+    statuses: ["QC"],
+    role: "Inspector / Admin / Técnico",
+    description: "Se verifica la calidad del trabajo mediante un checklist de 5 puntos. Si pasa, el vehículo queda listo para cobro.",
   },
   {
     key: "Ready",
-    label: "Listo / Caja",
+    label: "Caja / Entrega",
     icon: Coins,
-    color: "from-cyan-500 to-sky-400",
     glow: "shadow-cyan-500/30 border-cyan-500/60 text-cyan-400",
     bgGlow: "bg-cyan-950/20",
-    statuses: ["Ready", "Delivered"]
-  }
+    statuses: ["Ready", "Delivered"],
+    role: "Asesor / Caja",
+    description: "Se registra el pago final (abonos, vuelto, recibo PDF). Al cobrar el monto completo, el vehículo queda Entregado.",
+  },
 ];
 
 export function WorkflowStepper({ currentStatus }: WorkflowStepperProps) {
   const { t } = useLanguage();
+  const [expandedStep, setExpandedStep] = useState<string | null>(null);
 
-  // Find the index of the step matching the current status
-  const currentStepIndex = STEPS.findIndex(step => step.statuses.includes(currentStatus));
+  const currentStepIndex = STEPS.findIndex((step) =>
+    step.statuses.includes(currentStatus)
+  );
 
   return (
     <div className="w-full glass-panel border border-border/40 rounded-xl p-4 sm:p-5 shadow-lg bg-card/45 backdrop-blur-md">
       <div className="relative flex items-center justify-between w-full">
-        {/* Connector Line (Backdrop) */}
+        {/* Connector backdrop */}
         <div className="absolute left-6 right-6 top-[22px] h-[3px] bg-zinc-800 rounded-full z-0" />
 
-        {/* Dynamic Glowing Progress Line */}
-        <div 
+        {/* Progress line */}
+        <div
           className="absolute left-6 top-[22px] h-[3px] bg-gradient-to-r from-emerald-500 via-violet-500 to-cyan-400 transition-all duration-700 ease-out rounded-full z-0 shadow-[0_0_8px_rgba(16,185,129,0.4)]"
-          style={{ 
+          style={{
             width: `${currentStepIndex >= 0 ? (currentStepIndex / (STEPS.length - 1)) * 100 : 0}%`,
-            maxWidth: "calc(100% - 48px)"
+            maxWidth: "calc(100% - 48px)",
           }}
         />
 
-        {/* Stepper Nodes */}
+        {/* Nodes */}
         {STEPS.map((step, index) => {
           const Icon = step.icon;
           const isCompleted = index < currentStepIndex;
           const isActive = index === currentStepIndex;
-          const isPending = index > currentStepIndex;
+          const isExpanded = expandedStep === step.key;
 
           let nodeStyle = "border-zinc-700 bg-zinc-900 text-zinc-500";
           let labelStyle = "text-zinc-500 font-light";
@@ -106,46 +115,78 @@ export function WorkflowStepper({ currentStatus }: WorkflowStepperProps) {
             nodeStyle = `border-[2.5px] ${step.glow} ${step.bgGlow} scale-110 shadow-[0_0_20px_rgba(0,0,0,0.5)] z-10`;
             labelStyle = "text-foreground font-extrabold select-none";
           } else if (isCompleted) {
-            nodeStyle = `border-[2px] border-emerald-500/70 bg-emerald-950/20 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.15)] z-10`;
+            nodeStyle = "border-[2px] border-emerald-500/70 bg-emerald-950/20 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.15)] z-10";
             labelStyle = "text-emerald-400/80 font-medium select-none";
           }
 
           return (
             <div key={step.key} className="flex flex-col items-center flex-1 relative z-10">
-              {/* Node Circle */}
-              <div 
-                className={`w-11 h-11 rounded-full flex items-center justify-center transition-all duration-500 ${nodeStyle} backdrop-blur-md`}
-                title={`${step.label} (${currentStatus})`}
+              {/* Clickable node */}
+              <button
+                type="button"
+                className={`w-11 h-11 rounded-full flex items-center justify-center transition-all duration-500 ${nodeStyle} backdrop-blur-md relative`}
+                onClick={() => setExpandedStep(isExpanded ? null : step.key)}
+                title={step.description}
               >
-                <Icon className={`w-5 h-5 transition-transform duration-300 ${isActive ? 'scale-110' : ''}`} />
-              </div>
+                <Icon className={`w-5 h-5 transition-transform duration-300 ${isActive ? "scale-110" : ""}`} />
+                {isActive && (
+                  <span className="absolute inset-0 rounded-full animate-ping opacity-20 bg-current" />
+                )}
+              </button>
 
-              {/* Step Label (Hidden on small mobile screens for spacing, visible on sm and up) */}
-              <span className={`text-[10px] sm:text-xs mt-2.5 transition-all duration-300 text-center select-none ${labelStyle} hidden md:block`}>
+              {/* Label */}
+              <span className={`text-[10px] sm:text-xs mt-2.5 text-center select-none ${labelStyle} hidden md:block`}>
                 {step.label}
               </span>
-              <span className={`text-[8px] mt-1 transition-all duration-300 text-center select-none ${labelStyle} md:hidden block max-w-[60px] truncate`}>
+              <span className={`text-[8px] mt-1 text-center select-none ${labelStyle} md:hidden block max-w-[60px] truncate`}>
                 {step.label}
               </span>
+
+              {/* "Aquí" badge */}
+              {isActive && (
+                <span className="hidden md:block text-[9px] font-bold text-white bg-gradient-to-r from-violet-600 to-indigo-500 px-1.5 py-0.5 rounded-full mt-1 shadow-sm animate-pulse">
+                  Aquí
+                </span>
+              )}
+
+              {/* Tooltip popup */}
+              {isExpanded && (
+                <div className="absolute top-14 z-50 w-52 rounded-xl border border-border/60 bg-card/95 backdrop-blur-md shadow-xl p-3 text-left">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <Icon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <p className="text-[11px] font-bold text-foreground">{step.label}</p>
+                  </div>
+                  <p className="text-[10px] text-violet-400 font-semibold mb-1.5">👤 {step.role}</p>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">{step.description}</p>
+                </div>
+              )}
             </div>
           );
         })}
       </div>
 
-      {/* Mobile-Friendly Text Banner (Explaining current stage active) */}
+      {/* Bottom bar */}
       <div className="mt-4 pt-3 border-t border-border/20 flex items-center justify-between text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5 font-light">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           Ruta del Taller SGA
         </span>
         {currentStepIndex >= 0 ? (
-          <span className="text-foreground">
-            Vehículo en etapa de: <strong className="text-orange-400 font-semibold">{STEPS[currentStepIndex].label}</strong>
+          <span className="text-right">
+            <span className="text-foreground font-semibold">{STEPS[currentStepIndex].label}</span>
+            <span className="text-muted-foreground/60 ml-1.5">· {STEPS[currentStepIndex].role}</span>
           </span>
         ) : (
-          <span>Estado del auto: {currentStatus}</span>
+          <span>Estado: {currentStatus}</span>
         )}
       </div>
+
+      {/* Active step description — always visible */}
+      {currentStepIndex >= 0 && (
+        <p className="mt-2 text-[10px] text-muted-foreground/70 leading-relaxed border-t border-border/10 pt-2">
+          {STEPS[currentStepIndex].description}
+        </p>
+      )}
     </div>
   );
 }

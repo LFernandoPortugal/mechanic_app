@@ -55,10 +55,12 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
   const [method, setMethod]     = useState<PaymentMethod>("Efectivo");
   const [loading, setLoading]   = useState(false);
 
-  const paid       = totalPaid(job);
-  const balance    = (job.totalEstimate || 0) - paid;
-  const pctPaid    = job.totalEstimate > 0 ? Math.min((paid / job.totalEstimate) * 100, 100) : 0;
-  const isDelivered = job.status === "Delivered";
+  const paid         = totalPaid(job);
+  // Use the amount the client approved; fall back to totalEstimate if not set
+  const approvedTotal = (job.approvedAmount && job.approvedAmount > 0) ? job.approvedAmount : (job.totalEstimate || 0);
+  const balance      = approvedTotal - paid;
+  const pctPaid      = approvedTotal > 0 ? Math.min((paid / approvedTotal) * 100, 100) : 0;
+  const isDelivered  = job.status === "Delivered";
 
   const handlePay = async () => {
     const amt = parseFloat(amount);
@@ -119,7 +121,7 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
             </Badge>
           </div>
           <CardDescription className="mt-1 text-xs">
-            Total: <span className="font-semibold text-foreground">{workshopSettings?.currencySymbol || "$"}{(job.totalEstimate || 0).toFixed(2)}</span>
+            Total aprobado: <span className="font-semibold text-foreground">{workshopSettings?.currencySymbol || "$"}{approvedTotal.toFixed(2)}</span>
             {" · "}Pagado: <span className="font-semibold text-emerald-400">{workshopSettings?.currencySymbol || "$"}{paid.toFixed(2)}</span>
             {" · "}Saldo: <span className={`font-semibold ${balance > 0 ? "text-amber-400" : "text-emerald-400"}`}>{workshopSettings?.currencySymbol || "$"}{balance.toFixed(2)}</span>
           </CardDescription>
@@ -180,22 +182,21 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
               </div>
                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Monto ({workshopSettings?.currencySymbol || "$"})</Label>
-                  <div className="relative flex items-center">
-                    {/* Render symbol dynamically inside the input container */}
-                    <span className="absolute left-3 text-xs font-mono font-semibold text-muted-foreground select-none">
-                      {workshopSettings?.currencySymbol || "$"}
-                    </span>
-                    <Input
-                      type="number"
-                      placeholder={`Saldo: ${workshopSettings?.currencySymbol || "$"}${balance.toFixed(2)}`}
-                      value={amount}
-                      onChange={e => setAmount(e.target.value)}
-                      className="pl-10 bg-background border-border font-mono"
-                      min={0}
-                      step={0.01}
-                    />
-                  </div>
+                    <Label className="text-xs">Monto ({workshopSettings?.currencySymbol || "$"})</Label>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-3 text-xs font-mono font-semibold text-muted-foreground select-none">
+                        {workshopSettings?.currencySymbol || "$"}
+                      </span>
+                      <Input
+                        type="number"
+                        placeholder={`Saldo: ${workshopSettings?.currencySymbol || "$"}${balance.toFixed(2)}`}
+                        value={amount}
+                        onChange={e => setAmount(e.target.value)}
+                        className="pl-10 bg-background border-border font-mono"
+                        min={0}
+                        step={0.01}
+                      />
+                    </div>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Referencia / N° de Operación</Label>
