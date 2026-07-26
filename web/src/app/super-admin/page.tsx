@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { getAllWorkshops, getAllUsers, createWorkshopTester, updateWorkshopSettings, resetWorkshopData, deleteUserProfile, deleteWorkshopSettings, updateUserRoles, createUserProfile, getActiveJobCountByWorkshop, clearTempPassword } from "@/lib/db";
+import { getAllWorkshops, getAllUsers, createWorkshopTester, updateWorkshopSettings, resetWorkshopData, deleteUserProfile, deleteWorkshopSettings, deleteWorkshopCompletely, updateUserRoles, createUserProfile, getActiveJobCountByWorkshop, clearTempPassword } from "@/lib/db";
 import { toast } from "sonner";
 import {
   Crown, Building2, Users, Trash2, Calendar, ShieldAlert,
@@ -207,11 +207,11 @@ export default function SuperAdminPage() {
 
   const handleDeleteWorkshop = async (wId: string) => {
     if (wId === "demo-workshop") { toast.error("No se puede eliminar el taller demo."); return; }
-    if (!window.confirm(`¿Eliminar permanentemente el taller "${wId}"?`)) return;
+    if (!window.confirm(`¿Eliminar permanentemente el taller "${wId}" y todos sus usuarios y datos?`)) return;
     setActionLoading(`delete-workshop-${wId}`);
     try {
-      await deleteWorkshopSettings(wId);
-      toast.success("Taller eliminado.");
+      const res = await deleteWorkshopCompletely(wId);
+      toast.success(`Taller eliminado por completo. Se borraron ${res.usersDeleted} usuarios y ${res.jobsDeleted} OTs.`);
       loadWorkshops(); loadUsers();
     } catch (err: any) {
       toast.error("Error: " + err.message);

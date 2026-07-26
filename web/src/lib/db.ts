@@ -603,7 +603,14 @@ export async function getWorkshopSettings(workshopId: string): Promise<WorkshopS
         taxId: data.taxId || data.nit || defaults.taxId
       } as WorkshopSettings;
     }
-    return defaults;
+
+    // Only fallback to defaults if workshopId is the built-in 'demo-workshop'
+    if (workshopId === "demo-workshop") {
+      return defaults;
+    }
+
+    // For any deleted or non-existent workshop, return null to signify it does not exist
+    return null;
   } catch (e) {
     console.error("Error fetching settings:", e);
     return null;
@@ -695,6 +702,37 @@ export async function deleteWorkshopSettings(workshopId: string) {
     await deleteDoc(docRef);
   } catch (e) {
     console.error("Error deleting workshop settings:", e);
+    throw e;
+  }
+}
+
+/** Cascade deletes a workshop: removes settings, all user profiles, and operating data */
+export async function deleteWorkshopCompletely(workshopId: string): Promise<{ usersDeleted: number; jobsDeleted: number; inventoryDeleted: number; transactionsDeleted: number }> {
+  try {
+    // 1. Delete operating data (jobs, inventory, transactions)
+    const resetResult = await resetWorkshopData(workshopId);
+
+    // 2. Delete all user profiles belonging to this workshop
+    const usersRef = collection(db, "users");
+    const usersSnap = await getDocs(query(usersRef, where("workshopId", "==", workshopId)));
+    let usersDeleted = 0;
+    for (const uDoc of usersSnap.docs) {
+      await deleteDoc(doc(db, "users", uDoc.id));
+      usersDeleted++;
+    }
+
+    // 3. Delete the settings document
+    const settingsRef = doc(db, "settings", workshopId);
+    await deleteDoc(settingsRef);
+
+    return {
+      usersDeleted,
+      jobsDeleted: resetResult.jobsDeleted,
+      inventoryDeleted: resetResult.inventoryDeleted,
+      transactionsDeleted: resetResult.transactionsDeleted
+    };
+  } catch (e) {
+    console.error("Error completely deleting workshop:", e);
     throw e;
   }
 }
