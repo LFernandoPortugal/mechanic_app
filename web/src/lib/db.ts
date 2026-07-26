@@ -712,13 +712,16 @@ export async function deleteWorkshopCompletely(workshopId: string): Promise<{ us
     // 1. Delete operating data (jobs, inventory, transactions)
     const resetResult = await resetWorkshopData(workshopId);
 
-    // 2. Delete all user profiles belonging to this workshop
+    // 2. Delete all user profiles belonging to this workshop (protecting SUPER_ADMIN)
     const usersRef = collection(db, "users");
     const usersSnap = await getDocs(query(usersRef, where("workshopId", "==", workshopId)));
     let usersDeleted = 0;
     for (const uDoc of usersSnap.docs) {
-      await deleteDoc(doc(db, "users", uDoc.id));
-      usersDeleted++;
+      const uData = uDoc.data() as UserProfile;
+      if (!uData.roles?.includes('SUPER_ADMIN')) {
+        await deleteDoc(doc(db, "users", uDoc.id));
+        usersDeleted++;
+      }
     }
 
     // 3. Delete the settings document
