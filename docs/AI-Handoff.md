@@ -51,14 +51,15 @@ Reception → Diagnosis → Approval → Approved → Repair → QC → Ready �
 
 | Bug | Archivo | Fix |
 |-----|---------|-----|
-| Usuarios/talleres eliminados mantenían acceso o se auto-creaban | `AuthContext.tsx`, `login/page.tsx`, `firestore.rules` | Expulsión inmediata de sesión, `signOut(auth)` en catch de login y `hasUserProfile()` + `isWorkshopActive()` en Security Rules de Firestore |
-| `handleSaveQuote` ponía `status: "Ready"` en lugar de `"Approval"` | `advisor/page.tsx:69` | Cambiado a `"Approval"` |
-| Permisos denegados en `firestore.rules` para clientes públicos | `firestore.rules` | Permitir `get` en `Approval` y `update` a `Approved` |
-| SuperAdmin no creaba usuario vinculado al taller | `super-admin/page.tsx` + `db.ts` | `workshopIdOverride` en `createUserProfile` |
-| `approvedAmount` se sobreescribía con suma de pagos | `db.ts:registerPayment` | No se modifica `approvedAmount` en pagos |
-| Técnico sin acceso a QC | `qc/page.tsx` | Agregado `TECHNICIAN` a `allowedRoles` |
-| Precios editables post-aprobación | `advisor/page.tsx` | `readOnly={status !== 'Approval'}` |
-| Balance en Pagos usaba `totalEstimate` en lugar de `approvedAmount` | `payments/page.tsx` | `approvedTotal = approvedAmount ∥ totalEstimate` |
+| Usuarios/talleres eliminados mantenían acceso o se auto-creaban | `AuthContext.tsx`, `login/page.tsx`, `firestore.rules`, `db.ts` | `getWorkshopSettings` ahora retorna `null` para talleres borrados. `deleteWorkshopCompletely` borra en cascada (datos + usuarios) protegiendo a `SUPER_ADMIN`. Expulsión de sesión inmediata en `AuthContext` y `signOut(auth)` en catch de login. |
+| Esquema del SuperAdmin corrupto (`workshopId\t`) | Firestore DB (`users/uid`) | Se limpiaron los campos con tabuladores invisibles `\t` en Firestore. Se asignó `workshopId: "master-control"`. |
+| `handleSaveQuote` ponía `status: "Ready"` en lugar de `"Approval"` | `advisor/page.tsx:69` | Cambiado a `"Approval"`. |
+| Permisos denegados en `firestore.rules` para clientes públicos | `firestore.rules` | Permitir `get` en `Approval` y `update` a `Approved`. |
+| SuperAdmin no creaba usuario vinculado al taller | `super-admin/page.tsx` + `db.ts` | `workshopIdOverride` en `createUserProfile`. |
+| `approvedAmount` se sobreescribía con suma de pagos | `db.ts:registerPayment` | No se modifica `approvedAmount` en pagos. |
+| Técnico sin acceso a QC | `qc/page.tsx` | Agregado `TECHNICIAN` a `allowedRoles`. |
+| Precios editables post-aprobación | `advisor/page.tsx` | `readOnly={status !== 'Approval'}`. |
+| Balance en Pagos usaba `totalEstimate` en lugar de `approvedAmount` | `payments/page.tsx` | `approvedTotal = approvedAmount ∥ totalEstimate`. |
 
 ---
 
@@ -84,10 +85,12 @@ Reception → Diagnosis → Approval → Approved → Repair → QC → Ready �
 - Badge de OTs activas por taller (en tiempo real al cargar)
 - Días restantes del trial calculados dinámicamente
 - Botón "Limpiar Clave" (elimina `tempPassword` de settings)
+- Eliminación de talleres en cascada (`deleteWorkshopCompletely`) notificando conteo de datos borrados
 
 ### Nuevas funciones en `db.ts`
 - `getActiveJobCountByWorkshop(workshopId)` — cuenta jobs activos
 - `clearTempPassword(workshopId)` — borra la contraseña temporal
+- `deleteWorkshopCompletely(workshopId)` — elimina en cascada datos operativos y usuarios del taller borrado
 
 ---
 
@@ -167,3 +170,4 @@ NEXT_PUBLIC_GEMINI_API_KEY             # Para el diagnóstico AI en /technician
 - [x] Admin settings guarda logo + moneda correctamente: verificado (reactivo con `refreshSettings`)
 - [x] Analytics: métricas correctas: verificado
 - [x] Seguridad y revocado de usuarios/talleres borrados: **CORREGIDO Y DESPLEGADO**
+- [x] Reparación de campos en esquema de SuperAdmin: **CORREGIDO Y DESPLEGADO**
