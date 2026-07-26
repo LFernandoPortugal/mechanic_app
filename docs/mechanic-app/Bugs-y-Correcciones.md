@@ -42,7 +42,7 @@
 - Cada paso del stepper es ahora clickeable y muestra un popup con la descripción del rol y la acción correspondiente.
 - Badge "Aquí" animado en el paso activo.
 - Línea de progreso degradada con brillo.
-- Descripción del paso activo visible debajo del stepper.
+- Descripción del paso activo siempre visible debajo del stepper.
 
 ### MEJORA-002: Portal del cliente — pantalla post-aprobación
 - El portal ya no muestra solo "Cotización Aprobada" estático.
@@ -68,23 +68,18 @@
 
 ---
 
-## v1.3 — Fase de Seguridad y Revocado de Usuarios (2026-07-26)
+## v1.3 — Fase de Seguridad y Borrado en Cascada de Talleres (2026-07-26)
 
-### BUG-007: Usuarios eliminados o talleres borrados mantenían acceso y podían operar
-**Síntoma**: Cuando un SuperAdmin o Admin eliminaba un usuario en Firestore o borraba un taller completo, los usuarios borrados aún podían iniciar sesión, realizar acciones en la base de datos o volver a autogenerar su perfil.
-
-**Causas raíz**:
-1. **Sesión de Auth huérfana**: En `/login`, al fallar la auto-creación del perfil (por estar eliminado o no autorizado), el SDK de Firebase Auth dejaba la sesión iniciada en segundo plano porque no se ejecutaba `signOut(auth)` en el bloque `catch`.
-2. **Expulsión incompleta en `AuthContext`**: `AuthContext` no seteaba `setUser(null)` al detectar la eliminación del perfil en `onSnapshot`, y no verificaba si el documento del taller `settings/{workshopId}` había sido eliminado.
-3. **Falta de verificación en Security Rules**: `firestore.rules` no comprobaba si `users/{uid}` existía en Firestore ni si `settings/{workshopId}` continuaba activo antes de autorizar lecturas y escrituras.
+### BUG-007: `getWorkshopSettings` retornaba valores por defecto en talleres eliminados
+**Síntoma**: Al eliminar un taller en SuperAdmin, sus usuarios aún podían iniciar sesión y navegar sin problemas.
+**Causa raíz**:
+1. `getWorkshopSettings` en `db.ts` retornaba `defaults` ("SGA Auto") si el documento `settings/{workshopId}` no existía. Como resultado, `AuthContext` interpretaba que el taller seguía activo y nunca cerraba la sesión.
+2. `deleteWorkshopSettings` únicamente borraba `settings/{workshopId}`, dejando huérfanos los perfiles `users/{uid}` en Firestore.
 
 **Fixes Aplicados**:
-- `AuthContext.tsx`:
-  - Se añadió expulsión inmediata (`await firebaseSignOut(auth)` y `setUser(null)`) si el documento de usuario no existe en Firestore.
-  - Se añadió verificación de existencia de `settings/{workshopId}`. Si el taller fue borrado en SuperAdmin, se cierra automáticamente la sesión de todos los usuarios de ese taller.
-- `login/page.tsx`:
-  - Se añadió `await signOut(auth)` dentro del bloque `catch` de `handleLogin` para limpiar cualquier sesión huérfana de Firebase Auth cuando la verificación de perfil falla.
-- `firestore.rules`:
-  - Se crearon las funciones helper `hasUserProfile()` (que exige `exists(/users/uid)`) y `isWorkshopActive()` (que exige `exists(/settings/workshopId)`).
-  - Todas las operaciones de lectura/escritura en `jobs`, `inventory`, `inventory_transactions` y `users` ahora requieren `hasUserProfile()` y `isWorkshopActive()`, garantizando que usuarios o talleres borrados sean **bloqueados al 100% a nivel de base de datos**.
-  - Reglas desplegadas exitosamente a producción en Firebase Console.
+- `db.ts` (`getWorkshopSettings`):
+  - Retorna estrictamente `null` cuando el taller no existe (sólo devuelve `defaults` si la ID es `"demo-workshop"`). `AuthContext` detecta este `null` y fuerza inmediatamente `firebaseSignOut(auth)`.
+- `db.ts` (`deleteWorkshopCompletely`):
+  - Nueva función que elimina en cascada: los perfiles de usuarios de `users`, los datos operativos (`jobs`, `inventory`, `inventory_transactions`) y la configuración `settings`.
+- `super-admin/page.tsx`:
+  - Se actualizó el botón "Eliminar Taller" para invocar `deleteWorkshopCompletely`.
