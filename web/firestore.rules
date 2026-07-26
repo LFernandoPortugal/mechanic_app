@@ -80,29 +80,36 @@ service cloud.firestore {
     }
 
     // ─── Helper Functions ──────────────────────────────
+    function hasUserProfile() {
+      return request.auth != null && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isWorkshopActive(workshopId) {
+      return workshopId == "demo-workshop" || workshopId == "master-control" || exists(/databases/$(database)/documents/settings/$(workshopId));
+    }
+
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
     function isSameWorkshop(resourceData) {
-      return request.auth != null && (resourceData.workshopId == getUserData().workshopId || isSuperAdmin());
+      return hasUserProfile() && (isSuperAdmin() || (resourceData.workshopId == getUserData().workshopId && isWorkshopActive(resourceData.workshopId)));
     }
 
-    // Reuse getUserData helper for simpler roles rules
     function isAdmin() {
-      return request.auth != null && (getUserData().roles.hasAny(['ADMIN']) || isSuperAdmin());
+      return hasUserProfile() && (getUserData().roles.hasAny(['ADMIN']) || isSuperAdmin());
     }
 
     function isSuperAdmin() {
-      return request.auth != null && getUserData().roles.hasAny(['SUPER_ADMIN']);
+      return request.auth != null && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().roles.hasAny(['SUPER_ADMIN']);
     }
 
     function hasAnyRole(roles) {
-      return request.auth != null && (getUserData().roles.hasAny(roles) || isSuperAdmin());
+      return hasUserProfile() && (getUserData().roles.hasAny(roles) || isSuperAdmin());
     }
 
     function isResetAllowed(workshopId) {
-      return get(/databases/$(database)/documents/settings/$(workshopId)).data.allowResetData == true;
+      return exists(/databases/$(database)/documents/settings/$(workshopId)) && get(/databases/$(database)/documents/settings/$(workshopId)).data.allowResetData == true;
     }
   }
 }

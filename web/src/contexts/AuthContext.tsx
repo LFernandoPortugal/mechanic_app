@@ -74,8 +74,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userRef = doc(db, "users", firebaseUser.uid);
         unsubscribeProfile = onSnapshot(userRef, async (docSnap) => {
           if (!docSnap.exists()) {
-            console.log("User profile deleted. Evicting session...");
+            console.log("User profile deleted. Evicting session immediately...");
             await firebaseSignOut(auth);
+            setUser(null);
             setUserProfile(null);
             setWorkshopSettings(null);
             setTrialExpired(false);
@@ -85,15 +86,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const profile = docSnap.data() as UserProfile;
           setUserProfile(profile);
 
+          const isSuperAdmin = profile?.roles?.includes('SUPER_ADMIN');
+
           let settings: WorkshopSettings | null = null;
           if (profile?.workshopId) {
             settings = await getWorkshopSettings(profile.workshopId);
           } else {
             settings = await getWorkshopSettings("demo-workshop");
           }
+
+          // If the workshop was deleted in SuperAdmin (and user is not SuperAdmin), evict session
+          if (!settings && !isSuperAdmin && profile?.workshopId !== "demo-workshop") {
+            console.log("Workshop deleted. Evicting user session...");
+            await firebaseSignOut(auth);
+            setUser(null);
+            setUserProfile(null);
+            setWorkshopSettings(null);
+            setTrialExpired(false);
+            setLoading(false);
+            return;
+          }
+
           setWorkshopSettings(settings);
 
-          const isSuperAdmin = profile?.roles?.includes('SUPER_ADMIN');
           if (settings && settings.expiresAt && !isSuperAdmin) {
             const expirationDate = new Date(settings.expiresAt);
             if (new Date() > expirationDate) {
@@ -104,10 +119,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           setTrialExpired(false);
           setLoading(false);
-        }, (err) => {
+        }, async (err) => {
           console.error("Error listening to user profile:", err);
           if (err.code === "permission-denied") {
-            firebaseSignOut(auth);
+            await firebaseSignOut(auth);
+            setUser(null);
+            setUserProfile(null);
+            setWorkshopSettings(null);
           }
           setLoading(false);
         });

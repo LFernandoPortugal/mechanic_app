@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { createUserProfile } from "@/lib/db";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -40,12 +40,14 @@ function LoginForm() {
 
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
-      // Ensure profile is synced/exists (only creates if not already present)
+      // Ensure profile is synced/exists
       const roles = DEMO_ROLE_MAP[email] || ['RECEPTION'];
       await createUserProfile(cred.user.uid, cred.user.email || email, undefined, roles);
       router.push(redirectTo);
     } catch (err: any) {
-      console.error("Authentication failed:", err.code);
+      console.error("Authentication failed:", err.code || err.message);
+      // Clean up Firebase Auth state if profile validation fails
+      await signOut(auth).catch(() => {});
       if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setError(t('wrongPassword'));
       } else if (err.code === 'auth/user-not-found') {

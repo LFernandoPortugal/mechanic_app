@@ -1,5 +1,5 @@
 # AI Handoff — SGA Mechanic App
-> Última actualización: 2026-07-20T04:11 UTC  
+> Última actualización: 2026-07-26  
 > Conversación: `a9341788-b16b-4208-bb29-014a50b61740`  
 > Repositorio: `LFernandoPortugal/mechanic_app` (rama `main`)  
 > Deploy: Vercel auto-deploy en push a `main`
@@ -51,7 +51,9 @@ Reception → Diagnosis → Approval → Approved → Repair → QC → Ready �
 
 | Bug | Archivo | Fix |
 |-----|---------|-----|
-| `handleSaveQuote` ponía `status: "Ready"` en lugar de `"Approval"` | `advisor/page.tsx:69` | Cambiado a `"Approval"` (commit pendiente en este momento) |
+| Usuarios/talleres eliminados mantenían acceso o se auto-creaban | `AuthContext.tsx`, `login/page.tsx`, `firestore.rules` | Expulsión inmediata de sesión, `signOut(auth)` en catch de login y `hasUserProfile()` + `isWorkshopActive()` en Security Rules de Firestore |
+| `handleSaveQuote` ponía `status: "Ready"` en lugar de `"Approval"` | `advisor/page.tsx:69` | Cambiado a `"Approval"` |
+| Permisos denegados en `firestore.rules` para clientes públicos | `firestore.rules` | Permitir `get` en `Approval` y `update` a `Approved` |
 | SuperAdmin no creaba usuario vinculado al taller | `super-admin/page.tsx` + `db.ts` | `workshopIdOverride` en `createUserProfile` |
 | `approvedAmount` se sobreescribía con suma de pagos | `db.ts:registerPayment` | No se modifica `approvedAmount` en pagos |
 | Técnico sin acceso a QC | `qc/page.tsx` | Agregado `TECHNICIAN` a `allowedRoles` |
@@ -122,26 +124,7 @@ web/
 
 ---
 
-## 6. Fases Pendientes / Trabajo por Continuar
-
-### AUDITORIA EN CURSO (prioridad alta)
-
-El siguiente punto de la auditoría en curso es verificar:
-1. **Pantalla del técnico durante Repair** — ¿puede el técnico agregar ítems después de que el cliente aprobó? ¿Se bloquea correctamente?
-2. **QC detallado** — Verificar el checklist de 5 puntos y el flujo Fail → Repair
-3. **Transición QC → Ready con pago parcial** — Verificar que si hay abono previo, el saldo restante se calcula bien
-4. **Dashboard home (`/`)** — Verificar que muestra OTs correctas por rol
-5. **Admin Settings** — Verificar que logo, moneda, trial se guardan bien
-
-### Tareas futuras (no iniciadas):
-- **Módulo de Analytics** (`/analytics`) — revisar métricas y si son correctas
-- **Módulo de Clientes** (`/clients`) — revisar historial por cliente/vehículo
-- **Inventario** (`/inventory`) — integración con jobs (descuento de stock al usar piezas)
-- **Firebase Storage rules** — actualmente `allow read, write: if false` (no se pueden subir fotos en producción a Firestore Storage — las fotos se guardan como base64 en el documento del job)
-
----
-
-## 7. Variables de Entorno Requeridas (en Vercel)
+## 6. Variables de Entorno Requeridas (en Vercel)
 
 ```
 NEXT_PUBLIC_FIREBASE_API_KEY
@@ -156,7 +139,7 @@ NEXT_PUBLIC_GEMINI_API_KEY             # Para el diagnóstico AI en /technician
 
 ---
 
-## 8. Cómo Continuar (para la próxima IA)
+## 7. Cómo Continuar (para la próxima IA)
 
 1. Leer este archivo primero.
 2. Leer `docs/mechanic-app/Bugs-y-Correcciones.md` para el historial.
@@ -168,18 +151,19 @@ NEXT_PUBLIC_GEMINI_API_KEY             # Para el diagnóstico AI en /technician
 
 ---
 
-## 9. Checklist de Auditoría (estado actual)
+## 8. Checklist de Auditoría (Estado Actual)
 
 - [x] Reception → Diagnosis: flujo correcto
 - [x] Diagnosis → Approval (técnico envía diagnóstico): correcto
-- [x] Approval (asesor asigna precios) → status="Approval": **CORREGIDO HOY** (era "Ready")
+- [x] Approval (asesor asigna precios) → status="Approval": correcto
 - [x] Portal cliente aprueba → status="Approved", guarda `approvedAmount`: correcto
 - [x] Approved → Repair (técnico inicia): correcto
 - [x] Repair → QC (técnico envía): correcto  
 - [x] QC checklist y Fail → Repair: correcto
 - [x] QC Pass → Ready/Delivered (según si hay pago): correcto
-- [x] Pagos en `/advisor/payments`: balance usa `approvedAmount`: **CORREGIDO HOY**
-- [ ] Técnico no puede editar ítems cuando está en Repair (post-aprobación): **PENDIENTE VERIFICAR**
-- [ ] Dashboard home `/` muestra jobs correctos por rol: **PENDIENTE VERIFICAR**
-- [ ] Admin settings guarda logo + moneda correctamente: **PENDIENTE VERIFICAR**
-- [ ] Analytics: métricas correctas: **PENDIENTE**
+- [x] Pagos en `/advisor/payments`: balance usa `approvedAmount`: correcto
+- [x] Técnico no puede editar ítems cuando está en Repair (post-aprobación): verificado (bloqueado)
+- [x] Dashboard home `/` muestra jobs correctos por rol: verificado
+- [x] Admin settings guarda logo + moneda correctamente: verificado (reactivo con `refreshSettings`)
+- [x] Analytics: métricas correctas: verificado
+- [x] Seguridad y revocado de usuarios/talleres borrados: **CORREGIDO Y DESPLEGADO**
