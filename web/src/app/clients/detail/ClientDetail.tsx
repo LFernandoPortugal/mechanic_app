@@ -76,6 +76,8 @@ const inspectionStatusIcon: Record<string, React.ReactNode> = {
   Recommended: <CircleDot className="w-3.5 h-3.5 text-blue-400" />,
 };
 
+import { VehicleTimeline, TimelineEvent } from "@/components/ui/VehicleTimeline";
+
 /* ─── Component ──────────────────────────────────────────── */
 export default function ClientDetailPage() {
   const { t } = useLanguage();
@@ -105,7 +107,6 @@ export default function ClientDetailPage() {
         }
         const data = await getClientJobs(wId, clientName);
         setJobs(data);
-        // Auto-expand the most recent job
         if (data.length > 0) {
           setExpandedJobs(new Set([data[0].id]));
         }
@@ -151,6 +152,18 @@ export default function ClientDetailPage() {
       ),
     [jobs]
   );
+
+  // Generar timeline tipo Expediente Médico
+  const timelineEvents: TimelineEvent[] = useMemo(() => {
+    return jobs.map((j) => ({
+      id: j.id,
+      date: fmtDate(jobDate(j)),
+      title: `Servicio en Vehículo ${j.vehicleId}`,
+      description: j.symptoms ? `Motivo: ${j.symptoms}` : 'Inspección periódica.',
+      status: j.status,
+      badgeText: fmtCurrency(j.approvedAmount || j.totalEstimate || 0),
+    }));
+  }, [jobs]);
 
   return (
     <ProtectedRoute allowedRoles={["ADMIN", "ADVISOR", "RECEPTION"]}>
@@ -244,6 +257,16 @@ export default function ClientDetailPage() {
                   </CardContent>
                 </Card>
               </div>
+
+              {/* ── Expediente Vivo del Vehículo (Historial Médico Continuo) ── */}
+              {jobs.length > 0 && (
+                <Card className="glass-panel p-5 border-emerald-500/30">
+                  <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4" /> Expediente Vivo & Historial Médico Automotriz
+                  </h3>
+                  <VehicleTimeline events={timelineEvents} />
+                </Card>
+              )}
 
               {/* ── Vehicles & Timeline ──────────────────────── */}
               {Array.from(vehicles.entries()).map(([plate, vehicleJobs]) => (

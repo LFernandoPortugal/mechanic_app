@@ -382,45 +382,74 @@ export default function AdvisorQuoteBuilder() {
                     <p className="text-sm text-muted-foreground italic">{t('noComponentsLogged')}</p>
                   ) : (
                     selectedJob.inspectionItems.map(item => (
-                      <div key={item.id} className="p-4 bg-secondary/50 dark:bg-black/40 border border-border rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-1">
-                            <span className="font-medium text-lg text-foreground">{item.name}</span>
-                            <Badge className={`
-                              ${item.status === 'Pass' ? 'bg-emerald-600' : ''}
-                              ${item.status === 'Fail' ? 'bg-red-600' : ''}
-                              ${item.status === 'Critical' ? 'bg-orange-600' : ''}
-                              ${item.status === 'Recommended' ? 'bg-blue-600' : ''}
-                            `}>
-                              {t(`status${item.status}` as any) || item.status}
-                            </Badge>
+                      <div key={item.id} className="p-4 bg-secondary/50 dark:bg-black/40 border border-border rounded-lg flex flex-col space-y-3">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-1">
+                              <span className="font-medium text-lg text-foreground">{item.name}</span>
+                              <Badge className={`
+                                ${item.status === 'Pass' ? 'bg-emerald-600' : ''}
+                                ${item.status === 'Fail' ? 'bg-red-600' : ''}
+                                ${item.status === 'Critical' ? 'bg-orange-600' : ''}
+                                ${item.status === 'Recommended' ? 'bg-blue-600' : ''}
+                              `}>
+                                {t(`status${item.status}` as any) || item.status}
+                              </Badge>
+                            </div>
+                            
+                            {/* Motivo y Riesgo al Cliente */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                              <div className="p-2 rounded bg-slate-900/60 border border-slate-800 text-xs">
+                                <span className="font-bold text-amber-400 block uppercase tracking-wider text-[10px]">Motivo del Cambio:</span>
+                                <span className="text-slate-300">{item.notes || 'Desgaste / Falla por uso.'}</span>
+                              </div>
+                              <div className="p-2 rounded bg-slate-900/60 border border-slate-800 text-xs">
+                                <span className="font-bold text-rose-400 block uppercase tracking-wider text-[10px]">Riesgo al no reparar:</span>
+                                <span className="text-slate-300">
+                                  {item.status === 'Critical' ? 'Mayor probabilidad de avería grave o accidente.' : 'Reducción del rendimiento y vida útil.'}
+                                </span>
+                              </div>
+                            </div>
+
+                            {item.mediaUrls && item.mediaUrls.length > 0 && (
+                              <div className="flex flex-wrap gap-2 mt-3">
+                                {item.mediaUrls.map((url, idx) => (
+                                  <a href={url} target="_blank" rel="noopener noreferrer" key={idx}>
+                                    <img src={url} alt="Evidencia" className="w-16 h-16 object-cover rounded border border-border shadow-sm hover:scale-105 transition-transform" />
+                                  </a>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                          {item.notes && <p className="text-sm text-muted-foreground bg-secondary dark:bg-black/50 p-2 rounded border-l-2 border-border">{item.notes}</p>}
-                          {item.mediaUrls && item.mediaUrls.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mt-3">
-                              {item.mediaUrls.map((url, idx) => (
-                                <a href={url} target="_blank" rel="noopener noreferrer" key={idx}>
-                                  <img src={url} alt="Evidencia" className="w-16 h-16 object-cover rounded border border-border shadow-sm hover:scale-105 transition-transform" />
-                                </a>
-                              ))}
+                          
+                          {(item.status !== 'Pass') && (
+                            <div className="w-full md:w-48 space-y-2">
+                              <div>
+                                <Label className="text-xs text-muted-foreground mb-1 block">Prioridad Sugerida</Label>
+                                <select 
+                                  className="w-full rounded border border-border bg-background px-2.5 py-1 text-xs font-semibold text-slate-200"
+                                  defaultValue={item.status === 'Critical' ? 'Urgente' : 'Recomendado'}
+                                >
+                                  <option value="Urgente">🚨 Urgente</option>
+                                  <option value="Recomendado">⚠️ Recomendado</option>
+                                  <option value="Opcional">💡 Opcional</option>
+                                </select>
+                              </div>
+                              <div>
+                                <Label className="text-xs text-muted-foreground mb-1 block">{t('partPrice')}</Label>
+                                <Input 
+                                  type="number"
+                                  min="0"
+                                  placeholder="0.00"
+                                  className="bg-background border-border text-right text-emerald-600 dark:text-emerald-400 font-mono"
+                                  value={prices[item.id] === undefined ? '' : prices[item.id]}
+                                  onChange={(e) => setPrices({...prices, [item.id]: parseFloat(e.target.value) || 0})}
+                                  readOnly={selectedJob.status !== 'Approval'}
+                                />
+                              </div>
                             </div>
                           )}
                         </div>
-                        
-                        {(item.status !== 'Pass') && (
-                          <div className="w-full md:w-48">
-                            <Label className="text-xs text-muted-foreground mb-1 block">{t('partPrice')}</Label>
-                            <Input 
-                              type="number"
-                              min="0"
-                              placeholder="0.00"
-                              className="bg-background border-border text-right text-emerald-600 dark:text-emerald-400 font-mono"
-                              value={prices[item.id] === undefined ? '' : prices[item.id]}
-                              onChange={(e) => setPrices({...prices, [item.id]: parseFloat(e.target.value) || 0})}
-                              readOnly={selectedJob.status !== 'Approval'}
-                            />
-                          </div>
-                        )}
                       </div>
                     ))
                   )}

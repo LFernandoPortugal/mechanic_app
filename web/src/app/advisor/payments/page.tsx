@@ -253,6 +253,24 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
                 <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
                 <span>Vehículo entregado y pago completado.</span>
               </div>
+
+              {/* Checklist Cierre de Entrega */}
+              <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800 space-y-1.5 text-xs">
+                <span className="font-bold text-slate-400 uppercase tracking-widest block mb-1">Checklist Cierre de Entrega:</span>
+                <div className="flex items-center justify-between text-emerald-400">
+                  <span>1. Pago Total Confirmado</span>
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                </div>
+                <div className="flex items-center justify-between text-emerald-400">
+                  <span>2. Firma de Entrega / Conformidad</span>
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                </div>
+                <div className="flex items-center justify-between text-emerald-400">
+                  <span>3. Vehículo Entregado al Cliente</span>
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                </div>
+              </div>
+
               <Button
                 variant="outline"
                 className="w-full border-emerald-600/50 text-emerald-400 hover:bg-emerald-950/30 gap-2"
