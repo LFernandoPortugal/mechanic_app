@@ -49,73 +49,74 @@
 
 :root {
   --radius: 0.625rem;
-  /* ── Light Theme — SGA Branded Palette (Emerald + Amber) ─── */
-  --background: oklch(0.98 0.006 160);       /* Blanco con tinte verde muy sutil */
-  --foreground: oklch(0.15 0.015 160);       /* Casi negro con tinte verde */
-  --card: oklch(1 0 0);                      /* Blanco puro para cards */
-  --card-foreground: oklch(0.15 0.015 160);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.15 0.015 160);
-  --primary: oklch(0.42 0.15 160);           /* Emerald oscuro — botones principales */
-  --primary-foreground: oklch(0.99 0 0);     /* Blanco puro */
-  --secondary: oklch(0.92 0.045 160);        /* Verde muy claro */
-  --secondary-foreground: oklch(0.28 0.09 160); /* Verde oscuro */
-  --muted: oklch(0.94 0.018 160);            /* Fondo de elementos apagados */
-  --muted-foreground: oklch(0.46 0.035 160); /* Texto de apoyo — gris verdoso */
-  --accent: oklch(0.78 0.16 55);             /* Naranja/ámbar para highlights */
-  --accent-foreground: oklch(0.18 0.06 55);  /* Texto oscuro sobre accent */
-  --destructive: oklch(0.55 0.22 28);        /* Rojo */
-  --border: oklch(0.88 0.022 160);           /* Borde con tinte verde sutil */
-  --input: oklch(0.95 0.012 160);            /* Input background */
-  --ring: oklch(0.42 0.15 160);              /* Focus ring = primary */
-  --chart-1: oklch(0.52 0.20 160);           /* Emerald vibrante */
-  --chart-2: oklch(0.58 0.19 220);           /* Azul */
-  --chart-3: oklch(0.68 0.19 55);            /* Naranja */
-  --chart-4: oklch(0.55 0.22 305);           /* Violeta */
-  --chart-5: oklch(0.62 0.21 15);            /* Rojo-naranja */
-  --sidebar: oklch(0.96 0.018 160);          /* Sidebar fondo */
-  --sidebar-foreground: oklch(0.20 0.05 160);
-  --sidebar-primary: oklch(0.42 0.15 160);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.90 0.04 160);
-  --sidebar-accent-foreground: oklch(0.28 0.09 160);
-  --sidebar-border: oklch(0.88 0.022 160);
-  --sidebar-ring: oklch(0.42 0.15 160);
+  /* ── Light Enterprise Theme — Clean Technical Automotive Palette ── */
+  --background: #F3F5F7;                       /* Gris técnico empresarial fresco */
+  --foreground: #0F172A;                       /* Slate 900 — Texto principal de alto contraste */
+  --card: #FFFFFF;                              /* Tarjetas blanco puro */
+  --card-foreground: #0F172A;                  /* Texto oscuro en tarjetas */
+  --popover: #FFFFFF;
+  --popover-foreground: #0F172A;
+  --primary: #0284C7;                           /* Azul técnico corporativo */
+  --primary-foreground: #FFFFFF;
+  --secondary: #E2E8F0;                         /* Gris neutro para badges/elementos secundarios */
+  --secondary-foreground: #1E293B;
+  --muted: #F1F5F9;                             /* Fondo de apoyos */
+  --muted-foreground: #475569;                  /* Slate 600 — Texto secundario perfectamente legible */
+  --accent: #0EA5E9;
+  --accent-foreground: #0F172A;
+  --destructive: #E11D48;                       /* Rojo elegante */
+  --border: #CBD5E1;                            /* Borde suave pero visible (Slate 300) */
+  --input: #FFFFFF;
+  --ring: #0284C7;
+  --chart-1: #0284C7;
+  --chart-2: #0D9488;
+  --chart-3: #D97706;
+  --chart-4: #6D28D9;
+  --chart-5: #E11D48;
+  --sidebar: #F8FAFC;
+  --sidebar-foreground: #0F172A;
+  --sidebar-primary: #0284C7;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #E2E8F0;
+  --sidebar-accent-foreground: #0F172A;
+  --sidebar-border: #CBD5E1;
+  --sidebar-ring: #0284C7;
 }
 
 .dark {
-  --background: oklch(0.12 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.15 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.15 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.75 0.25 140);
-  --primary-foreground: oklch(0.12 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.65 0.25 40);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.75 0.25 140);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.75 0.25 140);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.75 0.25 140);
+  --background: #080C12;                        /* Dark Mode Industrial Scanner */
+  --foreground: #F8FAFC;
+  --card: #151E2B;                              /* Card industrial oscura */
+  --card-foreground: #F8FAFC;
+  --popover: #151E2B;
+  --popover-foreground: #F8FAFC;
+  --primary: #00D084;                           /* Emerald Neón automotriz */
+  --primary-foreground: #080C12;
+  --secondary: #1E293B;
+  --secondary-foreground: #F8FAFC;
+  --muted: #1E293B;
+  --muted-foreground: #94A3B8;
+  --accent: #F59E0B;
+  --accent-foreground: #F8FAFC;
+  --destructive: #F43F5E;
+  --border: #263344;                            /* Borde industrial oscuro */
+  --input: #1A2433;
+  --ring: #00D084;
+  --chart-1: #00D084;
+  --chart-2: #38BDF8;
+  --chart-3: #FBBF24;
+  --chart-4: #A78BFA;
+  --chart-5: #FB7185;
+  --sidebar: #0F172A;
+  --sidebar-foreground: #F8FAFC;
+  --sidebar-primary: #00D084;
+  --sidebar-primary-foreground: #080C12;
+  --sidebar-accent: #1E293B;
+  --sidebar-accent-foreground: #F8FAFC;
+  --sidebar-border: #263344;
+  --sidebar-ring: #00D084;
 }
+
 /* ── Touch ripple animation ───────────────────────────────── */
 @keyframes touch-ripple {
   0%   { transform: scale(0.2); opacity: 1; }
@@ -126,32 +127,32 @@
 }
 
 @layer utilities {
-  /* Glass panel — light mode base */
+  /* Glass panel — Light Enterprise: Tarjetas Blancas puras con bordes definidos y sombras profesionales */
   .glass-panel {
-    @apply bg-white/95 backdrop-blur-md border border-border shadow-sm transition-all duration-200;
+    @apply bg-white border border-slate-300 shadow-sm transition-all duration-200;
   }
 
   /* Glass panel — hover in light mode */
   .glass-panel:hover {
-    @apply bg-white shadow-md border-primary/20;
+    @apply bg-white shadow-md border-slate-400;
   }
 
   /* Glass panel — dark mode */
   .dark .glass-panel {
-    @apply bg-zinc-900/70 backdrop-blur-md border border-white/10 shadow-[0_0_15px_rgba(57,255,20,0.02)];
+    @apply bg-[#151E2B]/90 backdrop-blur-md border border-[#263344] shadow-[0_0_15px_rgba(0,208,132,0.02)];
   }
 
   /* Hover on dark glass panels */
   .dark .glass-panel:hover {
-    @apply bg-zinc-800/75 border-white/15 shadow-[0_0_20px_rgba(52,211,153,0.04)];
+    @apply bg-[#1C2838] border-[#36475D] shadow-[0_0_20px_rgba(0,208,132,0.05)];
   }
 
-  /* Page background — light: subtle emerald tinted gradient */
+  /* Page background — Light: Fondo gris técnico técnico limpio */
   .page-bg {
-    @apply bg-gradient-to-br from-background via-background to-secondary/30;
+    @apply bg-[#F3F5F7];
   }
   .dark .page-bg {
-    @apply bg-transparent;
+    @apply bg-[#080C12];
   }
 
   /* Desktop-friendly max-width container */
@@ -162,17 +163,17 @@
     @apply w-full max-w-7xl mx-auto px-4 md:px-10;
   }
 
-  /* Header tool button — light mode: visible dark text with border */
+  /* Header tool button — light mode */
   .header-tool-btn {
-    @apply flex items-center justify-center rounded-full bg-secondary border border-border
-           text-foreground/70 transition-all duration-200
-           hover:text-primary hover:bg-primary/10 hover:border-primary/30 hover:shadow-[0_0_10px_rgba(34,197,94,0.12)];
+    @apply flex items-center justify-center rounded-full bg-slate-200/80 border border-slate-300
+           text-slate-700 transition-all duration-200
+           hover:text-slate-900 hover:bg-slate-300/80 hover:border-slate-400;
   }
 
   /* Header tool button — dark mode override */
   .dark .header-tool-btn {
-    @apply text-muted-foreground
-           hover:text-foreground hover:bg-white/10 hover:border-white/25 hover:shadow-[0_0_10px_rgba(255,255,255,0.06)];
+    @apply bg-[#1E293B] border-[#263344] text-slate-300
+           hover:text-white hover:bg-[#2A394E] hover:border-[#3A4D66];
   }
 }
 
