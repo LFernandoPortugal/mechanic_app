@@ -21,6 +21,9 @@ import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { useRealtimeJobs } from "@/hooks/useRealtimeJobs";
 import { WorkflowStepper } from "@/components/WorkflowStepper";
 import { VehicleIcon } from "@/components/ui/vehicle-icons";
+import VehicleTypeSelector from "@/components/ui/VehicleTypeSelector";
+import { VehicleSummary } from "@/components/ui/VehicleSummary";
+import { ClientCommunicationAssistant } from "@/components/ui/ClientCommunicationAssistant";
 
 const STATUS_MAP: Record<string, string> = {
   Pass: 'statusPass',
@@ -527,6 +530,12 @@ export default function TechnicianDashboard() {
                       placeholder={t('addDetails')}
                     />
                   </div>
+
+                  {/* Asistente de Comunicación Comercial al Cliente (Gemini AI $0) */}
+                  <ClientCommunicationAssistant
+                    technicalNotes={newItemNotes || newItemName}
+                    onApplyExplanation={(exp) => setNewItemNotes((prev) => (prev ? `${prev}\n\nExplicación al Cliente: ${exp}` : exp))}
+                  />
 
                   {newItemStatus !== 'Pass' && (
                     <div className="space-y-2">

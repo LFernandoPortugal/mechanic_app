@@ -1,11 +1,31 @@
-"use client";
+'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLE_ROUTE_MAP, ROLE_META } from '@/types';
-import { ClipboardList, Wrench, DollarSign, BarChart3, ShieldCheck, Package, ArrowRight, Settings, Users2, Wand2, Crown } from 'lucide-react';
+import { 
+  ClipboardList, 
+  Wrench, 
+  DollarSign, 
+  BarChart3, 
+  ShieldCheck, 
+  Package, 
+  ArrowRight, 
+  Settings, 
+  Users2, 
+  Crown,
+  Car,
+  AlertCircle,
+  Activity,
+  CheckCircle
+} from 'lucide-react';
 import { useRealtimeJobs } from '@/hooks/useRealtimeJobs';
+import { MetricCard } from '@/components/ui/MetricCard';
+import { WorkshopLiveBoard, LiveBay } from '@/components/ui/WorkshopLiveBoard';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { JOB_STATUS_CONFIG } from '@/constants/statuses';
 
 interface NavCard {
   href: string;
@@ -23,9 +43,9 @@ const allCards: NavCard[] = [
     href: '/reception',
     titleKey: 'reception',
     descKey: 'receptionDesc',
-    icon: <ClipboardList className="w-7 h-7 text-emerald-400" />,
+    icon: <ClipboardList className="w-6 h-6 text-emerald-400" />,
     hoverBorder: 'hover:border-emerald-500/60',
-    hoverShadow: 'hover:shadow-[0_0_30px_rgba(52,211,153,0.12)]',
+    hoverShadow: 'hover:shadow-[0_0_30px_rgba(0,208,132,0.12)]',
     titleColor: 'text-emerald-400',
     accentBg: 'bg-emerald-500/10 group-hover:bg-emerald-500/20',
   },
@@ -33,27 +53,27 @@ const allCards: NavCard[] = [
     href: '/technician',
     titleKey: 'technician',
     descKey: 'technicianDesc',
-    icon: <Wrench className="w-7 h-7 text-orange-400" />,
-    hoverBorder: 'hover:border-orange-500/60',
-    hoverShadow: 'hover:shadow-[0_0_30px_rgba(249,115,22,0.12)]',
-    titleColor: 'text-orange-400',
-    accentBg: 'bg-orange-500/10 group-hover:bg-orange-500/20',
-  },
-  {
-    href: '/advisor',
-    titleKey: 'advisor',
-    descKey: 'advisorDesc',
-    icon: <DollarSign className="w-7 h-7 text-blue-400" />,
+    icon: <Wrench className="w-6 h-6 text-blue-400" />,
     hoverBorder: 'hover:border-blue-500/60',
     hoverShadow: 'hover:shadow-[0_0_30px_rgba(59,130,246,0.12)]',
     titleColor: 'text-blue-400',
     accentBg: 'bg-blue-500/10 group-hover:bg-blue-500/20',
   },
   {
+    href: '/advisor',
+    titleKey: 'advisor',
+    descKey: 'advisorDesc',
+    icon: <DollarSign className="w-6 h-6 text-amber-400" />,
+    hoverBorder: 'hover:border-amber-500/60',
+    hoverShadow: 'hover:shadow-[0_0_30px_rgba(245,158,11,0.12)]',
+    titleColor: 'text-amber-400',
+    accentBg: 'bg-amber-500/10 group-hover:bg-amber-500/20',
+  },
+  {
     href: '/advisor/payments',
     titleKey: 'payments',
     descKey: 'paymentsDesc',
-    icon: <DollarSign className="w-7 h-7 text-green-400" />,
+    icon: <DollarSign className="w-6 h-6 text-green-400" />,
     hoverBorder: 'hover:border-green-500/60',
     hoverShadow: 'hover:shadow-[0_0_30px_rgba(34,197,94,0.12)]',
     titleColor: 'text-green-400',
@@ -63,7 +83,7 @@ const allCards: NavCard[] = [
     href: '/analytics',
     titleKey: 'analytics',
     descKey: 'analyticsDesc',
-    icon: <BarChart3 className="w-7 h-7 text-purple-400" />,
+    icon: <BarChart3 className="w-6 h-6 text-purple-400" />,
     hoverBorder: 'hover:border-purple-500/60',
     hoverShadow: 'hover:shadow-[0_0_30px_rgba(168,85,247,0.12)]',
     titleColor: 'text-purple-400',
@@ -73,7 +93,7 @@ const allCards: NavCard[] = [
     href: '/inventory',
     titleKey: 'inventory',
     descKey: 'inventoryDesc',
-    icon: <Package className="w-7 h-7 text-teal-400" />,
+    icon: <Package className="w-6 h-6 text-teal-400" />,
     hoverBorder: 'hover:border-teal-500/60',
     hoverShadow: 'hover:shadow-[0_0_30px_rgba(20,184,166,0.12)]',
     titleColor: 'text-teal-400',
@@ -83,7 +103,7 @@ const allCards: NavCard[] = [
     href: '/admin/settings',
     titleKey: 'settings',
     descKey: 'settingsDesc',
-    icon: <Settings className="w-7 h-7 text-indigo-400" />,
+    icon: <Settings className="w-6 h-6 text-indigo-400" />,
     hoverBorder: 'hover:border-indigo-500/60',
     hoverShadow: 'hover:shadow-[0_0_30px_rgba(99,102,241,0.12)]',
     titleColor: 'text-indigo-400',
@@ -93,7 +113,7 @@ const allCards: NavCard[] = [
     href: '/clients',
     titleKey: 'clientDatabase',
     descKey: 'clientDatabaseDesc',
-    icon: <Users2 className="w-7 h-7 text-cyan-400" />,
+    icon: <Users2 className="w-6 h-6 text-cyan-400" />,
     hoverBorder: 'hover:border-cyan-500/60',
     hoverShadow: 'hover:shadow-[0_0_30px_rgba(6,182,212,0.12)]',
     titleColor: 'text-cyan-400',
@@ -103,7 +123,7 @@ const allCards: NavCard[] = [
     href: '/qc',
     titleKey: 'qc',
     descKey: 'qcDesc',
-    icon: <ShieldCheck className="w-7 h-7 text-pink-400" />,
+    icon: <ShieldCheck className="w-6 h-6 text-pink-400" />,
     hoverBorder: 'hover:border-pink-500/60',
     hoverShadow: 'hover:shadow-[0_0_30px_rgba(244,63,94,0.12)]',
     titleColor: 'text-pink-400',
@@ -113,7 +133,7 @@ const allCards: NavCard[] = [
     href: '/super-admin',
     titleKey: 'superAdmin',
     descKey: 'superAdminDesc',
-    icon: <Crown className="w-7 h-7 text-red-500" />,
+    icon: <Crown className="w-6 h-6 text-red-500" />,
     hoverBorder: 'hover:border-red-500/60',
     hoverShadow: 'hover:shadow-[0_0_30px_rgba(239,68,68,0.12)]',
     titleColor: 'text-red-500',
@@ -136,14 +156,53 @@ export default function Home() {
       })
     : allCards.filter((card) => card.href !== '/super-admin');
 
+  // Cálculos para KPIs en vivo
+  const activeJobs = jobs.filter(j => j.status !== 'Delivered');
+  const receptionCount = jobs.filter(j => j.status === 'Reception').length;
+  const diagnosisCount = jobs.filter(j => j.status === 'Diagnosis').length;
+  const approvalCount = jobs.filter(j => j.status === 'Approval' || j.status === 'Approved').length;
+  const repairCount = jobs.filter(j => j.status === 'Repair').length;
+  const qcCount = jobs.filter(j => j.status === 'QC').length;
+  const readyCount = jobs.filter(j => j.status === 'Ready').length;
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayRevenue = jobs.reduce((sum, job) => {
+    if (!job.payments) return sum;
+    const jobPaymentsToday = job.payments
+      .filter(p => p.date && p.date.startsWith(todayStr))
+      .reduce((s, p) => s + p.amount, 0);
+    return sum + jobPaymentsToday;
+  }, 0);
+
+  // Mapear bahías en vivo
+  const liveBays: LiveBay[] = jobs
+    .filter(j => j.status === 'Repair' || j.status === 'Diagnosis')
+    .slice(0, 6)
+    .map((j, idx) => ({
+      id: j.id,
+      bayName: `Bahía ${String(idx + 1).padStart(2, '0')}`,
+      vehicleModel: (j.make || j.model) ? `${j.make || ''} ${j.model || ''}`.trim() : 'Vehículo',
+      licensePlate: j.vehicleId || j.vin || 'N/A',
+      status: j.status,
+      technicianName: j.technicianId || 'Técnico asignado',
+      elapsedTime: 'En bahía',
+      progressPercentage: j.status === 'Repair' ? 75 : 30,
+    }));
+
   return (
-    <div className="min-h-screen page-bg text-foreground flex flex-col items-center justify-center px-4 py-12">
-      {/* Hero */}
-      <div className="text-center mb-10 max-w-2xl">
-        <h1 className="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-400 mb-3 drop-shadow-[0_0_20px_rgba(52,211,153,0.3)] leading-tight">
-          {t('appTitle')}
+    <div className="min-h-screen page-bg text-foreground flex flex-col items-center justify-start px-4 py-8 sm:py-12">
+      {/* Hero / Brand Header */}
+      <div className="text-center mb-8 max-w-3xl">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-4">
+          <Activity className="w-3.5 h-3.5 animate-pulse" />
+          SGA Garage Command Center
+        </div>
+        <h1 className="text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500 tracking-tight leading-tight">
+          {workshopSettings?.workshopName || t('appTitle')}
         </h1>
-        <p className="text-muted-foreground text-lg">{t('appSubtitle')}</p>
+        <p className="text-slate-400 dark:text-slate-400 light:text-slate-600 text-sm sm:text-base mt-2 max-w-xl mx-auto">
+          {t('appSubtitle')}
+        </p>
       </div>
 
       {/* Role badges */}
@@ -152,7 +211,7 @@ export default function Home() {
           {userProfile.roles.map((role) => {
             const meta = ROLE_META[role];
             return (
-              <span key={role} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${meta.color}`}>
+              <span key={role} className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${meta.color}`}>
                 {meta.emoji} {t(meta.labelKey)}
               </span>
             );
@@ -160,136 +219,114 @@ export default function Home() {
         </div>
       )}
 
-      {/* Real-time KPI Dashboard for Admins */}
-      {isAdmin && jobs.length > 0 && (
-        <div className="w-full max-w-5xl mb-10 animate-fade-in space-y-6">
-          <div className="flex items-center justify-between border-b border-border/40 pb-2">
-            <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+      {/* GARAGE COMMAND CENTER: KPIs & Live Board */}
+      {user && (
+        <div className="w-full max-w-6xl mb-10 space-y-6">
+          {/* Header de la consola de control */}
+          <div className="flex items-center justify-between border-b pb-3 border-slate-800 dark:border-slate-800 light:border-slate-200">
+            <h2 className="text-lg font-bold text-slate-100 dark:text-slate-100 light:text-slate-800 flex items-center gap-2">
               <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
-              Vista General del Taller (En Vivo)
+              Estado del Taller en Vivo
             </h2>
-            <span className="text-[11px] text-muted-foreground bg-zinc-900/60 dark:bg-black/30 border border-border/40 px-2.5 py-0.5 rounded font-mono">
-              {jobs.filter(j => j.status !== 'Delivered').length} Vehículos Activos
+            <div className="flex items-center gap-2">
+              <StatusBadge status="reception" customLabel={`${activeJobs.length} Activos`} showPulse size="sm" />
+            </div>
+          </div>
+
+          {/* Grid de Métricas Principales */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <MetricCard
+              title="Vehículos Activos"
+              value={activeJobs.length}
+              subtitle="En flujo de trabajo"
+              icon={Car}
+              statusColor={JOB_STATUS_CONFIG.reception.dark.text}
+            />
+            <MetricCard
+              title="Diagnósticos Pendientes"
+              value={diagnosisCount}
+              subtitle="Evaluación en taller"
+              icon={Wrench}
+              statusColor={JOB_STATUS_CONFIG.diagnosis.dark.text}
+            />
+            <MetricCard
+              title="Cotizaciones Esperando"
+              value={approvalCount}
+              subtitle="Aprobación de cliente"
+              icon={DollarSign}
+              statusColor={JOB_STATUS_CONFIG.approval.dark.text}
+            />
+            <MetricCard
+              title="Ingresos del Día"
+              value={`${workshopSettings?.currencySymbol || '$'}${todayRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+              subtitle="Cobros procesados hoy"
+              icon={CheckCircle}
+              statusColor={JOB_STATUS_CONFIG.ready.dark.text}
+            />
+          </div>
+
+          {/* Pipeline Visual Interactivo */}
+          <div className="rounded-xl border p-4 sm:p-5 bg-[#151E2B] border-[#263344] dark:bg-[#151E2B] dark:border-[#263344] light:bg-white light:border-[#D8E1E8]">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest block mb-3">
+              Pipeline de Vehículos por Etapa:
             </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {/* Daily Revenue Card */}
-            <div className="glass-panel p-5 rounded-2xl border-l-4 border-l-emerald-500 flex flex-col justify-between hover:shadow-[0_0_30px_rgba(16,185,129,0.15)] transition-all duration-300 hover:-translate-y-0.5">
-              <div>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Ingresos de Hoy</p>
-                <h3 className="text-3xl font-black text-emerald-400 mt-2 font-mono">
-                  {workshopSettings?.currencySymbol || "$"}{(() => {
-                    const todayStr = new Date().toISOString().split('T')[0];
-                    return jobs.reduce((sum, job) => {
-                      if (!job.payments) return sum;
-                      const jobPaymentsToday = job.payments
-                        .filter(p => p.date && p.date.startsWith(todayStr))
-                        .reduce((s, p) => s + p.amount, 0);
-                      return sum + jobPaymentsToday;
-                    }, 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                  })()}
-                </h3>
-              </div>
-              <p className="text-[10px] text-muted-foreground mt-3 pt-2 border-t border-border/20">
-                Suma total de cobros realizados hoy
-              </p>
-            </div>
-
-            {/* Shop Occupancy Card */}
-            <div className="glass-panel p-5 rounded-2xl border-l-4 border-l-orange-500 flex flex-col justify-between hover:shadow-[0_0_30px_rgba(249,115,22,0.15)] transition-all duration-300 hover:-translate-y-0.5">
-              <div>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Ocupación</p>
-                <div className="flex items-baseline justify-between mt-2">
-                  <h3 className="text-3xl font-black text-orange-400 font-mono">
-                    {jobs.filter(j => j.status !== 'Delivered' && j.status !== 'Ready').length}
-                  </h3>
-                  <span className="text-xs text-muted-foreground font-light">vehículos en taller</span>
-                </div>
-              </div>
-              <div className="mt-3 pt-2 border-t border-border/20">
-                <div className="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden">
-                  <div 
-                    className="bg-orange-500 h-1.5 rounded-full transition-all duration-500" 
-                    style={{ 
-                      width: `${Math.min(100, (jobs.filter(j => j.status !== 'Delivered' && j.status !== 'Ready').length / 12) * 100)}%` 
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Actions Required Card */}
-            <div className="glass-panel p-5 rounded-2xl border-l-4 border-l-blue-500 flex flex-col justify-between hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] transition-all duration-300 hover:-translate-y-0.5">
-              <div>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Atención Requerida</p>
-                <div className="flex flex-col gap-1.5 mt-2">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-muted-foreground font-light">Sin Técnico:</span>
-                    <span className="font-bold text-blue-400 font-mono bg-blue-950/40 px-1.5 py-0.5 rounded border border-blue-500/20">
-                      {jobs.filter(j => !j.technicianId && j.status !== 'Delivered').length}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-muted-foreground font-light">Esperando Cotización:</span>
-                    <span className="font-bold text-amber-400 font-mono bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-500/20">
-                      {jobs.filter(j => j.status === 'Diagnosis').length}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <p className="text-[10px] text-muted-foreground mt-3 pt-2 border-t border-border/20">
-                Órdenes que requieren acción inmediata
-              </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+              <Link href="/reception" className="p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors text-center">
+                <span className="text-[11px] text-emerald-400 font-semibold block">Recepción</span>
+                <span className="text-xl font-bold font-mono text-slate-100">{receptionCount}</span>
+              </Link>
+              <Link href="/technician" className="p-3 rounded-lg border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 transition-colors text-center">
+                <span className="text-[11px] text-blue-400 font-semibold block">Diagnóstico</span>
+                <span className="text-xl font-bold font-mono text-slate-100">{diagnosisCount}</span>
+              </Link>
+              <Link href="/advisor" className="p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 transition-colors text-center">
+                <span className="text-[11px] text-amber-400 font-semibold block">Cotización</span>
+                <span className="text-xl font-bold font-mono text-slate-100">{approvalCount}</span>
+              </Link>
+              <Link href="/technician" className="p-3 rounded-lg border border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20 transition-colors text-center">
+                <span className="text-[11px] text-orange-400 font-semibold block">Reparación</span>
+                <span className="text-xl font-bold font-mono text-slate-100">{repairCount}</span>
+              </Link>
+              <Link href="/qc" className="p-3 rounded-lg border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 transition-colors text-center">
+                <span className="text-[11px] text-purple-400 font-semibold block">QC</span>
+                <span className="text-xl font-bold font-mono text-slate-100">{qcCount}</span>
+              </Link>
+              <Link href="/advisor/payments" className="p-3 rounded-lg border border-green-500/30 bg-green-500/10 hover:bg-green-500/20 transition-colors text-center">
+                <span className="text-[11px] text-green-400 font-semibold block">Entrega</span>
+                <span className="text-xl font-bold font-mono text-slate-100">{readyCount}</span>
+              </Link>
             </div>
           </div>
 
-          {/* Quick status breakdown bar */}
-          <div className="glass-panel p-4 rounded-xl flex flex-wrap gap-4 items-center justify-between text-xs border border-border/40">
-            <span className="font-bold text-muted-foreground uppercase tracking-widest text-[9px]">Pipeline Operativo:</span>
-            <div className="flex flex-wrap gap-3">
-              <span className="flex items-center gap-1.5 bg-zinc-900/60 dark:bg-black/30 px-2.5 py-1 rounded border border-border/40 font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                Recepción: <strong className="font-bold font-mono text-amber-400 ml-0.5">{jobs.filter(j => j.status === 'Reception').length}</strong>
-              </span>
-              <span className="flex items-center gap-1.5 bg-zinc-900/60 dark:bg-black/30 px-2.5 py-1 rounded border border-border/40 font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-                Diagnóstico: <strong className="font-bold font-mono text-blue-400 ml-0.5">{jobs.filter(j => j.status === 'Diagnosis').length}</strong>
-              </span>
-              <span className="flex items-center gap-1.5 bg-zinc-900/60 dark:bg-black/30 px-2.5 py-1 rounded border border-border/40 font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
-                Cotizando: <strong className="font-bold font-mono text-violet-400 ml-0.5">{jobs.filter(j => j.status === 'Approval' || j.status === 'Approved' || j.status === 'Ready').length}</strong>
-              </span>
-              <span className="flex items-center gap-1.5 bg-zinc-900/60 dark:bg-black/30 px-2.5 py-1 rounded border border-border/40 font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
-                Reparación: <strong className="font-bold font-mono text-orange-400 ml-0.5">{jobs.filter(j => j.status === 'Repair').length}</strong>
-              </span>
-              <span className="flex items-center gap-1.5 bg-zinc-900/60 dark:bg-black/30 px-2.5 py-1 rounded border border-border/40 font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />
-                QC: <strong className="font-bold font-mono text-teal-400 ml-0.5">{jobs.filter(j => j.status === 'QC').length}</strong>
-              </span>
+          {/* Taller en Vivo: Bahías activas */}
+          {liveBays.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-sm font-bold text-slate-300 dark:text-slate-300 light:text-slate-700 uppercase tracking-wider">
+                Bahías Operativas en Tiempo Real
+              </h3>
+              <WorkshopLiveBoard bays={liveBays} />
             </div>
-          </div>
+          )}
         </div>
       )}
 
-      {/* Navigation grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 w-full max-w-5xl">
+      {/* Grid de Accesos Directos Módulos */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full max-w-6xl">
         {visibleCards.map((card) => (
           <Link
             key={card.href}
             href={card.href}
-            className={`group relative flex flex-col p-6 glass-panel rounded-2xl ${card.hoverBorder} ${card.hoverShadow} transition-all duration-300 hover:-translate-y-1`}
+            className={`group relative flex flex-col p-5 rounded-xl border transition-all duration-300 hover:-translate-y-1
+            bg-[#151E2B] border-[#263344] text-[#E5E7EB] dark:bg-[#151E2B] dark:border-[#263344]
+            light:bg-white light:border-[#D8E1E8] light:text-[#17202A] light:shadow-sm ${card.hoverBorder} ${card.hoverShadow}`}
           >
-            {/* Icon badge */}
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-5 transition-all duration-300 ${card.accentBg}`}>
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 transition-all duration-300 ${card.accentBg}`}>
               {card.icon}
             </div>
-            <h2 className={`text-lg font-bold mb-2 ${card.titleColor}`}>{t(card.titleKey)}</h2>
-            <p className="text-muted-foreground text-sm flex-1 leading-relaxed">{t(card.descKey)}</p>
-            {/* Arrow */}
-            <div className={`mt-4 flex items-center gap-1 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${card.titleColor}`}>
-              <span>Abrir</span>
+            <h2 className={`text-base font-bold mb-1 ${card.titleColor}`}>{t(card.titleKey)}</h2>
+            <p className="text-slate-400 dark:text-slate-400 light:text-slate-600 text-xs flex-1 leading-relaxed">{t(card.descKey)}</p>
+            <div className={`mt-4 flex items-center gap-1 text-xs font-semibold opacity-80 group-hover:opacity-100 transition-opacity ${card.titleColor}`}>
+              <span>Ingresar</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </div>
           </Link>
@@ -298,15 +335,15 @@ export default function Home() {
         {hasRole('ADMIN') && (
           <Link
             href="/admin/users"
-            className="group relative flex flex-col p-6 glass-panel rounded-2xl hover:border-purple-500/60 hover:shadow-[0_0_30px_rgba(168,85,247,0.12)] transition-all duration-300 hover:-translate-y-1"
+            className="group relative flex flex-col p-5 rounded-xl border border-[#263344] bg-[#151E2B] hover:border-purple-500/60 hover:shadow-[0_0_30px_rgba(168,85,247,0.12)] transition-all duration-300 hover:-translate-y-1 light:bg-white light:border-[#D8E1E8]"
           >
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-5 bg-purple-500/10 group-hover:bg-purple-500/20 transition-all duration-300">
-              <ShieldCheck className="w-7 h-7 text-purple-400" />
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-4 bg-purple-500/10 group-hover:bg-purple-500/20 transition-all duration-300">
+              <ShieldCheck className="w-6 h-6 text-purple-400" />
             </div>
-            <h2 className="text-lg font-bold mb-2 text-purple-400">{t('userManagement')}</h2>
-            <p className="text-muted-foreground text-sm flex-1 leading-relaxed">{t('userManagementDesc')}</p>
-            <div className="mt-4 flex items-center gap-1 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-purple-400">
-              <span>Abrir</span>
+            <h2 className="text-base font-bold mb-1 text-purple-400">{t('userManagement')}</h2>
+            <p className="text-slate-400 dark:text-slate-400 light:text-slate-600 text-xs flex-1 leading-relaxed">{t('userManagementDesc')}</p>
+            <div className="mt-4 flex items-center gap-1 text-xs font-semibold opacity-80 group-hover:opacity-100 transition-opacity text-purple-400">
+              <span>Ingresar</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </div>
           </Link>
@@ -314,8 +351,8 @@ export default function Home() {
       </div>
 
       {!user && !loading && (
-        <p className="mt-10 text-muted-foreground text-sm">
-          <Link href="/login" className="text-emerald-400 hover:underline">{t('loginPrompt')}</Link> {t('loginPromptSuffix')}
+        <p className="mt-10 text-slate-400 text-sm">
+          <Link href="/login" className="text-emerald-400 hover:underline font-semibold">{t('loginPrompt')}</Link> {t('loginPromptSuffix')}
         </p>
       )}
     </div>

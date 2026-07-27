@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { Header } from "@/components/Header";
 import { MouseEffects } from "@/components/MouseEffects";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { BetaFeedbackModal } from "@/components/ui/BetaFeedbackModal";
 import { Toaster } from "sonner";
 
 const geistSans = Geist({
@@ -50,6 +51,7 @@ export default function RootLayout({
               <MouseEffects />
               <Header />
               {children}
+              <BetaFeedbackModal />
               <Toaster richColors position="top-right" />
             </AuthProvider>
           </LanguageProvider>
