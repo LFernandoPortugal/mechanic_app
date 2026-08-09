@@ -1,173 +1,138 @@
 # AI Handoff — SGA Mechanic App
-> Última actualización: 2026-07-26  
-> Conversación: `a9341788-b16b-4208-bb29-014a50b61740`  
-> Repositorio: `LFernandoPortugal/mechanic_app` (rama `main`)  
-> Deploy: Vercel auto-deploy en push a `main`
 
----
+> Última actualización: 2026-08-08
+> Producción oficial: rama `main` en Vercel
+> Trabajo pendiente de integrar: `codex/security-stabilization`
 
-## 1. Estado General del Proyecto
+## Estado ejecutivo
 
-La aplicación es un **Sistema de Gestión de Taller (SGA)** multitenant construido en:
-- **Framework**: Next.js 16 (App Router, TypeScript)
-- **Auth**: Firebase Auth (email/password)
-- **DB**: Cloud Firestore
-- **Hosting**: Vercel (NO Firebase Hosting)
-- **Deploy**: `git push origin main` → Vercel auto-build
+La aplicación es un SGA multitenant en Next.js 16, Firebase Auth/Firestore y Vercel. La rama de estabilización compila, pasa TypeScript y cuenta con pruebas unitarias y de reglas; todavía **no está desplegada en producción**.
 
-### Regla de oro:
-```
-git add -A && git commit -m "tipo(scope): desc" && git push origin main
-# NUNCA: firebase deploy --only hosting
-# SÍ: firebase deploy --only firestore:rules (solo si se cambian reglas)
-```
+- Producción continúa en `https://mechanic-app-zeta.vercel.app/` desde `main`.
+- Preview protegida más reciente: `https://mechanic-aujr6tf33-lfernandoportugals-projects.vercel.app`.
+- No se desplegaron las reglas nuevas a Firebase ni se promovió la preview.
+- El taller tester `p1` fue reparado: conserva su cuenta Auth y ahora tiene un único perfil ADMIN y un `settings/p1` vacío/activo. No se combinaron usuarios antiguos.
+- Las órdenes sintéticas de E2E fueron eliminadas al terminar.
 
----
+## Arquitectura real
 
-## 2. Flujo de Trabajo Completo (Auditado y Correcto)
+- Web y API routes: Next.js 16 en Vercel.
+- Identidad: Firebase Authentication (email/password).
+- Datos: Cloud Firestore.
+- Imágenes actuales: base64 en Firestore; Storage permanece `deny all`.
+- Despliegue web: push a `main` y build de Vercel.
+- Firebase CLI: solo reglas, índices o Storage cuando corresponda; nunca Firebase Hosting.
+- Operaciones privilegiadas server-side: Vercel OIDC → Google Workload Identity Federation → cuenta de servicio sin clave estática.
 
-```
+La aplicación incorpora estas rutas server-side:
+
+- `GET/POST /api/public/quotes/[id]`: DTO público sanitizado y aprobación transaccional.
+- `POST /api/jobs/[id]/payments`: pagos autenticados y transaccionales.
+- `POST/DELETE /api/admin/users`: aprovisionamiento y borrado coordinado de Firebase Auth + Firestore, exclusivo de SUPER_ADMIN.
+
+## Flujo canónico
+
+```text
 Reception → Diagnosis → Approval → Approved → Repair → QC → Ready → Delivered
 ```
 
-| Estado      | Actor              | Pantalla                         | Acción clave                                   |
-|-------------|--------------------|---------------------------------|------------------------------------------------|
-| Reception   | Recepcionista/Admin | `/reception`                   | Crea job con firma, fluidos, fotos             |
-| Diagnosis   | Técnico            | `/technician`                   | Registra ítems de inspección (Pass/Fail/etc.)  |
-| Approval    | Asesor             | `/advisor` (tab Approval)       | Asigna precios, genera link de cotización      |
-| Approved    | (cliente)          | `/quote/view?id=JOB_ID`         | Cliente aprueba ítems. Guarda `approvedAmount` |
-| Repair      | Técnico            | `/technician`                   | Inicia reparación → botón "Enviar a QC"        |
-| QC          | Inspector/Técnico/Admin | `/qc`                      | Checklist 5 puntos. Aprueba → Ready/Delivered  |
-| Ready       | Asesor/Caja        | `/advisor/payments`             | Registra pago(s). Pago completo → Delivered    |
-| Delivered   | —                  | `/advisor/payments` (archivado) | Job cerrado. PDF de recibo disponible          |
+El enlace público vigente es:
 
-> [!IMPORTANT]
-> El Asesor en `/advisor` sólo ve jobs en `["Approval", "Approved", "Repair"]`.
-> Los jobs en `"Ready"` son exclusivos del módulo de Caja `/advisor/payments`.
-
----
-
-## 3. Bugs Resueltos (commits en `main`)
-
-| Bug | Archivo | Fix |
-|-----|---------|-----|
-| Usuarios/talleres eliminados mantenían acceso o se auto-creaban | `AuthContext.tsx`, `login/page.tsx`, `firestore.rules`, `db.ts` | `getWorkshopSettings` ahora retorna `null` para talleres borrados. `deleteWorkshopCompletely` borra en cascada (datos + usuarios) protegiendo a `SUPER_ADMIN`. Expulsión de sesión inmediata en `AuthContext` y `signOut(auth)` en catch de login. |
-| Esquema del SuperAdmin corrupto (`workshopId\t`) | Firestore DB (`users/uid`) | Se limpiaron los campos con tabuladores invisibles `\t` en Firestore. Se asignó `workshopId: "master-control"`. |
-| `handleSaveQuote` ponía `status: "Ready"` en lugar de `"Approval"` | `advisor/page.tsx:69` | Cambiado a `"Approval"`. |
-| Permisos denegados en `firestore.rules` para clientes públicos | `firestore.rules` | Permitir `get` en `Approval` y `update` a `Approved`. |
-| SuperAdmin no creaba usuario vinculado al taller | `super-admin/page.tsx` + `db.ts` | `workshopIdOverride` en `createUserProfile`. |
-| `approvedAmount` se sobreescribía con suma de pagos | `db.ts:registerPayment` | No se modifica `approvedAmount` en pagos. |
-| Técnico sin acceso a QC | `qc/page.tsx` | Agregado `TECHNICIAN` a `allowedRoles`. |
-| Precios editables post-aprobación | `advisor/page.tsx` | `readOnly={status !== 'Approval'}`. |
-| Balance en Pagos usaba `totalEstimate` en lugar de `approvedAmount` | `payments/page.tsx` | `approvedTotal = approvedAmount ∥ totalEstimate`. |
-
----
-
-## 4. Mejoras Implementadas (Fases 2-4)
-
-### WorkflowStepper (`/web/src/components/WorkflowStepper.tsx`)
-- Cada nodo es clicable → muestra popup con descripción del rol y la acción
-- Badge "Aquí" animado en el paso activo
-- Línea de progreso degradada con brillo
-- Descripción del paso activo siempre visible en el pie del stepper
-
-### Portal del Cliente (`/web/src/app/quote/view/QuoteView.tsx`)
-- Pantalla post-aprobación: tracker visual de 4 pasos en tiempo real
-  - Muestra progreso real: `Approved` → `Repair` → `QC` → `Ready` → `Delivered`
-- Logo del taller visible si está configurado en settings
-- Símbolo de moneda del taller en el monto autorizado
-
-### Módulo de Pagos (`/web/src/app/advisor/payments/page.tsx`)
-- Muestra "Total aprobado" en lugar de "Total estimado"
-- Calcula balance contra `approvedAmount` con fallback a `totalEstimate`
-
-### SuperAdmin (`/web/src/app/super-admin/page.tsx`)
-- Badge de OTs activas por taller (en tiempo real al cargar)
-- Días restantes del trial calculados dinámicamente
-- Botón "Limpiar Clave" (elimina `tempPassword` de settings)
-- Eliminación de talleres en cascada (`deleteWorkshopCompletely`) notificando conteo de datos borrados
-
-### Nuevas funciones en `db.ts`
-- `getActiveJobCountByWorkshop(workshopId)` — cuenta jobs activos
-- `clearTempPassword(workshopId)` — borra la contraseña temporal
-- `deleteWorkshopCompletely(workshopId)` — elimina en cascada datos operativos y usuarios del taller borrado
-
----
-
-## 5. Estructura de Archivos Clave
-
-```
-web/
-  src/
-    app/
-      reception/page.tsx        — Creación de OT + firma
-      technician/page.tsx       — Diagnóstico + Reparación + Envío a QC
-      advisor/page.tsx          — Cotización (Approval/Approved/Repair)
-      advisor/payments/page.tsx — Caja y cobros (Ready/Delivered)
-      qc/page.tsx               — Control de calidad
-      quote/view/QuoteView.tsx  — Portal del cliente (sin login)
-      super-admin/page.tsx      — Panel multitenant
-      admin/
-        settings/page.tsx       — Configuración del taller
-        users/page.tsx          — Gestión de roles
-    components/
-      WorkflowStepper.tsx       — Barra de progreso interactiva
-      ProtectedRoute.tsx        — Guard de roles
-    lib/
-      db.ts                     — Todas las funciones de Firestore
-      pdf.ts                    — Generación de PDFs
-      whatsapp.ts               — Links de WhatsApp
-      email.ts                  — Envío de cotizaciones por email
-    contexts/
-      AuthContext.tsx            — Auth + userProfile + workshopSettings
-    hooks/
-      useRealtimeJobs.ts        — Listener en tiempo real de jobs por status
-    types/index.ts              — Tipos globales (Job, UserProfile, etc.)
+```text
+/quote/view?id=JOB_ID
 ```
 
----
+El cliente selecciona ítems, confirma una firma de aprobación separada de la firma de recepción y el servidor recalcula `approvedAmount`, llena `declinedItems`, registra `approvedAt` y cambia el estado a `Approved`.
 
-## 6. Variables de Entorno Requeridas (en Vercel)
+## Cambios de estabilización
 
+### Seguridad
+
+- Eliminado el acceso público directo a `jobs` y `settings`.
+- Eliminada la creación client-side de perfiles y la autoasignación de roles.
+- Eliminado `tempPassword` del flujo nuevo; las contraseñas no deben guardarse en Firestore.
+- Reglas con aislamiento de tenant, trial y transiciones/campos permitidos.
+- La configuración de trial y `allowResetData` ya no puede ser alterada por un ADMIN.
+- Pagos y aprovisionamiento se realizan en API routes autenticadas.
+
+### Integridad
+
+- Stock inicial ya no se duplica.
+- Cada cambio de stock requiere un movimiento inmutable enlazado mediante `lastMovementId`.
+- Pagos usan transacción y rechazan sobrepagos/concurrencia.
+- `auditLog` deja de usar read-modify-write en actualizaciones comunes.
+- La aprobación pública valida firma PNG y tamaño, normaliza ítems y nunca devuelve PII, firmas, pagos ni auditoría.
+
+### Calidad y UI
+
+- Tracker post-aprobación corregido: `Approved`/`Repair` resaltan Reparación, luego QC, Ready y Delivered.
+- Marca del taller usa `workshopName`; moneda usa el símbolo configurado.
+- Firma obligatoria en el portal; eliminado el botón de autoaprobación demo.
+- Mejor contraste de roles en tema claro y CTA visible en tarjetas móviles.
+- Next.js actualizado a 16.3.0 y dependencias runtime sin vulnerabilidades conocidas en `npm audit --omit=dev`.
+
+## Verificación reproducible
+
+Desde `web/` en Windows:
+
+```powershell
+npx.cmd tsc --noEmit --incremental false
+npm.cmd run lint
+$env:JAVA_HOME='C:\Program Files\Microsoft\jdk-21.0.12.8-hotspot'
+$env:Path="$env:JAVA_HOME\bin;$env:Path"
+npm.cmd run test:all
+npm.cmd run build
+npm.cmd audit --omit=dev
 ```
-NEXT_PUBLIC_FIREBASE_API_KEY
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-NEXT_PUBLIC_FIREBASE_PROJECT_ID
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-NEXT_PUBLIC_FIREBASE_APP_ID
-NEXT_PUBLIC_SUPER_ADMIN_EMAIL          # Email que obtiene SUPER_ADMIN en el primer login
-NEXT_PUBLIC_GEMINI_API_KEY             # Para el diagnóstico AI en /technician
+
+Resultado del 2026-08-08:
+
+- TypeScript: 0 errores.
+- Lint: 0 errores, 59 warnings no bloqueantes.
+- Unit tests: 11/11.
+- Firestore Rules tests: 17/17.
+- Build: 19/19 páginas generadas; 3 API routes dinámicas.
+- Auditoría runtime: 0 vulnerabilidades.
+- E2E público local y Vercel preview: GET sanitizado, firma/aprobación parcial, monto 210, un `declinedItem`, tracker correcto y limpieza confirmada.
+
+CI vive en `.github/workflows/ci.yml` y ejecuta instalación, auditoría runtime, TypeScript, lint, pruebas y build.
+
+## Variables requeridas
+
+Las variables públicas Firebase y EmailJS están documentadas en `web/.env.example`. Para las API routes server-side se requieren:
+
+```text
+FIREBASE_ADMIN_PROJECT_ID
+GCP_PROJECT_ID
+GCP_PROJECT_NUMBER
+GCP_SERVICE_ACCOUNT_EMAIL
+GCP_WORKLOAD_IDENTITY_POOL_ID
+GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID
 ```
 
----
+Vercel ya tiene esos identificadores en Preview y Production. No crear ni subir una clave JSON de cuenta de servicio.
 
-## 7. Cómo Continuar (para la próxima IA)
+## Datos existentes que requieren decisión humana
 
-1. Leer este archivo primero.
-2. Leer `docs/mechanic-app/Bugs-y-Correcciones.md` para el historial.
-3. Leer `docs/mechanic-app/Flujo-de-Trabajo.md` para el flujo de estados.
-4. Verificar el último commit en GitHub para saber qué fue lo último desplegado.
-5. **No usar** `firebase deploy --only hosting` bajo ninguna circunstancia.
-6. Siempre verificar con `npm run build` antes de hacer push (desde `/web`).
-7. El build exitoso + push a `main` = deploy automático en Vercel en ~60s.
+Hay órdenes antiguas con `workshopId` `p2`, `prueba` y `master-control`, pero sus documentos `settings` ya no existen (excepto otras configuraciones válidas). Son datos huérfanos históricos. No deben migrarse ni borrarse automáticamente sin decidir si se conservan como evidencia o se purgan.
 
----
+También quedan cuentas Auth antiguas que no tienen perfil `users`. El flujo nuevo evita crear más fantasmas, pero la limpieza histórica debe hacerse con una lista exacta y verificación previa.
 
-## 8. Checklist de Auditoría (Estado Actual)
+## Pendiente antes de producción
 
-- [x] Reception → Diagnosis: flujo correcto
-- [x] Diagnosis → Approval (técnico envía diagnóstico): correcto
-- [x] Approval (asesor asigna precios) → status="Approval": correcto
-- [x] Portal cliente aprueba → status="Approved", guarda `approvedAmount`: correcto
-- [x] Approved → Repair (técnico inicia): correcto
-- [x] Repair → QC (técnico envía): correcto  
-- [x] QC checklist y Fail → Repair: correcto
-- [x] QC Pass → Ready/Delivered (según si hay pago): correcto
-- [x] Pagos en `/advisor/payments`: balance usa `approvedAmount`: correcto
-- [x] Técnico no puede editar ítems cuando está en Repair (post-aprobación): verificado (bloqueado)
-- [x] Dashboard home `/` muestra jobs correctos por rol: verificado
-- [x] Admin settings guarda logo + moneda correctamente: verificado (reactivo con `refreshSettings`)
-- [x] Analytics: métricas correctas: verificado
-- [x] Seguridad y revocado de usuarios/talleres borrados: **CORREGIDO Y DESPLEGADO**
-- [x] Reparación de campos en esquema de SuperAdmin: **CORREGIDO Y DESPLEGADO**
+1. Revisar el diff y decidir si la rama se integra por PR.
+2. Probar con SUPER_ADMIN real la creación y eliminación de un taller descartable; no usar esa cuenta para pruebas rutinarias.
+3. Probar un pago autenticado con un job descartable en Preview.
+4. Desplegar `firestore.rules` desde `web/` al proyecto verificado `mechanic-app-7d459`.
+5. Integrar a `main` y observar el deploy Vercel.
+6. Ejecutar smoke test de login, recepción, diagnóstico, cotización, aprobación, reparación, QC, pago y entrega.
+7. Resolver o aceptar explícitamente los 59 warnings de lint y los 8 avisos dev-only de `npm audit`.
+
+## Reglas para la próxima IA
+
+1. Leer primero `AGENTS.md` y los documentos obligatorios que enumera.
+2. Confirmar rama, `HEAD`, `origin/main`, proyecto Firebase y deployment Vercel antes de afirmar qué está en producción.
+3. No leer ni mostrar secretos de `.env.local`.
+4. Empezar producción en modo lectura y usar datos descartables con limpieza explícita.
+5. No usar Firebase Hosting.
+6. No describir un build correcto como cobertura completa de pruebas.

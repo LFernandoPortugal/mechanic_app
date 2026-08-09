@@ -236,11 +236,8 @@ export function VehicleIcon({
   className = "", 
   size = 24, 
   ...props 
-}: { 
+}: IconProps & {
   type: string | undefined; 
-  className?: string; 
-  size?: number;
-  [key: string]: any;
 }) {
   switch (type) {
     case "auto":

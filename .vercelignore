@@ -1,0 +1,5 @@
+.codex/
+.git/
+web/.env*
+web/.next/
+web/firestore-debug.log

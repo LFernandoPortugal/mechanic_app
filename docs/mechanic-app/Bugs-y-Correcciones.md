@@ -1,6 +1,6 @@
 # Historial de Bugs y Correcciones — SGA
 
-> Actualizado: 2026-07-26
+> Actualizado: 2026-08-08
 
 ## v1.1 — Fase 1: Bugs Críticos (2026-07-02)
 
@@ -47,7 +47,7 @@
 ### MEJORA-002: Portal del cliente — pantalla post-aprobación
 - El portal ya no muestra solo "Cotización Aprobada" estático.
 - Muestra un tracker visual de 4 pasos: Reparación → QC → Listo → Entregado.
-- El tracker se actualiza en tiempo real según el estado del job.
+- El tracker muestra el estado actual al cargar la página.
 - Aplica para todos los estados post-aprobación: `Approved`, `Repair`, `QC`, `Ready`, `Delivered`.
 
 ### MEJORA-003: SuperAdmin — métricas y gestión mejorada
@@ -66,6 +66,8 @@
 **Fix**:
 - `firestore.rules`: Se actualizó la regla de cliente para permitir `get` en estado `Approval` y `update` hacia `Approved`.
 
+> **Obsoleto desde v1.4**: el acceso público directo a Firestore se eliminó por seguridad. El portal usa `/api/public/quotes/[id]`.
+
 ---
 
 ## v1.3 — Fase de Seguridad y Borrado en Cascada de Talleres (2026-07-26)
@@ -83,3 +85,44 @@
   - Nueva función que elimina en cascada: los perfiles de usuarios de `users`, los datos operativos (`jobs`, `inventory`, `inventory_transactions`) y la configuración `settings`.
 - `super-admin/page.tsx`:
   - Se actualizó el botón "Eliminar Taller" para invocar `deleteWorkshopCompletely`.
+
+---
+
+## v1.4 — Estabilización de Seguridad e Integridad (2026-08-08)
+
+### SEC-001: Escalada de roles mediante auto-creación de perfil
+
+- Firestore ya no permite `users/{uid}` create desde clientes.
+- El aprovisionamiento se movió a `/api/admin/users` y requiere SUPER_ADMIN verificado server-side.
+- Si un email ya existe en Firebase Auth, la operación falla sin combinar usuarios.
+
+### SEC-002: Datos privados expuestos por el portal público
+
+- Eliminado el `get/update` público de `jobs` y el `get` público de `settings`.
+- El nuevo endpoint devuelve un DTO que excluye PII, firmas, pagos, fotos de recepción, auditoría e IDs de personal.
+- La aprobación valida decisiones/firma y recalcula el monto en una transacción.
+
+### BUG-008: Stock inicial duplicado e historial editable
+
+- `addInventoryItem` registra el stock inicial sin incrementarlo dos veces.
+- Cambios de stock y movimientos se escriben atómicamente.
+- `inventory_transactions` es inmutable y cada cambio queda enlazado por `lastMovementId`.
+
+### BUG-009: Pagos concurrentes o manipulables desde cliente
+
+- Los pagos se movieron a `/api/jobs/[id]/payments`.
+- El servidor verifica sesión, rol, tenant, trial, estado, saldo y actor.
+- La transacción rechaza sobrepagos y evita perder abonos concurrentes.
+
+### BUG-010: Portal sin firma de aprobación y tracker desplazado
+
+- La firma de aprobación es obligatoria y se guarda separada de recepción.
+- `declinedItems` se llena con la decisión real del cliente.
+- Corregido el índice visual del tracker post-aprobación.
+- Eliminado el botón de autoaprobación demo.
+
+### INFRA-001: Credenciales server-side
+
+- Vercel usa OIDC + Google Workload Identity Federation.
+- No se almacena ninguna clave JSON de cuenta de servicio.
+- Las API routes usan el SDK server de Firestore con transporte gRPC.

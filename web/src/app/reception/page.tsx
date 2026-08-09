@@ -19,6 +19,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Job, VehicleType } from "@/types";
 import { WorkflowStepper } from "@/components/WorkflowStepper";
 import VehicleTypeSelector from "@/components/ui/VehicleTypeSelector";
+import { toDate } from "@/lib/dates";
 
 export default function Reception() {
   const { t } = useLanguage();
@@ -130,7 +131,7 @@ export default function Reception() {
     setSubmitting(true);
     try {
       // 1. Compress photos to base64 (client-side, instant)
-      let photoBase64s: string[] = [];
+      const photoBase64s: string[] = [];
       if (photos.length > 0) {
         toast.info(t('uploadingPhotos') || "Procesando fotos...");
         for (const file of photos) {
@@ -452,11 +453,7 @@ export default function Reception() {
                   ) : (
                     <div className="relative border-l-2 border-purple-500/30 ml-3 pl-5 py-2 space-y-6">
                       {pastJobs.map((job) => {
-                        const date = job.createdAt
-                          ? (job.createdAt as any).toDate
-                            ? (job.createdAt as any).toDate().toLocaleDateString()
-                            : new Date(job.createdAt).toLocaleDateString()
-                          : "N/A";
+                        const date = toDate(job.createdAt)?.toLocaleDateString() || "N/A";
                         return (
                           <div key={job.id} className="relative">
                             {/* Dot */}
@@ -472,7 +469,7 @@ export default function Reception() {
                               {job.symptoms && (
                                 <p className="text-sm text-muted-foreground bg-zinc-950/30 dark:bg-black/20 p-2 rounded border border-border/40 mt-1 italic">
                                   <strong className="text-xs text-purple-400 not-italic block uppercase tracking-wider mb-0.5">Motivo:</strong>
-                                  "{job.symptoms}"
+                                  &ldquo;{job.symptoms}&rdquo;
                                 </p>
                               )}
                               {job.inspectionItems && job.inspectionItems.length > 0 && (

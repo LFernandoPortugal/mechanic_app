@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { toDate } from "@/lib/dates";
 import {
   Package, Plus, Pencil, Trash2, ArrowDownCircle, ArrowUpCircle,
   AlertTriangle, Search, X, ChevronDown, ChevronUp, History, ArrowLeft
@@ -155,7 +156,12 @@ export default function InventoryPage() {
 
   // ── Stock movement ───────────────────────────────────────
   const handleMovement = async () => {
-    if (!movementItem || movQty <= 0) { toast.warning('Cantidad inválida.'); return; }
+    const invalidQuantity = !Number.isInteger(movQty)
+      || (movType === 'ADJUSTMENT' ? movQty < -1 : movQty <= 0);
+    if (!isAdmin || !movementItem || invalidQuantity) {
+      toast.warning('Cantidad inválida.');
+      return;
+    }
     setMovSaving(true);
     try {
       const wId = userProfile?.workshopId || "demo-workshop";
@@ -174,8 +180,8 @@ export default function InventoryPage() {
       setMovQty(1);
       setMovNotes('');
       fetchItems();
-    } catch {
-      toast.error('Error registrando movimiento.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error registrando movimiento.');
     } finally {
       setMovSaving(false);
     }
@@ -330,30 +336,31 @@ export default function InventoryPage() {
                         <td className="px-4 py-3 text-center text-xs text-muted-foreground">{item.supplier || '—'}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-center gap-1">
-                            <button
-                              title="Entrada de stock"
-                              onClick={() => { setMovementItem(item); setMovType('IN'); }}
-                              className="p-1.5 rounded hover:bg-emerald-500/10 text-emerald-400 transition-colors"
-                            >
-                              <ArrowDownCircle className="w-4 h-4" />
-                            </button>
-                            <button
-                              title="Salida de stock"
-                              onClick={() => { setMovementItem(item); setMovType('OUT'); }}
-                              className="p-1.5 rounded hover:bg-red-500/10 text-red-400 transition-colors"
-                              disabled={item.stock === 0}
-                            >
-                              <ArrowUpCircle className="w-4 h-4" />
-                            </button>
-                            <button
-                              title="Historial"
-                              onClick={() => openHistory(item)}
-                              className="p-1.5 rounded hover:bg-blue-500/10 text-blue-400 transition-colors"
-                            >
-                              <History className="w-4 h-4" />
-                            </button>
                             {isAdmin && (
                               <>
+                                <button
+                                  title="Entrada de stock"
+                                  onClick={() => { setMovementItem(item); setMovType('IN'); }}
+                                  className="p-1.5 rounded hover:bg-emerald-500/10 text-emerald-400 transition-colors"
+                                  disabled={item.stock === -1}
+                                >
+                                  <ArrowDownCircle className="w-4 h-4" />
+                                </button>
+                                <button
+                                  title="Salida de stock"
+                                  onClick={() => { setMovementItem(item); setMovType('OUT'); }}
+                                  className="p-1.5 rounded hover:bg-red-500/10 text-red-400 transition-colors"
+                                  disabled={item.stock <= 0}
+                                >
+                                  <ArrowUpCircle className="w-4 h-4" />
+                                </button>
+                                <button
+                                  title="Historial"
+                                  onClick={() => openHistory(item)}
+                                  className="p-1.5 rounded hover:bg-blue-500/10 text-blue-400 transition-colors"
+                                >
+                                  <History className="w-4 h-4" />
+                                </button>
                                 <button
                                   title="Editar"
                                   onClick={() => openEdit(item)}
@@ -498,7 +505,14 @@ export default function InventoryPage() {
 
               <div>
                 <Label className="text-muted-foreground text-xs">Cantidad</Label>
-                <Input type="number" min="1" value={movQty} onChange={e => setMovQty(parseInt(e.target.value) || 1)} className="mt-1 bg-secondary border-border" />
+                <Input
+                  type="number"
+                  min={movType === 'ADJUSTMENT' ? -1 : 1}
+                  step="1"
+                  value={movQty}
+                  onChange={e => setMovQty(Number.parseInt(e.target.value, 10) || 0)}
+                  className="mt-1 bg-secondary border-border"
+                />
                 {movType !== 'ADJUSTMENT' && movementItem.stock >= 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
                     Resultado: {movType === 'IN' ? movementItem.stock + movQty : Math.max(0, movementItem.stock - movQty)} {movementItem.unit}
@@ -557,7 +571,7 @@ export default function InventoryPage() {
                             {tx.type === 'IN' ? 'Entrada' : tx.type === 'OUT' ? 'Salida' : 'Ajuste'}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {tx.createdAt ? new Date((tx.createdAt as any).seconds * 1000).toLocaleString('es-PA') : '—'}
+                            {toDate(tx.createdAt)?.toLocaleString('es-PA') || '—'}
                           </span>
                         </div>
                         {tx.notes && <p className="text-xs text-muted-foreground mt-0.5 truncate">{tx.notes}</p>}

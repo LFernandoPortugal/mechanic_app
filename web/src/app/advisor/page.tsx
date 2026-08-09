@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { updateJob, registerPayment } from "@/lib/db";
+import { updateJob, registerPayment, type PaymentInput } from "@/lib/db";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Job } from "@/types";
@@ -20,6 +20,7 @@ import { sendQuoteEmail, isEmailConfigured } from "@/lib/email";
 import { useRealtimeJobs } from "@/hooks/useRealtimeJobs";
 import { WorkflowStepper } from "@/components/WorkflowStepper";
 import { VehicleIcon } from "@/components/ui/vehicle-icons";
+import { toDate } from "@/lib/dates";
 
 export default function AdvisorQuoteBuilder() {
   const { t } = useLanguage();
@@ -33,7 +34,7 @@ export default function AdvisorQuoteBuilder() {
   const [copied, setCopied] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState("");
-  const [paymentType, setPaymentType] = useState("Efectivo");
+  const [paymentType, setPaymentType] = useState<PaymentInput["method"]>("Efectivo");
   
   const router = useRouter();
 
@@ -111,15 +112,14 @@ export default function AdvisorQuoteBuilder() {
     try {
       await registerPayment(selectedJob.id, {
         amount: appliedAmount,
-        method: paymentType as any,
-        actorId: user?.uid || "unknown"
+        method: paymentType,
       });
 
       // Update local state to reflect payment in real-time
       const updatedPayments = [...(selectedJob.payments || []), {
         id: Math.random().toString(36).substring(7),
         amount: appliedAmount,
-        method: paymentType as any,
+        method: paymentType,
         date: new Date().toISOString(),
         actorId: user?.uid || "unknown"
       }];
@@ -254,9 +254,9 @@ export default function AdvisorQuoteBuilder() {
   }
 
   // Helper: human-readable relative date
-  const formatJobTime = (date: any): string => {
-    if (!date) return '';
-    const d = date instanceof Date ? date : (date?.toDate ? date.toDate() : new Date(date));
+  const formatJobTime = (date: unknown): string => {
+    const d = toDate(date);
+    if (!d) return '';
     const now = new Date();
     const diffMs = now.getTime() - d.getTime();
     const diffMin = Math.floor(diffMs / 60000);
@@ -337,7 +337,7 @@ export default function AdvisorQuoteBuilder() {
                           variant="outline"
                           className={`shrink-0 text-[10px] px-1.5 py-0 font-medium ${statusColor}`}
                         >
-                          {t(`status${job.status}` as any) || job.status}
+                          {t(`status${job.status}`) || job.status}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2 mt-1.5">
@@ -392,7 +392,7 @@ export default function AdvisorQuoteBuilder() {
                               ${item.status === 'Critical' ? 'bg-orange-600' : ''}
                               ${item.status === 'Recommended' ? 'bg-blue-600' : ''}
                             `}>
-                              {t(`status${item.status}` as any) || item.status}
+                              {t(`status${item.status}`) || item.status}
                             </Badge>
                           </div>
                           {item.notes && <p className="text-sm text-muted-foreground bg-secondary dark:bg-black/50 p-2 rounded border-l-2 border-border">{item.notes}</p>}
@@ -478,7 +478,7 @@ export default function AdvisorQuoteBuilder() {
                     </CardTitle>
                     <CardDescription>Vehículo: {selectedJob.vehicleId}</CardDescription>
                   </div>
-                  <Badge className="bg-emerald-600">{t(`status${selectedJob.status}` as any) || selectedJob.status}</Badge>
+                  <Badge className="bg-emerald-600">{t(`status${selectedJob.status}`) || selectedJob.status}</Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -551,7 +551,7 @@ export default function AdvisorQuoteBuilder() {
                       <select 
                         className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"
                         value={paymentType}
-                        onChange={(e) => setPaymentType(e.target.value)}
+                        onChange={(e) => setPaymentType(e.target.value as PaymentInput["method"])}
                       >
                         <option value="Efectivo">Efectivo 💵</option>
                         <option value="Tarjeta">Tarjeta 💳</option>

@@ -1,17 +1,16 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { createUserProfile } from "@/lib/db";
+import { getUserProfile } from "@/lib/db";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { AlertCircle, Lock, Shield, Wrench, ClipboardList, DollarSign, LogIn } from "lucide-react";
-import { UserRole } from "@/types";
+import { AlertCircle, Lock, Shield, Wrench, ClipboardList, DollarSign } from "lucide-react";
 
 const IS_DEV = process.env.NODE_ENV !== "production";
 
@@ -26,13 +25,6 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const DEMO_ROLE_MAP: Record<string, UserRole[]> = {
-    'demo-admin@demo.com': ['ADMIN', 'RECEPTION', 'TECHNICIAN', 'ADVISOR'],
-    'tech@demo.com': ['TECHNICIAN'],
-    'reception@demo.com': ['RECEPTION'],
-    'advisor@demo.com': ['ADVISOR', 'RECEPTION'],
-  };
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -40,20 +32,25 @@ function LoginForm() {
 
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
-      // Ensure profile is synced/exists
-      const roles = DEMO_ROLE_MAP[email] || ['RECEPTION'];
-      await createUserProfile(cred.user.uid, cred.user.email || email, undefined, roles);
+      const profile = await getUserProfile(cred.user.uid);
+      if (!profile) {
+        throw new Error("Tu cuenta no tiene un perfil activo. Contacta al administrador.");
+      }
       router.push(redirectTo);
-    } catch (err: any) {
-      console.error("Authentication failed:", err.code || err.message);
+    } catch (err: unknown) {
+      const code = typeof err === "object" && err !== null && "code" in err
+        ? String(err.code)
+        : "";
+      const message = err instanceof Error ? err.message : t('authError');
+      console.error("Authentication failed:", code || message);
       // Clean up Firebase Auth state if profile validation fails
       await signOut(auth).catch(() => {});
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+      if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
         setError(t('wrongPassword'));
-      } else if (err.code === 'auth/user-not-found') {
+      } else if (code === 'auth/user-not-found') {
         setError("Usuario no registrado. Contacta al administrador para obtener acceso.");
       } else {
-        setError(err.message || t('authError'));
+        setError(message);
       }
     } finally {
       setLoading(false);

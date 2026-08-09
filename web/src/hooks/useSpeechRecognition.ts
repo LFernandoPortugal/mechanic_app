@@ -1,5 +1,40 @@
 import { useState, useRef, useCallback } from "react";
 
+interface SpeechRecognitionResultLike {
+  isFinal: boolean;
+  0: { transcript: string };
+}
+
+interface SpeechRecognitionResultEventLike {
+  results: ArrayLike<SpeechRecognitionResultLike>;
+}
+
+interface SpeechRecognitionErrorEventLike {
+  error: string;
+}
+
+interface SpeechRecognitionLike {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onresult: ((event: SpeechRecognitionResultEventLike) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+}
+
+interface SpeechRecognitionConstructor {
+  new (): SpeechRecognitionLike;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  }
+}
+
 interface SpeechRecognitionHook {
   transcript: string;
   isListening: boolean;
@@ -20,11 +55,11 @@ export function useSpeechRecognition(lang = "es-ES"): SpeechRecognitionHook {
   const [transcript, setTranscript] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   const SpeechRecognitionAPI =
     typeof window !== "undefined"
-      ? ((window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition)
+      ? (window.SpeechRecognition ?? window.webkitSpeechRecognition)
       : undefined;
 
   const isSupported = !!SpeechRecognitionAPI;
@@ -42,7 +77,7 @@ export function useSpeechRecognition(lang = "es-ES"): SpeechRecognitionHook {
     recognition.continuous = true;       // keep listening until stop() called
     recognition.interimResults = true;   // show partial results while speaking
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event: SpeechRecognitionResultEventLike) => {
       let finalTranscript = "";
       let interimTranscript = "";
 
@@ -58,7 +93,7 @@ export function useSpeechRecognition(lang = "es-ES"): SpeechRecognitionHook {
       setTranscript(finalTranscript + interimTranscript);
     };
 
-    recognition.onerror = (event: any) => {
+    recognition.onerror = (event: SpeechRecognitionErrorEventLike) => {
       if (event.error === "no-speech") {
         setError("No se detectó voz. Intenta de nuevo.");
       } else if (event.error === "not-allowed") {

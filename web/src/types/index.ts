@@ -35,6 +35,14 @@ export const ROLE_META: Record<UserRole, { labelKey: string; emoji: string; colo
   ADVISOR: { labelKey: 'roleAdvisor', emoji: '💰', color: 'text-blue-400 border-blue-500/50 bg-blue-950/30' },
 };
 
+export const ROLE_BADGE_CLASSES: Record<UserRole, string> = {
+  SUPER_ADMIN: 'text-red-700 border-red-300 bg-red-100 dark:text-red-400 dark:border-red-500/50 dark:bg-red-950/30',
+  ADMIN: 'text-purple-700 border-purple-300 bg-purple-100 dark:text-purple-400 dark:border-purple-500/50 dark:bg-purple-950/30',
+  RECEPTION: 'text-emerald-700 border-emerald-300 bg-emerald-100 dark:text-emerald-400 dark:border-emerald-500/50 dark:bg-emerald-950/30',
+  TECHNICIAN: 'text-orange-700 border-orange-300 bg-orange-100 dark:text-orange-400 dark:border-orange-500/50 dark:bg-orange-950/30',
+  ADVISOR: 'text-blue-700 border-blue-300 bg-blue-100 dark:text-blue-400 dark:border-blue-500/50 dark:bg-blue-950/30',
+};
+
 // ─── Domain Types ────────────────────────────────────────
 export type VehicleType = 'auto' | 'suv' | 'pickup' | 'minivan' | 'truck' | 'moto' | 'ebike' | 'parts' | 'other';
 
@@ -93,6 +101,8 @@ export interface Job {
   // Liability Shield Data
   receptionImages?: string[]; // Base64 data URLs of pre-existing damage photos
   signatureBase64?: string;   // Client signature as base64 data URL (PNG)
+  approvalSignatureBase64?: string; // Separate signature authorizing the quote
+  approvedAt?: Date;
   fluidAudit: {
     oilLevel: 'OK' | 'Low' | 'Empty';
     coolantLevel: 'OK' | 'Low' | 'Empty';
@@ -145,6 +155,7 @@ export interface InventoryItem {
   unit: string;                 // "pcs", "litros", "metros"
   description?: string;
   supplier?: string;
+  lastMovementId?: string;      // Links stock changes to their immutable audit entry
   createdAt: Date;
   updatedAt: Date;
 }
@@ -157,7 +168,7 @@ export interface InventoryTransaction {
   itemId: string;
   itemName: string;
   type: StockMovementType;
-  quantity: number;             // Always positive; direction set by type
+  quantity: number;             // Positive except ADJUSTMENT, where -1 means unlimited
   unitPrice: number;            // Price at time of movement
   jobId?: string;               // Linked job if OUT via repair
   notes?: string;

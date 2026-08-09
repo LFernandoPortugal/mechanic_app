@@ -21,6 +21,7 @@ import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { useRealtimeJobs } from "@/hooks/useRealtimeJobs";
 import { WorkflowStepper } from "@/components/WorkflowStepper";
 import { VehicleIcon } from "@/components/ui/vehicle-icons";
+import { toDate } from "@/lib/dates";
 
 const STATUS_MAP: Record<string, string> = {
   Pass: 'statusPass',
@@ -124,9 +125,10 @@ export default function TechnicianDashboard() {
           setNewItemStatus("Recommended");
         }
       }
-    } catch (err: any) {
-      setAiError(err.message || "Error al ejecutar el diagnóstico.");
-      toast.error("Error de IA: " + (err.message || "Desconocido"));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Error al ejecutar el diagnóstico.";
+      setAiError(message);
+      toast.error("Error de IA: " + message);
     } finally {
       setAiLoading(false);
     }
@@ -241,9 +243,9 @@ export default function TechnicianDashboard() {
   }
 
   // Helper: human-readable relative date
-  const formatJobTime = (date: any): string => {
-    if (!date) return '';
-    const d = date instanceof Date ? date : (date?.toDate ? date.toDate() : new Date(date));
+  const formatJobTime = (date: unknown): string => {
+    const d = toDate(date);
+    if (!d) return '';
     const now = new Date();
     const diffMs = now.getTime() - d.getTime();
     const diffMin = Math.floor(diffMs / 60000);
@@ -320,7 +322,7 @@ export default function TechnicianDashboard() {
                       variant="outline"
                       className={`shrink-0 text-[10px] px-1.5 py-0 font-medium ${statusColor}`}
                     >
-                      {t(`status${job.status}` as any) || job.status}
+                      {t(`status${job.status}`) || job.status}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-2 mt-1.5">
@@ -361,7 +363,7 @@ export default function TechnicianDashboard() {
                       <strong className="text-xs text-orange-400 not-italic block uppercase tracking-wider mb-1">
                         {t('symptomsLabel') || "Síntomas Reportados por el Cliente / Motivo:"}
                       </strong>
-                      "{selectedJob.symptoms}"
+                      &ldquo;{selectedJob.symptoms}&rdquo;
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground italic mt-1">Sin síntomas reportados en la recepción.</p>

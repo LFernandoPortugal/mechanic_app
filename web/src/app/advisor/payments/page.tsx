@@ -7,7 +7,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { registerPayment, PaymentInput } from "@/lib/db";
 import { generateReceiptPDF } from "@/lib/pdf";
 import { useRealtimeJobs } from "@/hooks/useRealtimeJobs";
-import { Job } from "@/types";
+import { Job, WorkshopSettings } from "@/types";
 import { toast } from "sonner";
 import {
   Card, CardContent, CardHeader, CardTitle, CardDescription,
@@ -47,8 +47,7 @@ function totalPaid(job: Job): number {
   return (job.payments || []).reduce((s, p) => s + p.amount, 0);
 }
 
-function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onPaymentRegistered: () => void; workshopSettings: any }) {
-  const { user } = useAuth();
+function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onPaymentRegistered: () => void; workshopSettings: WorkshopSettings | null }) {
   const [expanded, setExpanded] = useState(false);
   const [amount, setAmount]     = useState("");
   const [reference, setRef]     = useState("");
@@ -81,7 +80,7 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
 
     setLoading(true);
     try {
-      await registerPayment(job.id, { amount: appliedAmount, method, reference, actorId: user!.uid });
+      await registerPayment(job.id, { amount: appliedAmount, method, reference });
       if (change > 0) {
         toast.success(`✅ Pago completo. Vuelto a entregar: ${workshopSettings?.currencySymbol || "$"}${change.toFixed(2)}`);
       } else {
@@ -92,8 +91,8 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
       }
       setAmount(""); setRef("");
       onPaymentRegistered();
-    } catch {
-      toast.error("Error al registrar el pago.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error al registrar el pago.");
     } finally {
       setLoading(false);
     }

@@ -8,6 +8,7 @@ import { getClientJobs } from "@/lib/clients";
 import { useAuth } from "@/contexts/AuthContext";
 import { Job } from "@/types";
 import { Timestamp } from "firebase/firestore";
+import { toDate } from "@/lib/dates";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,10 +38,7 @@ import {
 
 /* ─── helpers ────────────────────────────────────────────── */
 function jobDate(job: Job): Date | null {
-  if (!job.createdAt) return null;
-  return (job.createdAt as any).toDate
-    ? (job.createdAt as any).toDate()
-    : new Date(job.createdAt as unknown as string);
+  return toDate(job.createdAt);
 }
 
 const fmtDate = (d: Date | null) => {

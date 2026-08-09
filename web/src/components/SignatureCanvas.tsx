@@ -143,7 +143,7 @@ export function SignatureCanvas({ onConfirm, onClear, confirmedUrl }: SignatureC
               variant="outline"
               onClick={clear}
               disabled={!hasStrokes}
-              className="gap-1.5 border-border text-muted-foreground"
+              className="gap-1.5 border-border text-muted-foreground disabled:cursor-not-allowed disabled:opacity-45"
             >
               <Trash2 className="w-3.5 h-3.5" />
               Limpiar
@@ -153,7 +153,7 @@ export function SignatureCanvas({ onConfirm, onClear, confirmedUrl }: SignatureC
               size="sm"
               onClick={confirm}
               disabled={!hasStrokes}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white gap-1.5"
+              className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white gap-1.5 disabled:cursor-not-allowed disabled:opacity-45"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
               Confirmar Firma

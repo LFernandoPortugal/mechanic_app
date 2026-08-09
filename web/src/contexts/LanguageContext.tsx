@@ -5,10 +5,11 @@ import en from "@/locales/en.json";
 import es from "@/locales/es.json";
 
 type Language = "en" | "es";
+type Dictionary = Record<string, string>;
 
-const dictionaries: Record<Language, any> = {
-  en,
-  es
+const dictionaries: Record<Language, Dictionary> = {
+  en: en as Dictionary,
+  es: es as Dictionary,
 };
 
 interface LanguageContextType {
@@ -25,7 +26,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const savedLang = localStorage.getItem("app-lang") as Language | null;
     if (savedLang) {
-      setLangState(savedLang);
+      const frame = window.requestAnimationFrame(() => setLangState(savedLang));
+      return () => window.cancelAnimationFrame(frame);
     }
   }, []);
 

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { toDate } from "@/lib/dates";
 import { Activity, CircleDollarSign, Wrench, Users, TrendingUp, Calendar, ArrowLeft } from "lucide-react";
 
 export default function OwnerAnalytics() {
@@ -345,11 +346,7 @@ export default function OwnerAnalytics() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-[10px] text-muted-foreground font-mono">
-                      {job.createdAt
-                        ? (job.createdAt as any).toDate
-                          ? (job.createdAt as any).toDate().toLocaleDateString()
-                          : new Date(job.createdAt).toLocaleDateString()
-                        : "N/A"}
+                      {toDate(job.createdAt)?.toLocaleDateString() || "N/A"}
                     </span>
                     <Badge className={`
                       text-[10px] font-bold px-2.5 py-0.5 rounded-full border
