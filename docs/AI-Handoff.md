@@ -9,7 +9,7 @@
 La aplicación es un SGA multitenant en Next.js 16, Firebase Auth/Firestore y Vercel. La rama de estabilización compila, pasa TypeScript y cuenta con pruebas unitarias y de reglas; todavía **no está desplegada en producción**.
 
 - Producción continúa en `https://mechanic-app-zeta.vercel.app/` desde `main`.
-- Preview protegida más reciente: `https://mechanic-ctusx4ne6-lfernandoportugals-projects.vercel.app`.
+- Preview protegida de la rama (alias estable): `https://mechanic-app-git-codex-secur-abea4c-lfernandoportugals-projects.vercel.app`.
 - No se desplegaron las reglas nuevas a Firebase ni se promovió la preview.
 - El taller tester `p1` fue reparado: conserva su cuenta Auth y ahora tiene un único perfil ADMIN y un `settings/p1` vacío/activo. No se combinaron usuarios antiguos.
 - Las órdenes sintéticas de E2E fueron eliminadas al terminar.
