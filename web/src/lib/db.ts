@@ -353,10 +353,20 @@ export async function recordStockMovement(movement: StockMovementInput): Promise
   }
 }
 
-export async function getStockMovements(itemId: string, limitCount = 50): Promise<InventoryTransaction[]> {
+export async function getStockMovements(
+  workshopId: string,
+  itemId: string,
+  limitCount = 50,
+): Promise<InventoryTransaction[]> {
   try {
     const ref = collection(db, "inventory_transactions");
-    const q = query(ref, where("itemId", "==", itemId));
+    // The tenant constraint is required both for isolation and so Firestore can
+    // prove that every document returned by the query satisfies the read rule.
+    const q = query(
+      ref,
+      where("workshopId", "==", workshopId),
+      where("itemId", "==", itemId),
+    );
     const snap = await getDocs(q);
     const txs = snap.docs.map(d => ({ id: d.id, ...d.data() } as InventoryTransaction));
     return txs

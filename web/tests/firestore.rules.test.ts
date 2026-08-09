@@ -15,6 +15,8 @@ import {
   updateDoc,
   writeBatch,
   collection,
+  query,
+  where,
 } from "firebase/firestore";
 
 const projectId = "demo-mechanic-app";
@@ -482,6 +484,57 @@ describe("job workflow boundaries", () => {
 });
 
 describe("inventory audit boundaries", () => {
+  it("requires tenant-scoped queries when reading stock movement history", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await Promise.all([
+        setDoc(doc(db, "inventory_transactions", "history-a"), {
+          workshopId: "ws-a",
+          itemId: "item-a",
+          itemName: "Repuesto de prueba",
+          type: "IN",
+          quantity: 2,
+          unitPrice: 5,
+          actorId: "admin-a",
+          createdAt: Timestamp.now(),
+        }),
+        setDoc(doc(db, "inventory_transactions", "history-b"), {
+          workshopId: "ws-b",
+          itemId: "item-b",
+          itemName: "Repuesto externo",
+          type: "IN",
+          quantity: 1,
+          unitPrice: 10,
+          actorId: "admin-b",
+          createdAt: Timestamp.now(),
+        }),
+      ]);
+    });
+
+    const db = testEnv
+      .authenticatedContext("admin-a", { email: "admin-a@example.test" })
+      .firestore();
+    const movements = collection(db, "inventory_transactions");
+
+    await assertFails(
+      getDocs(query(movements, where("itemId", "==", "item-a"))),
+    );
+    await assertSucceeds(
+      getDocs(query(
+        movements,
+        where("workshopId", "==", "ws-a"),
+        where("itemId", "==", "item-a"),
+      )),
+    );
+    await assertFails(
+      getDocs(query(
+        movements,
+        where("workshopId", "==", "ws-b"),
+        where("itemId", "==", "item-b"),
+      )),
+    );
+  });
+
   it("requires an immutable movement for every stock change", async () => {
     const db = testEnv
       .authenticatedContext("admin-a", { email: "admin-a@example.test" })

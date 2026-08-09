@@ -264,8 +264,10 @@ export default function Reception() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>{t('licensePlate')} *</Label>
+                    <Label htmlFor="vehicle-plate">{t('licensePlate')} *</Label>
                     <Input 
+                      id="vehicle-plate"
+                      required
                       placeholder="ABC-123" 
                       className="bg-background border-border" 
                       value={vehicle.plate}
@@ -279,8 +281,8 @@ export default function Reception() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                    <div className="space-y-2">
-                    <Label>{t('make')} *</Label>
-                    <Input placeholder="Toyota" value={vehicle.make} onChange={(e) => setVehicle({...vehicle, make: e.target.value})} className="bg-background border-border" />
+                    <Label htmlFor="vehicle-make">{t('make')} *</Label>
+                    <Input id="vehicle-make" required placeholder="Toyota" value={vehicle.make} onChange={(e) => setVehicle({...vehicle, make: e.target.value})} className="bg-background border-border" />
                   </div>
                    <div className="space-y-2">
                     <Label>{t('model')}</Label>
@@ -320,8 +322,8 @@ export default function Reception() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label>{t('clientName')} *</Label>
-                    <Input placeholder={t('clientNamePlaceholder')} value={client.name} onChange={(e) => setClient({...client, name: e.target.value})} className="bg-background border-border" />
+                    <Label htmlFor="client-name">{t('clientName')} *</Label>
+                    <Input id="client-name" required placeholder={t('clientNamePlaceholder')} value={client.name} onChange={(e) => setClient({...client, name: e.target.value})} className="bg-background border-border" />
                   </div>
                   <div className="space-y-2">
                     <Label>{t('clientPhone')}</Label>

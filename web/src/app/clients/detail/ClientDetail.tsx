@@ -44,6 +44,29 @@ const fmtDate = (d: Date | null) => {
   return d.toLocaleDateString("es-PA", { day: "2-digit", month: "short", year: "numeric" });
 };
 
+const fmtDateTime = (value: unknown) => {
+  const date = toDate(value);
+  if (!date) return "—";
+  return date.toLocaleString("es-PE", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const statusLabels: Record<string, string> = {
+  Reception: "Recepción",
+  Diagnosis: "Diagnóstico",
+  Approval: "En cotización",
+  Approved: "Aprobado",
+  Repair: "En reparación",
+  QC: "Control de calidad",
+  Ready: "Listo",
+  Delivered: "Entregado",
+};
+
 const statusConfig: Record<string, { color: string; icon: React.ReactNode }> = {
   Reception: { color: "text-emerald-400 border-emerald-500/30 bg-emerald-950/20", icon: <ClipboardList className="w-3 h-3" /> },
   Diagnosis: { color: "text-amber-400 border-amber-500/30 bg-amber-950/20", icon: <Wrench className="w-3 h-3" /> },
@@ -287,7 +310,7 @@ export default function ClientDetailPage() {
                                   className={`text-xs ${sc.color}`}
                                 >
                                   {sc.icon}
-                                  <span className="ml-1">{job.status}</span>
+                                  <span className="ml-1">{statusLabels[job.status] || job.status}</span>
                                 </Badge>
                                 <span className="text-sm font-semibold text-emerald-400 hidden sm:inline">
                                   {fmtCurrency(job.approvedAmount || 0)}
@@ -539,9 +562,9 @@ export default function ClientDetailPage() {
                                       {job.payments.map((payment) => (
                                         <div
                                           key={payment.id}
-                                          className="flex items-center justify-between p-2.5 bg-zinc-950/20 rounded-lg border border-border/30 text-sm"
+                                          className="flex flex-col gap-2 p-2.5 bg-zinc-950/20 rounded-lg border border-border/30 text-sm sm:flex-row sm:items-center sm:justify-between"
                                         >
-                                          <div className="flex items-center gap-2">
+                                          <div className="flex flex-wrap items-center gap-2">
                                             <CreditCard className="w-3.5 h-3.5 text-blue-400" />
                                             <span className="text-foreground">{fmtCurrency(payment.amount)}</span>
                                             <Badge
@@ -552,7 +575,7 @@ export default function ClientDetailPage() {
                                             </Badge>
                                           </div>
                                           <span className="text-xs text-muted-foreground">
-                                            {payment.date}
+                                            {fmtDateTime(payment.date)}
                                           </span>
                                         </div>
                                       ))}
