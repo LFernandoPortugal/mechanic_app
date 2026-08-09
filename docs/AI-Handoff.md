@@ -2,13 +2,13 @@
 
 > Última actualización: 2026-08-09
 > Producción oficial: rama `main` en Vercel
-> Producción verificada: `eb74f84` en `https://mechanic-app-zeta.vercel.app/`
+> Código funcional de producción verificado: `eb74f84` en `https://mechanic-app-zeta.vercel.app/`
 
 ## Punto de reanudación rápido
 
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
-- **Producción:** `origin/main` en `eb74f84`; la estabilización y la primera ronda visual están desplegadas en `https://mechanic-app-zeta.vercel.app/`.
+- **Producción:** `origin/main` incluye el commit funcional `eb74f84`; la estabilización y la primera ronda visual están desplegadas en `https://mechanic-app-zeta.vercel.app/`. El HEAD puede avanzar por commits exclusivamente documentales.
 - **Rama de trabajo:** ninguna funcional pendiente; PR #3 integrada por squash en `main`.
 - **Árbol local al cerrar:** limpio y sincronizado con `origin/main` después de integrar el checkpoint documental.
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas de la estabilización están desplegadas y fueron releídas desde el proyecto activo.
@@ -23,7 +23,7 @@ Para retomar, leer este documento completo y luego seguir el orden obligatorio d
 
 La aplicación es un SGA multitenant en Next.js 16, Firebase Auth/Firestore y Vercel. La estabilización está integrada en `main`, desplegada en Vercel Production y acompañada por sus reglas Firestore en `mechanic-app-7d459`.
 
-- Producción sirve `eb74f84` en `https://mechanic-app-zeta.vercel.app/` desde `main`; el código funcional de estabilización continúa en su historial como `c903185`.
+- Producción sirve el código funcional de `eb74f84` en `https://mechanic-app-zeta.vercel.app/` desde `main`; commits posteriores pueden limitarse a documentación. La estabilización continúa en el historial como `c903185`.
 - Preview protegida de la rama (alias estable): `https://mechanic-app-git-codex-secur-abea4c-lfernandoportugals-projects.vercel.app`.
 - Las reglas nuevas se compilaron y publicaron únicamente como `firestore:rules`; no se desplegaron Hosting, Storage ni índices.
 - El taller tester `p1` fue reparado: conserva su cuenta Auth y ahora tiene un único perfil ADMIN y un `settings/p1` vacío/activo. No se combinaron usuarios antiguos.
