@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ArrowLeft, Wand2, MessageCircle, Mic, MicOff, Loader2, Bot, AlertTriangle, CheckCircle } from "lucide-react";
+import { ArrowLeft, Wand2, MessageCircle, Mic, MicOff, Loader2, Bot, AlertTriangle, CheckCircle, Wrench } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { openWhatsAppStatusUpdate } from "@/lib/whatsapp";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
@@ -23,6 +23,7 @@ import { useRealtimeJobs } from "@/hooks/useRealtimeJobs";
 import { WorkflowStepper } from "@/components/WorkflowStepper";
 import { VehicleIcon } from "@/components/ui/vehicle-icons";
 import { toDate } from "@/lib/dates";
+import { WorkflowQueueEmptyState } from "@/components/WorkflowQueueEmptyState";
 
 const STATUS_MAP: Record<string, string> = {
   Pass: 'statusPass',
@@ -251,6 +252,30 @@ export default function TechnicianDashboard() {
             </div>
           </Card>
         </div>
+      </ProtectedRoute>
+    );
+  }
+
+  if (jobs.length === 0) {
+    return (
+      <ProtectedRoute allowedRoles={['ADMIN', 'TECHNICIAN']}>
+        <WorkflowQueueEmptyState
+          accent="orange"
+          icon={<Wrench className="h-8 w-8" />}
+          eyebrow="Cola técnica · 0 órdenes activas"
+          title="El área técnica está al día"
+          description="No hay vehículos esperando diagnóstico o reparación. La cola se actualizará automáticamente cuando Recepción registre una nueva orden o el cliente apruebe un trabajo."
+          steps={[
+            {
+              title: "Recepción inicia la orden",
+              description: "El vehículo aparecerá aquí con sus síntomas, evidencias y datos de ingreso.",
+            },
+            {
+              title: "Selecciona y documenta el trabajo",
+              description: "Registra el diagnóstico o continúa la reparación sin cambiar de módulo.",
+            },
+          ]}
+        />
       </ProtectedRoute>
     );
   }

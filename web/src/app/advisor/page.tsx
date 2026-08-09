@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ArrowLeft, ArrowRight, DollarSign, Wand2, Copy, ExternalLink, CheckCircle, MessageCircle, Download, Mail } from "lucide-react";
+import { ArrowLeft, ArrowRight, DollarSign, Wand2, Copy, ExternalLink, CheckCircle, MessageCircle, Download, Mail, FileSearch } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { openWhatsAppQuote } from "@/lib/whatsapp";
 import { generateQuotePDF } from "@/lib/pdf";
@@ -23,6 +23,7 @@ import { WorkflowStepper } from "@/components/WorkflowStepper";
 import { VehicleIcon } from "@/components/ui/vehicle-icons";
 import { toDate } from "@/lib/dates";
 import { getPayableTotal } from "@/lib/transactions";
+import { WorkflowQueueEmptyState } from "@/components/WorkflowQueueEmptyState";
 
 const payableTotal = (job: Job) => {
   try {
@@ -261,6 +262,30 @@ export default function AdvisorQuoteBuilder() {
           </div>
         </Card>
       </div>
+    );
+  }
+
+  if (jobs.length === 0) {
+    return (
+      <ProtectedRoute allowedRoles={['ADMIN', 'ADVISOR']}>
+        <WorkflowQueueEmptyState
+          accent="violet"
+          icon={<FileSearch className="h-8 w-8" />}
+          eyebrow="Cotizaciones · 0 órdenes pendientes"
+          title="No hay presupuestos por preparar"
+          description="La bandeja está vacía. Las órdenes aparecerán aquí en tiempo real cuando el técnico complete un diagnóstico o cuando un trabajo aprobado necesite seguimiento."
+          steps={[
+            {
+              title: "El técnico completa el diagnóstico",
+              description: "Los hallazgos y evidencias pasan automáticamente al constructor de cotizaciones.",
+            },
+            {
+              title: "Cotiza y envía al cliente",
+              description: "Asigna precios, genera el enlace público y continúa el seguimiento desde este módulo.",
+            },
+          ]}
+        />
+      </ProtectedRoute>
     );
   }
 

@@ -220,6 +220,8 @@ export default function InventoryPage() {
     type === 'IN' ? 'text-emerald-400' : type === 'OUT' ? 'text-red-400' : 'text-amber-400';
   const movSign = (type: StockMovementType) =>
     type === 'IN' ? '+' : type === 'OUT' ? '-' : '=';
+  const currencySymbol = workshopSettings?.currencySymbol || '$';
+  const formatMoney = (amount: number) => `${currencySymbol}${amount.toFixed(2)}`;
 
   return (
     <ProtectedRoute allowedRoles={['ADMIN', 'ADVISOR']}>
@@ -259,7 +261,7 @@ export default function InventoryPage() {
               { label: 'Total Items', value: items.length, color: 'text-emerald-400' },
               { label: 'Stock Bajo', value: lowStock, color: lowStock > 0 ? 'text-red-400' : 'text-emerald-400', icon: lowStock > 0 ? <AlertTriangle className="w-3.5 h-3.5" /> : null },
               { label: 'Categorías', value: new Set(items.map(i => i.category)).size, color: 'text-blue-400' },
-              { label: 'Valor Inventario', value: `$${items.reduce((acc, i) => acc + (i.stock > 0 ? i.stock * (i.costPrice ?? i.unitPrice) : 0), 0).toFixed(0)}`, color: 'text-amber-400' },
+              { label: 'Valor Inventario', value: formatMoney(items.reduce((acc, i) => acc + (i.stock > 0 ? i.stock * (i.costPrice ?? i.unitPrice) : 0), 0)), color: 'text-amber-400' },
             ].map(k => (
               <Card key={k.label} className="glass-panel">
                 <CardContent className="p-4">
@@ -338,8 +340,8 @@ export default function InventoryPage() {
                             {item.category}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right font-mono font-medium">${item.unitPrice.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right font-mono text-muted-foreground text-xs">{item.costPrice ? `$${item.costPrice.toFixed(2)}` : '—'}</td>
+                        <td className="px-4 py-3 text-right font-mono font-medium">{formatMoney(item.unitPrice)}</td>
+                        <td className="px-4 py-3 text-right font-mono text-muted-foreground text-xs">{item.costPrice ? formatMoney(item.costPrice) : '—'}</td>
                         <td className="px-4 py-3 text-center">
                           {isUnlimited ? (
                             <span className="text-emerald-400 text-xs font-medium">∞</span>
@@ -454,11 +456,11 @@ export default function InventoryPage() {
 
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label className="text-muted-foreground text-xs">Precio Venta (USD)</Label>
+                  <Label className="text-muted-foreground text-xs">Precio Venta ({currencySymbol})</Label>
                   <Input type="number" min="0" step="0.01" value={form.unitPrice} onChange={e => setForm(f => ({...f, unitPrice: parseFloat(e.target.value) || 0}))} className="mt-1 bg-secondary border-border" />
                 </div>
                 <div>
-                  <Label className="text-muted-foreground text-xs">Costo (USD)</Label>
+                  <Label className="text-muted-foreground text-xs">Costo ({currencySymbol})</Label>
                   <Input type="number" min="0" step="0.01" value={form.costPrice} onChange={e => setForm(f => ({...f, costPrice: parseFloat(e.target.value) || 0}))} className="mt-1 bg-secondary border-border" />
                 </div>
                 <div>
@@ -598,7 +600,7 @@ export default function InventoryPage() {
                         {tx.notes && <p className="text-xs text-muted-foreground mt-0.5 truncate">{tx.notes}</p>}
                         {tx.jobId && <p className="text-xs text-blue-400 mt-0.5">Trabajo: {tx.jobId.substring(0, 12)}...</p>}
                       </div>
-                      <div className="text-xs font-mono text-muted-foreground">${tx.unitPrice.toFixed(2)}</div>
+                      <div className="text-xs font-mono text-muted-foreground">{formatMoney(tx.unitPrice)}</div>
                     </div>
                   ))}
                 </div>
