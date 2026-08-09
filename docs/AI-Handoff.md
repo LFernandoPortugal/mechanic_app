@@ -9,7 +9,7 @@
 La aplicación es un SGA multitenant en Next.js 16, Firebase Auth/Firestore y Vercel. La rama de estabilización compila, pasa TypeScript y cuenta con pruebas unitarias y de reglas; todavía **no está desplegada en producción**.
 
 - Producción continúa en `https://mechanic-app-zeta.vercel.app/` desde `main`.
-- Preview protegida más reciente: `https://mechanic-aujr6tf33-lfernandoportugals-projects.vercel.app`.
+- Preview protegida más reciente: `https://mechanic-ctusx4ne6-lfernandoportugals-projects.vercel.app`.
 - No se desplegaron las reglas nuevas a Firebase ni se promovió la preview.
 - El taller tester `p1` fue reparado: conserva su cuenta Auth y ahora tiene un único perfil ADMIN y un `settings/p1` vacío/activo. No se combinaron usuarios antiguos.
 - Las órdenes sintéticas de E2E fueron eliminadas al terminar.
@@ -95,6 +95,8 @@ Resultado del 2026-08-08:
 - Build: 19/19 páginas generadas; 3 API routes dinámicas.
 - Auditoría runtime: 0 vulnerabilidades.
 - E2E público local y Vercel preview: GET sanitizado, firma/aprobación parcial, monto 210, un `declinedItem`, tracker correcto y limpieza confirmada.
+- E2E autenticado en Vercel preview: ADMIN tester registró 40.25 + 59.75, mantuvo `Ready` tras el abono, cambió a `Delivered` al completar, rechazó un tercer pago con 409, derivó el actor del token y limpió el job con 404 verificado.
+- Aislamiento privilegiado: el mismo ADMIN recibió 403 al intentar `/api/admin/users`.
 
 CI vive en `.github/workflows/ci.yml` y ejecuta instalación, auditoría runtime, TypeScript, lint, pruebas y build.
 
@@ -123,11 +125,10 @@ También quedan cuentas Auth antiguas que no tienen perfil `users`. El flujo nue
 
 1. Revisar el diff y decidir si la rama se integra por PR.
 2. Probar con SUPER_ADMIN real la creación y eliminación de un taller descartable; no usar esa cuenta para pruebas rutinarias.
-3. Probar un pago autenticado con un job descartable en Preview.
-4. Desplegar `firestore.rules` desde `web/` al proyecto verificado `mechanic-app-7d459`.
-5. Integrar a `main` y observar el deploy Vercel.
-6. Ejecutar smoke test de login, recepción, diagnóstico, cotización, aprobación, reparación, QC, pago y entrega.
-7. Resolver o aceptar explícitamente los 8 avisos dev-only de `npm audit`.
+3. Desplegar `firestore.rules` desde `web/` al proyecto verificado `mechanic-app-7d459`.
+4. Integrar a `main` y observar el deploy Vercel.
+5. Ejecutar smoke test de login, recepción, diagnóstico, cotización, aprobación, reparación, QC, pago y entrega.
+6. Resolver o aceptar explícitamente los 8 avisos dev-only de `npm audit`.
 
 ## Reglas para la próxima IA
 
