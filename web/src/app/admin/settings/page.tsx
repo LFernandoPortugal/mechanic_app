@@ -173,7 +173,7 @@ export default function SettingsPage() {
                 <CardTitle>Datos de la Empresa</CardTitle>
                 <CardDescription>Información fiscal y de contacto principal.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="mt-6 space-y-6">
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
@@ -375,7 +375,7 @@ export default function SettingsPage() {
                         autoFocus
                       />
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex flex-col-reverse gap-3 sm:flex-row">
                       <Button
                         type="button"
                         variant="ghost"

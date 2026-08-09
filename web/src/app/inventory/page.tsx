@@ -285,7 +285,12 @@ export default function InventoryPage() {
                 className="pl-9 bg-secondary border-border"
               />
               {search && (
-                <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
+                  aria-label="Limpiar búsqueda"
+                >
                   <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
                 </button>
               )}
@@ -414,16 +419,18 @@ export default function InventoryPage() {
 
       {/* ── Add / Edit Modal ────────────────────────────────── */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <Card className="glass-panel w-full max-w-2xl max-h-[90vh] overflow-y-auto border-emerald-500/30">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
+          <Card className="glass-panel w-full max-w-2xl max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] overflow-y-auto border-emerald-500/30">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-emerald-400">{editingItem ? 'Editar Repuesto' : 'Agregar Repuesto'}</CardTitle>
-                <button onClick={() => setShowForm(false)}><X className="w-5 h-5 text-muted-foreground hover:text-foreground" /></button>
+                <button type="button" onClick={() => setShowForm(false)} aria-label="Cerrar formulario">
+                  <X className="w-5 h-5 text-muted-foreground hover:text-foreground" />
+                </button>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-muted-foreground text-xs">SKU *</Label>
                   <Input value={form.sku} onChange={e => setForm(f => ({...f, sku: e.target.value}))} placeholder="FRE-001" className="mt-1 bg-secondary border-border" />
@@ -441,7 +448,7 @@ export default function InventoryPage() {
                 <Input value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} placeholder="Pastillas de Freno Delanteras" className="mt-1 bg-secondary border-border" />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-muted-foreground text-xs">Categoría</Label>
                   <select value={form.category} onChange={e => setForm(f => ({...f, category: e.target.value as InventoryCategory}))} className="mt-1 w-full h-10 rounded-md border border-border bg-secondary text-foreground px-3 text-sm">
@@ -454,7 +461,7 @@ export default function InventoryPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <Label className="text-muted-foreground text-xs">Precio Venta ({currencySymbol})</Label>
                   <Input type="number" min="0" step="0.01" value={form.unitPrice} onChange={e => setForm(f => ({...f, unitPrice: parseFloat(e.target.value) || 0}))} className="mt-1 bg-secondary border-border" />
@@ -482,11 +489,11 @@ export default function InventoryPage() {
                 <Input value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))} placeholder="Descripción opcional..." className="mt-1 bg-secondary border-border" />
               </div>
 
-              <div className="flex gap-3 pt-2">
-                <Button onClick={handleSave} disabled={saving} className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold">
+              <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row">
+                <Button onClick={handleSave} disabled={saving} className="w-full sm:flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold">
                   {saving ? 'Guardando...' : editingItem ? 'Guardar Cambios' : 'Agregar al Inventario'}
                 </Button>
-                <Button onClick={() => setShowForm(false)} variant="outline" className="border-border">Cancelar</Button>
+                <Button onClick={() => setShowForm(false)} variant="outline" className="w-full sm:w-auto border-border">Cancelar</Button>
               </div>
             </CardContent>
           </Card>
@@ -495,19 +502,21 @@ export default function InventoryPage() {
 
       {/* ── Stock Movement Modal ─────────────────────────────── */}
       {movementItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <Card className="glass-panel w-full max-w-md border-emerald-500/30">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
+          <Card className="glass-panel w-full max-w-md max-h-[calc(100dvh-1rem)] overflow-y-auto border-emerald-500/30">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-base">{movType === 'IN' ? '📦 Entrada de Stock' : movType === 'OUT' ? '📤 Salida de Stock' : '⚙️ Ajuste de Stock'}</CardTitle>
                   <CardDescription className="mt-1">{movementItem.name}</CardDescription>
                 </div>
-                <button onClick={() => setMovementItem(null)}><X className="w-5 h-5 text-muted-foreground" /></button>
+                <button type="button" onClick={() => setMovementItem(null)} aria-label="Cerrar movimiento">
+                  <X className="w-5 h-5 text-muted-foreground" />
+                </button>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {(['IN', 'OUT', 'ADJUSTMENT'] as StockMovementType[]).map(t => (
                   <Button
                     key={t}
@@ -548,15 +557,15 @@ export default function InventoryPage() {
                 <Input value={movNotes} onChange={e => setMovNotes(e.target.value)} placeholder="Motivo del movimiento..." className="mt-1 bg-secondary border-border" />
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row">
                 <Button
                   onClick={handleMovement}
                   disabled={movSaving}
-                  className={`flex-1 text-white font-bold ${movType === 'IN' ? 'bg-emerald-600 hover:bg-emerald-500' : movType === 'OUT' ? 'bg-red-600 hover:bg-red-500' : 'bg-amber-600 hover:bg-amber-500'}`}
+                  className={`w-full sm:flex-1 text-white font-bold ${movType === 'IN' ? 'bg-emerald-600 hover:bg-emerald-500' : movType === 'OUT' ? 'bg-red-600 hover:bg-red-500' : 'bg-amber-600 hover:bg-amber-500'}`}
                 >
                   {movSaving ? 'Registrando...' : 'Registrar Movimiento'}
                 </Button>
-                <Button onClick={() => setMovementItem(null)} variant="outline" className="border-border">Cancelar</Button>
+                <Button onClick={() => setMovementItem(null)} variant="outline" className="w-full sm:w-auto border-border">Cancelar</Button>
               </div>
             </CardContent>
           </Card>
@@ -573,7 +582,9 @@ export default function InventoryPage() {
                   <CardTitle className="text-blue-400 text-base flex items-center gap-2"><History className="w-4 h-4" /> Historial de Movimientos</CardTitle>
                   <CardDescription className="mt-1">{historyItem.name}</CardDescription>
                 </div>
-                <button onClick={() => setHistoryItem(null)}><X className="w-5 h-5 text-muted-foreground" /></button>
+                <button type="button" onClick={() => setHistoryItem(null)} aria-label="Cerrar historial">
+                  <X className="w-5 h-5 text-muted-foreground" />
+                </button>
               </div>
             </CardHeader>
             <CardContent className="overflow-y-auto flex-1">

@@ -570,7 +570,7 @@ export default function AdvisorQuoteBuilder() {
                 {/* Registrar Pago rápido */}
                 <div className="bg-secondary/50 p-4 rounded-lg border border-border mt-4">
                   <h3 className="font-semibold text-foreground mb-4">Registrar Nuevo Pago (Abono)</h3>
-                  <div className="flex gap-4">
+                  <div className="flex flex-col gap-4 sm:flex-row">
                     <div className="flex-1">
                       <Label>Monto</Label>
                       <Input 
@@ -625,7 +625,7 @@ export default function AdvisorQuoteBuilder() {
                   <ArrowRight className="w-4 h-4 text-cyan-500 group-hover:text-cyan-300 group-hover:translate-x-0.5 transition-transform shrink-0" />
                 </button>
 
-                <div className="pt-4 flex gap-4">
+                <div className="pt-4 flex flex-col gap-3 sm:flex-row sm:gap-4">
                   <Button onClick={() => router.push(`/quote/view?id=${selectedJob.id}`)} variant="outline" className="flex-1 border-blue-500/50 text-blue-500">
                     <ExternalLink className="w-4 h-4 mr-2" /> Ver Vista del Cliente
                   </Button>

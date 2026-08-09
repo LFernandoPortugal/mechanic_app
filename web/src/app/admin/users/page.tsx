@@ -97,7 +97,7 @@ export default function AdminUsersPage() {
     <ProtectedRoute allowedRoles={['ADMIN']}>
       <div className="min-h-screen page-bg text-foreground px-4 md:px-8 py-6">
         <div className="max-w-7xl mx-auto space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-purple-100 dark:bg-purple-950/30 rounded-xl border border-purple-500/30">
                 <ShieldCheck className="w-6 h-6 text-purple-500 dark:text-purple-400" />
@@ -110,7 +110,7 @@ export default function AdminUsersPage() {
             <Button
               onClick={fetchUsers}
               variant="outline"
-              className="border-border text-muted-foreground hover:text-foreground"
+              className="self-start sm:self-auto border-border text-muted-foreground hover:text-foreground"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
               {t('refresh')}
@@ -127,7 +127,7 @@ export default function AdminUsersPage() {
             <div className="space-y-4">
               {users.map((user) => (
                 <Card key={user.uid} className="glass-panel">
-                  <CardContent className="p-5">
+                  <CardContent className="p-4 sm:p-5">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
@@ -166,7 +166,7 @@ export default function AdminUsersPage() {
                         size="sm"
                         disabled={!hasChanges(user.uid) || saving === user.uid}
                         onClick={() => handleSave(user.uid)}
-                        className={`shrink-0 transition-all ${
+                        className={`w-full sm:w-auto shrink-0 transition-all ${
                           hasChanges(user.uid)
                             ? 'bg-purple-600 hover:bg-purple-500 text-white'
                             : 'bg-secondary text-muted-foreground cursor-not-allowed'

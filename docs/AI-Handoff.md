@@ -95,12 +95,15 @@ El cliente selecciona ítems, confirma una firma de aprobación separada de la f
 
 ### Primera ronda visual posterior al despliegue
 
-- PR draft #3: `https://github.com/LFernandoPortugal/mechanic_app/pull/3`.
+- PR #3: `https://github.com/LFernandoPortugal/mechanic_app/pull/3`.
 - Preview: `https://mechanic-app-git-codex-visua-462c2f-lfernandoportugals-projects.vercel.app`.
 - Técnico y Asesor muestran estados vacíos informativos y responsive en lugar de paneles desproporcionados.
 - La preferencia de tema claro/oscuro sobrevive a recargas completas.
 - Inventario usa el símbolo de moneda configurado por el taller en métricas, tabla, formularios e historial.
-- Gates locales y CI pasan; Vercel reporta el preview listo. Esta rama todavía no está en producción.
+- La revisión responsive se ejecutó en viewports reales de 320x568 y 390x844: Header, Recepción, Asesor, Inventario, Configuración, Usuarios y QC no presentan desbordamiento horizontal.
+- Formularios, acciones y modales largos se apilan en móvil; el formulario de Inventario conserva desplazamiento interno y controles de cierre accesibles.
+- El stepper de flujo reduce nodos en móvil y oculta etiquetas que se superponían; la firma y los botones de pago, aprobación, rechazo y restablecimiento se adaptan a una columna.
+- QA de navegador sin warnings ni errores de consola. TypeScript, lint, 23 pruebas unitarias, 21 pruebas de reglas y build de producción pasan localmente.
 
 ## Verificación reproducible
 
@@ -165,12 +168,10 @@ La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos 
 
 ## Siguiente bloque recomendado
 
-1. Completar QA móvil de PR #3 y revisar su preview en tema claro/oscuro.
-2. Integrar PR #3 cuando la revisión responsive quede aprobada; observar Production sin volver a desplegar reglas Firebase.
-3. Continuar la auditoría visual con formularios largos, tablas y modales.
-4. Validar notificaciones EmailJS con un destinatario controlado si forman parte del release.
-5. Resolver o aceptar explícitamente los avisos moderados dev-only de `npm audit` sin aplicar un downgrade automático de `firebase-tools`.
-6. Tras cerrar QA, decidir si `p1` se conserva como fixture de pruebas o se elimina coordinadamente de Auth, `users` y `settings`.
+1. Continuar la auditoría visual con contenido real en formularios largos, tablas, modales y estados de error/carga.
+2. Validar notificaciones EmailJS con un destinatario controlado si forman parte del release.
+3. Resolver o aceptar explícitamente los avisos moderados dev-only de `npm audit` sin aplicar un downgrade automático de `firebase-tools`.
+4. Tras cerrar QA, decidir si `p1` se conserva como fixture de pruebas o se elimina coordinadamente de Auth, `users` y `settings`.
 
 ## Reglas para la próxima IA
 

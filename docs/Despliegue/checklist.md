@@ -68,7 +68,7 @@ firebase deploy --only firestore:rules,firestore:indexes --project mechanic-app-
 - [x] Build de Vercel Production exitoso.
 - [x] Reglas Firestore desplegadas solo después de confirmar que la nueva API QC está activa en Vercel.
 - [x] Smoke test: login → Reception → Diagnosis → Approval → firma cliente → Approved → Repair → QC → pago → Delivered (el pago completo previo al pass de QC entrega sin omitir el checklist).
-- [ ] Tema claro/oscuro y viewport móvil revisados.
+- [x] Tema claro/oscuro y viewport móvil revisados en 320x568 y 390x844; sin desbordamientos ni errores de consola en las rutas principales.
 - [ ] Logs de Vercel y Firebase revisados sin errores nuevos. Vercel quedó verificado; queda pendiente una revisión específica de logs Firebase cuando exista acceso a esa vista.
 - [x] Datos de prueba eliminados y eliminación verificada.
 - [x] Cuentas demo históricas con credenciales conocidas revisadas y eliminadas.

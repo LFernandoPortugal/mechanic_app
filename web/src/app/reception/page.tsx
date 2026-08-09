@@ -262,7 +262,7 @@ export default function Reception() {
                 <CardTitle className="text-lg">{t('vehicleDetails')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>{t('licensePlate')} *</Label>
                     <Input 
@@ -277,7 +277,7 @@ export default function Reception() {
                     <Input placeholder={t('scanOrType')} value={vehicle.vin} onChange={(e) => setVehicle({...vehicle, vin: e.target.value})} className="bg-background border-border" />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                    <div className="space-y-2">
                     <Label>{t('make')} *</Label>
                     <Input placeholder="Toyota" value={vehicle.make} onChange={(e) => setVehicle({...vehicle, make: e.target.value})} className="bg-background border-border" />
