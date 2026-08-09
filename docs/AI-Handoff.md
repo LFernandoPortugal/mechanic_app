@@ -1,31 +1,31 @@
 # AI Handoff — SGA Mechanic App
 
-> Última actualización: 2026-08-08
+> Última actualización: 2026-08-09
 > Producción oficial: rama `main` en Vercel
-> Trabajo pendiente de integrar: `codex/security-stabilization`
+> Producción verificada: `c903185` en `https://mechanic-app-zeta.vercel.app/`
 
 ## Punto de reanudación rápido
 
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
-- **Producción:** `origin/main` en `b0210d5`; continúa en `https://mechanic-app-zeta.vercel.app/` y no contiene esta estabilización.
-- **Rama de trabajo:** `codex/security-stabilization`, publicada en `origin`; consultar Git para el HEAD actual. El checkpoint evita fijar su propio hash para no quedar obsoleto al actualizarse.
+- **Producción:** `origin/main` en `c903185`; la estabilización está desplegada en `https://mechanic-app-zeta.vercel.app/`.
+- **Rama de documentación:** `codex/post-deploy-handoff`, creada desde el `main` desplegado para registrar este cierre.
 - **Árbol local al cerrar:** limpio y sincronizado con la rama remota.
-- **Firebase esperado:** `mechanic-app-7d459`; las reglas nuevas todavía no se han desplegado.
-- **Último hito:** PR draft #1 abierto y verde; E2E de QC correcto y datos históricos de prueba limpiados con verificación posterior.
-- **Calidad verificada:** TypeScript, lint, 23 pruebas unitarias, 21 pruebas de reglas, build, auditoría runtime, dos ejecuciones de CI y preview Vercel.
-- **Siguiente paso recomendado:** revisar y aprobar el PR. Después, desplegar primero el código Vercel y enseguida las reglas Firebase, porque las reglas nuevas bloquean el QC client-side de `main` actual.
-- **No repetir ni asumir:** no hace falta recrear los datos E2E ya eliminados; no afirmar que la estabilización está en producción hasta comprobar `main` y Vercel.
+- **Firebase esperado:** `mechanic-app-7d459`; las reglas de la estabilización están desplegadas y fueron releídas desde el proyecto activo.
+- **Último hito:** PR #1 integrado, CI de `main` verde, Vercel Production listo y smoke completo de producción aprobado con limpieza posterior.
+- **Calidad verificada:** TypeScript, lint, 23 pruebas unitarias, 21 pruebas de reglas, build, auditoría runtime, CI, preview y flujo integral en producción.
+- **Siguiente paso recomendado:** ejecutar QA visual/exploratoria en tema claro/oscuro y móvil; después decidir si se conserva o elimina el taller tester `p1`.
+- **No repetir ni asumir:** no hace falta recrear el smoke ya eliminado; verificar siempre el deployment vigente antes de un nuevo cambio.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
 
 ## Estado ejecutivo
 
-La aplicación es un SGA multitenant en Next.js 16, Firebase Auth/Firestore y Vercel. La rama de estabilización compila, pasa TypeScript y cuenta con pruebas unitarias y de reglas; todavía **no está desplegada en producción**.
+La aplicación es un SGA multitenant en Next.js 16, Firebase Auth/Firestore y Vercel. La estabilización está integrada en `main`, desplegada en Vercel Production y acompañada por sus reglas Firestore en `mechanic-app-7d459`.
 
-- Producción continúa en `https://mechanic-app-zeta.vercel.app/` desde `main`.
+- Producción sirve `c903185` en `https://mechanic-app-zeta.vercel.app/` desde `main`.
 - Preview protegida de la rama (alias estable): `https://mechanic-app-git-codex-secur-abea4c-lfernandoportugals-projects.vercel.app`.
-- No se desplegaron las reglas nuevas a Firebase ni se promovió la preview.
+- Las reglas nuevas se compilaron y publicaron únicamente como `firestore:rules`; no se desplegaron Hosting, Storage ni índices.
 - El taller tester `p1` fue reparado: conserva su cuenta Auth y ahora tiene un único perfil ADMIN y un `settings/p1` vacío/activo. No se combinaron usuarios antiguos.
 - Las órdenes sintéticas de E2E fueron eliminadas al terminar.
 
@@ -143,15 +143,23 @@ Vercel ya tiene esos identificadores en Preview y Production. No crear ni subir 
 
 La limpieza autorizada eliminó 12 cuentas Auth de prueba: cuatro cuentas demo históricas y ocho cuentas huérfanas `p2/p3/p4/prueba*`. También se eliminaron tres perfiles demo sin taller, ocho órdenes de prueba huérfanas y el documento legado `settings/workshop`.
 
-La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos perfiles `users`: la cuenta única SUPER_ADMIN y el ADMIN tester de `p1`. Firestore conserva únicamente `settings/p1`; `jobs`, `inventory`, `inventory_transactions` y `feedback` quedaron vacíos. SUPER_ADMIN y `master-control` no fueron modificados. `p1` se conserva temporalmente para el smoke test posterior al merge.
+La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos perfiles `users`: la cuenta única SUPER_ADMIN y el ADMIN tester de `p1`. Firestore conserva únicamente `settings/p1`; `jobs`, `inventory`, `inventory_transactions` y `feedback` quedaron vacíos. SUPER_ADMIN y `master-control` no fueron modificados. `p1` se conserva temporalmente para la siguiente ronda de QA visual/exploratoria.
 
-## Pendiente antes de producción
+## Cierre de producción del 2026-08-09
 
-1. Revisar el PR draft #1.
-2. Aprobar/integrar a `main` y observar hasta que el deploy Vercel con la ruta QC esté listo.
-3. Inmediatamente después, desplegar `firestore.rules` desde `web/` al proyecto verificado `mechanic-app-7d459`. No desplegarlas antes del código: el `main` anterior todavía actualiza QC desde el cliente.
-4. Ejecutar smoke test de login, recepción, diagnóstico, cotización, aprobación, reparación, QC, pago y entrega.
-5. Resolver o aceptar explícitamente los avisos moderados dev-only de `npm audit` sin aplicar un downgrade automático de `firebase-tools`.
+1. PR #1 integrado por squash en `main` como `c903185`; CI de `main` completó correctamente.
+2. Vercel Production completó el despliegue y la ruta QC autenticada quedó activa antes de publicar las reglas.
+3. `firestore.rules` se desplegó desde `web/` al proyecto verificado `mechanic-app-7d459` y se releyó desde Firebase.
+4. Smoke integral aprobado en producción: login, recepción, diagnóstico, cotización, portal público, firma/aprobación, reparación, QC, pago y entrega.
+5. El job descartable fue eliminado; Firestore volvió a 0 jobs, inventario, movimientos y feedback. Permanecen solo SUPER_ADMIN y el tester `p1`.
+6. Los logs del deployment mostraron 200 en las operaciones del smoke, un 401 intencional sin sesión y 0 warnings, errores o fatales.
+
+## Siguiente bloque recomendado
+
+1. QA visual y exploratoria de pantallas completas en escritorio/móvil y tema claro/oscuro.
+2. Validar notificaciones EmailJS con un destinatario controlado si forman parte del release.
+3. Resolver o aceptar explícitamente los avisos moderados dev-only de `npm audit` sin aplicar un downgrade automático de `firebase-tools`.
+4. Tras cerrar QA, decidir si `p1` se conserva como fixture de pruebas o se elimina coordinadamente de Auth, `users` y `settings`.
 
 ## Reglas para la próxima IA
 
