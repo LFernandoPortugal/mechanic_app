@@ -61,7 +61,7 @@ El cliente selecciona ítems, confirma una firma de aprobación separada de la f
 - Cada cambio de stock requiere un movimiento inmutable enlazado mediante `lastMovementId`.
 - Pagos usan transacción y rechazan sobrepagos/concurrencia.
 - `auditLog` deja de usar read-modify-write en actualizaciones comunes.
-- La aprobación pública valida firma PNG y tamaño, normaliza ítems y nunca devuelve PII, firmas, pagos ni auditoría.
+- La aprobación pública valida la cabecera PNG de la firma y limita su tamaño; el DTO no devuelve nombre ni contacto del cliente, firmas, pagos, auditoría o IDs internos del personal.
 
 ### Calidad y UI
 
@@ -90,7 +90,7 @@ Resultado del 2026-08-08:
 
 - TypeScript: 0 errores.
 - Lint: 0 errores, 0 warnings.
-- Unit tests: 11/11.
+- Unit tests: 18/18.
 - Firestore Rules tests: 17/17.
 - Build: 19/19 páginas generadas; 3 API routes dinámicas.
 - Auditoría runtime: 0 vulnerabilidades.

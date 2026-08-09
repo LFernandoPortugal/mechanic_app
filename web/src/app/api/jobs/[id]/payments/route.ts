@@ -2,6 +2,7 @@ import { Timestamp } from "@google-cloud/firestore";
 import { NextResponse } from "next/server";
 import { getAdminFirestore } from "@/lib/firebase-admin";
 import { HttpError, requireRoles } from "@/lib/server-auth";
+import { isWorkshopActive } from "@/lib/server-workshop";
 import { calculatePayment } from "@/lib/transactions";
 import type { Job } from "@/types";
 
@@ -17,14 +18,6 @@ const HEADERS = {
 
 const json = (body: unknown, status = 200) =>
   NextResponse.json(body, { status, headers: HEADERS });
-
-function workshopIsActive(settings: Record<string, unknown>, workshopId: string) {
-  if (["demo-workshop", "master-control"].includes(workshopId)) return true;
-  if (settings.disabled === true) return false;
-
-  const expiry = settings.expiresAtTimestamp as { toDate?: () => Date } | undefined;
-  return !expiry?.toDate || expiry.toDate().getTime() > Date.now();
-}
 
 export async function POST(
   request: Request,
@@ -67,7 +60,7 @@ export async function POST(
       const settingsSnapshot = await transaction.get(db.collection("settings").doc(job.workshopId));
       if (!isSuperAdmin && (
         !settingsSnapshot.exists
-        || !workshopIsActive(settingsSnapshot.data() ?? {}, job.workshopId)
+        || !isWorkshopActive(settingsSnapshot.data() ?? {}, job.workshopId)
       )) {
         throw new HttpError(403, "El taller no est\u00e1 activo.");
       }

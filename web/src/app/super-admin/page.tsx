@@ -192,7 +192,7 @@ export default function SuperAdminPage() {
 
   const handleDeleteUser = async (uid: string, email: string) => {
     if (uid === userProfile?.uid) { toast.error("No puedes eliminarte a ti mismo."); return; }
-    if (!window.confirm(`¿Eliminar perfil de "${email}"? Deberás también eliminarlo en Firebase Auth para revocar acceso total.`)) return;
+    if (!window.confirm(`¿Eliminar la cuenta "${email}" de Firebase Authentication y Firestore?`)) return;
     setActionLoading(`delete-user-${uid}`);
     try {
       await callAdminUsersApi("DELETE", { uids: [uid] });

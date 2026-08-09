@@ -7,6 +7,7 @@ import {
   sanitizePublicQuote,
   validateApprovalSignature,
 } from "@/lib/public-quote";
+import { isWorkshopActive } from "@/lib/server-workshop";
 import type { Job } from "@/types";
 
 export const runtime = "nodejs";
@@ -32,7 +33,10 @@ async function loadPublicQuote(jobId: string) {
   if (!isPublicQuoteStatus(job.status)) return null;
 
   const settingsSnapshot = await db.collection("settings").doc(job.workshopId).get();
-  if (!settingsSnapshot.exists) return null;
+  if (
+    !settingsSnapshot.exists
+    || !isWorkshopActive(settingsSnapshot.data() ?? {}, job.workshopId)
+  ) return null;
 
   return sanitizePublicQuote(job, settingsSnapshot.data() ?? {});
 }
@@ -77,13 +81,22 @@ export async function POST(
     const approvalSignatureBase64 = validateApprovalSignature(body.signatureBase64);
     const db = getAdminFirestore();
     const jobRef = db.collection("jobs").doc(id);
-    const updatedJob = await db.runTransaction(async (transaction) => {
-      const snapshot = await transaction.get(jobRef);
-      if (!snapshot.exists) throw new Error("NOT_FOUND");
+    const result = await db.runTransaction(async (transaction) => {
+      const jobSnapshot = await transaction.get(jobRef);
+      if (!jobSnapshot.exists) throw new Error("NOT_FOUND");
 
-      const job = { id: snapshot.id, ...snapshot.data() } as Job;
+      const job = { id: jobSnapshot.id, ...jobSnapshot.data() } as Job;
+      const settingsRef = db.collection("settings").doc(job.workshopId);
+      const settingsSnapshot = await transaction.get(settingsRef);
+      if (
+        !settingsSnapshot.exists
+        || !isWorkshopActive(settingsSnapshot.data() ?? {}, job.workshopId)
+      ) throw new Error("NOT_FOUND");
+
       if (job.status !== "Approval") {
-        if (isPublicQuoteStatus(job.status)) return job;
+        if (isPublicQuoteStatus(job.status)) {
+          return { job, settings: settingsSnapshot.data() ?? {} };
+        }
         throw new Error("NOT_FOUND");
       }
 
@@ -101,16 +114,13 @@ export async function POST(
         }),
       });
 
-      return { ...job, ...approval, approvalSignatureBase64, approvedAt };
+      return {
+        job: { ...job, ...approval, approvalSignatureBase64, approvedAt },
+        settings: settingsSnapshot.data() ?? {},
+      };
     });
 
-    const settingsSnapshot = await db
-      .collection("settings")
-      .doc(updatedJob.workshopId)
-      .get();
-    if (!settingsSnapshot.exists) return json({ error: "Cotización no encontrada." }, 404);
-
-    return json(sanitizePublicQuote(updatedJob, settingsSnapshot.data() ?? {}));
+    return json(sanitizePublicQuote(result.job, result.settings));
   } catch (error) {
     if (error instanceof SyntaxError) return json({ error: "JSON inválido." }, 400);
     if (error instanceof Error && error.message === "NOT_FOUND") {

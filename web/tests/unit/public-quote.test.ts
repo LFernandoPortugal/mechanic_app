@@ -6,6 +6,9 @@ import {
 } from "@/lib/public-quote";
 import type { Job } from "@/types";
 
+const ONE_PIXEL_PNG =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Z4SIAAAAASUVORK5CYII=";
+
 const sourceJob = {
   id: "AbCdEfGhIjKlMnOpQrSt",
   workshopId: "ws-a",
@@ -52,6 +55,8 @@ describe("sanitizePublicQuote", () => {
 
     expect(publicQuote.job.vehicleId).toBe("ABC-123");
     expect(publicQuote.settings.currencySymbol).toBe("S/.");
+    expect(publicQuote.job).not.toHaveProperty("clientId");
+    expect(JSON.stringify(publicQuote)).not.toContain("Cliente Uno");
     expect(JSON.stringify(publicQuote)).not.toContain("private@example.test");
     expect(JSON.stringify(publicQuote)).not.toContain("private-advisor-id");
     expect(JSON.stringify(publicQuote)).not.toContain("must-never-leak");
@@ -65,15 +70,25 @@ describe("sanitizePublicQuote", () => {
 
 describe("validateApprovalSignature", () => {
   it("accepts a reasonably sized PNG data URL", () => {
-    const signature = `data:image/png;base64,${"A".repeat(64)}`;
+    const signature = `data:image/png;base64,${ONE_PIXEL_PNG}`;
     expect(validateApprovalSignature(signature)).toBe(signature);
   });
 
-  it("rejects other formats, malformed data, and oversized payloads", () => {
+  it("rejects other formats, malformed data, and non-PNG payloads", () => {
     expect(() => validateApprovalSignature("data:image/jpeg;base64,AAAA")).toThrow();
     expect(() => validateApprovalSignature("data:image/png;base64,not base64")).toThrow();
     expect(() =>
-      validateApprovalSignature(`data:image/png;base64,${"A".repeat(174_768)}`),
+      validateApprovalSignature(`data:image/png;base64,${"A".repeat(64)}`),
+    ).toThrow();
+  });
+
+  it("rejects payloads larger than the signature limit", () => {
+    const oversized = Buffer.concat([
+      Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+      Buffer.alloc(128 * 1024),
+    ]).toString("base64");
+    expect(() =>
+      validateApprovalSignature(`data:image/png;base64,${oversized}`),
     ).toThrow();
   });
 });

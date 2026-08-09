@@ -99,8 +99,9 @@
 ### SEC-002: Datos privados expuestos por el portal público
 
 - Eliminado el `get/update` público de `jobs` y el `get` público de `settings`.
-- El nuevo endpoint devuelve un DTO que excluye PII, firmas, pagos, fotos de recepción, auditoría e IDs de personal.
-- La aprobación valida decisiones/firma y recalcula el monto en una transacción.
+- El nuevo endpoint devuelve un DTO que excluye nombre/contacto del cliente, firmas, pagos, fotos de recepción, auditoría e IDs de personal.
+- La aprobación valida decisiones, cabecera/tamaño de la firma PNG y recalcula el monto en una transacción.
+- Una cotización de un taller inexistente, deshabilitado o vencido no puede leerse ni aprobarse.
 
 ### BUG-008: Stock inicial duplicado e historial editable
 

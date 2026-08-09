@@ -37,9 +37,10 @@
 - Ruta visible: `/quote/view?id=JOB_ID`.
 - Firestore no permite lectura/escritura pública directa de `jobs` o `settings`.
 - `GET /api/public/quotes/[id]` devuelve un DTO sanitizado y limitado a datos necesarios.
-- No expone email/teléfono del cliente, firma de recepción/aprobación, fotos privadas de recepción, pagos, auditoría ni IDs internos del personal.
+- No expone nombre/email/teléfono del cliente, firma de recepción/aprobación, fotos privadas de recepción, pagos, auditoría ni IDs internos del personal.
 - `POST` solo acepta decisiones booleanas que coincidan con ítems cotizados y una firma PNG acotada.
 - El servidor recalcula el monto, llena `declinedItems`, registra firma/fecha/auditoría y actualiza en una transacción.
+- Tanto lectura como aprobación ocultan las cotizaciones de talleres inexistentes, deshabilitados o vencidos.
 
 Los IDs aleatorios reducen enumeración, pero no sustituyen un token de acceso. Para una fase posterior se recomienda un token revocable/de un solo uso por cotización.
 

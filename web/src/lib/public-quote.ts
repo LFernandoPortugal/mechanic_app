@@ -28,7 +28,6 @@ export interface PublicQuoteJob {
   model?: string;
   color?: string;
   vehicleType?: Job["vehicleType"];
-  clientId: string;
   status: Job["status"];
   inspectionItems: InspectionItem[];
   declinedItems: InspectionItem[];
@@ -52,6 +51,7 @@ export interface QuoteApprovalUpdate {
 
 const SIGNATURE_PREFIX = "data:image/png;base64,";
 const MAX_APPROVAL_SIGNATURE_BYTES = 128 * 1024;
+const PNG_SIGNATURE = [137, 80, 78, 71, 13, 10, 26, 10];
 
 export function validateApprovalSignature(value: unknown): string {
   if (typeof value !== "string" || !value.startsWith(SIGNATURE_PREFIX)) {
@@ -73,6 +73,14 @@ export function validateApprovalSignature(value: unknown): string {
     throw new Error("The approval signature is invalid.");
   }
 
+  const decoded = Buffer.from(encoded, "base64");
+  if (
+    decoded.length !== decodedBytes
+    || PNG_SIGNATURE.some((byte, index) => decoded[index] !== byte)
+  ) {
+    throw new Error("The approval signature is invalid.");
+  }
+
   return value;
 }
 
@@ -85,7 +93,6 @@ type QuoteSource = Pick<
   | "model"
   | "color"
   | "vehicleType"
-  | "clientId"
   | "status"
   | "inspectionItems"
   | "declinedItems"
@@ -133,7 +140,6 @@ export function sanitizePublicQuote(
       model: job.model,
       color: job.color,
       vehicleType: job.vehicleType,
-      clientId: job.clientId,
       status: job.status,
       inspectionItems: (job.inspectionItems ?? []).map(normalizeInspectionItem),
       declinedItems: (job.declinedItems ?? []).map(normalizeInspectionItem),

@@ -40,7 +40,7 @@ npm.cmd run build
 - [ ] Crear preview desde la raíz del repositorio, porque el Root Directory del proyecto es `web`.
 - [ ] Verificar rutas server-side en el resumen de build.
 - [ ] Probar acceso no autenticado: admin/pagos deben responder 401.
-- [ ] Probar cotización pública con documento descartable y confirmar que el DTO no filtra PII.
+- [ ] Probar cotización pública con documento descartable y confirmar que el DTO no filtra nombre/contacto del cliente ni datos internos.
 - [ ] Probar firma/aprobación parcial y limpiar el documento temporal.
 - [ ] Probar pago autenticado descartable antes de producción.
 - [ ] Probar creación/borrado de taller descartable con SUPER_ADMIN antes de producción.

@@ -10,8 +10,8 @@ import { Job, WorkshopSettings } from '@/types';
 
 type QuotePdfJob = Pick<
   Job,
-  'id' | 'vehicleId' | 'clientId' | 'inspectionItems' | 'totalEstimate' | 'approvedAmount' | 'status'
-> & Partial<Pick<Job, 'odometer' | 'clientPhone' | 'clientEmail' | 'startingFuel'>>;
+  'id' | 'vehicleId' | 'inspectionItems' | 'totalEstimate' | 'approvedAmount' | 'status'
+> & Partial<Pick<Job, 'clientId' | 'odometer' | 'clientPhone' | 'clientEmail' | 'startingFuel'>>;
 
 const BRAND_COLOR: [number, number, number] = [16, 185, 129];   // Emerald-500
 const DARK_COLOR:  [number, number, number] = [24, 24, 27];     // zinc-900

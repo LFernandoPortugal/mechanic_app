@@ -238,7 +238,6 @@ export default function ClientQuoteView() {
           {/* Vehicle info */}
           <div className="glass-panel rounded-xl border border-border/30 px-4 py-3 flex items-center justify-between text-xs text-muted-foreground">
             <span>Vehículo: <span className="text-foreground font-mono font-medium">{job.vehicleId}</span></span>
-            <span>Cliente: <span className="text-foreground font-medium">{job.clientId}</span></span>
           </div>
         </div>
       </div>
