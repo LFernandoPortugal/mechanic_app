@@ -69,6 +69,7 @@ El cliente selecciona ítems, confirma una firma de aprobación separada de la f
 - Marca del taller usa `workshopName`; moneda usa el símbolo configurado.
 - Firma obligatoria en el portal; eliminado el botón de autoaprobación demo.
 - Mejor contraste de roles en tema claro y CTA visible en tarjetas móviles.
+- Limpieza de código muerto y migración de imágenes dinámicas a `next/image` sin optimizar URLs privadas/base64.
 - Next.js actualizado a 16.3.0 y dependencias runtime sin vulnerabilidades conocidas en `npm audit --omit=dev`.
 
 ## Verificación reproducible
@@ -88,7 +89,7 @@ npm.cmd audit --omit=dev
 Resultado del 2026-08-08:
 
 - TypeScript: 0 errores.
-- Lint: 0 errores, 59 warnings no bloqueantes.
+- Lint: 0 errores, 0 warnings.
 - Unit tests: 11/11.
 - Firestore Rules tests: 17/17.
 - Build: 19/19 páginas generadas; 3 API routes dinámicas.
@@ -126,7 +127,7 @@ También quedan cuentas Auth antiguas que no tienen perfil `users`. El flujo nue
 4. Desplegar `firestore.rules` desde `web/` al proyecto verificado `mechanic-app-7d459`.
 5. Integrar a `main` y observar el deploy Vercel.
 6. Ejecutar smoke test de login, recepción, diagnóstico, cotización, aprobación, reparación, QC, pago y entrega.
-7. Resolver o aceptar explícitamente los 59 warnings de lint y los 8 avisos dev-only de `npm audit`.
+7. Resolver o aceptar explícitamente los 8 avisos dev-only de `npm audit`.
 
 ## Reglas para la próxima IA
 

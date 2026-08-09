@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -12,15 +12,13 @@ import { toast } from "sonner";
 import {
   Card, CardContent, CardHeader, CardTitle, CardDescription,
 } from "@/components/ui/card";
-import { ArrowLeft } from "lucide-react";
-import { WorkflowStepper } from "@/components/WorkflowStepper";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   DollarSign, CreditCard, Banknote, Smartphone, CheckCircle2,
-  ChevronDown, ChevronUp, Loader2, RefreshCw, FileText,
+  ChevronDown, ChevronUp, Loader2, FileText, ArrowLeft,
 } from "lucide-react";
 
 type PaymentMethod = PaymentInput["method"];
@@ -270,7 +268,7 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
 
 export default function PaymentsPage() {
   const router = useRouter();
-  const { userProfile, workshopSettings } = useAuth();
+  const { workshopSettings } = useAuth();
   const { jobs, loading } = useRealtimeJobs({ statuses: ["Ready", "Approved", "Delivered", "QC"] });
 
   // Sort: pending first, then delivered

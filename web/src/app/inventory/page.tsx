@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import {
   getInventoryItems,
@@ -18,12 +17,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { toDate } from "@/lib/dates";
 import {
   Package, Plus, Pencil, Trash2, ArrowDownCircle, ArrowUpCircle,
-  AlertTriangle, Search, X, ChevronDown, ChevronUp, History, ArrowLeft
+  AlertTriangle, Search, X, History, ArrowLeft
 } from "lucide-react";
 
 const CATEGORIES: InventoryCategory[] = [
@@ -55,7 +53,6 @@ const emptyForm = (): Partial<InventoryItem> => ({
 export default function InventoryPage() {
   const router = useRouter();
   const { user, userProfile, hasRole, loading: authLoading } = useAuth();
-  const { t } = useLanguage();
   const isAdmin = hasRole('ADMIN');
 
   const [items, setItems] = useState<InventoryItem[]>([]);
@@ -124,7 +121,7 @@ export default function InventoryPage() {
     try {
       const wId = userProfile?.workshopId || "demo-workshop";
       if (editingItem) {
-        await updateInventoryItem(editingItem.id, { ...form, workshopId: wId }, user?.uid || 'unknown');
+        await updateInventoryItem(editingItem.id, { ...form, workshopId: wId });
         toast.success('Repuesto actualizado.');
       } else {
         const itemWithWorkshop = {

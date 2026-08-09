@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { updateJob, assignTechnician } from "@/lib/db";
 import { uploadJobImage } from "@/lib/storage";
 import { toast } from "sonner";
@@ -88,7 +89,7 @@ export default function TechnicianDashboard() {
       setNewItemNotes("");
       setNewItemStatus("Pass");
       setNewItemPhotos([]);
-    } catch (e) {
+    } catch {
       toast.error("Error al subir la evidencia");
     } finally {
       setIsLogging(false);
@@ -439,7 +440,7 @@ export default function TechnicianDashboard() {
                             {item.mediaUrls && item.mediaUrls.length > 0 && (
                               <div className="flex gap-2 mt-2">
                                 {item.mediaUrls.map((url, idx) => (
-                                  <img key={idx} src={url} alt="Evidencia" className="w-12 h-12 object-cover rounded border border-border" />
+                                  <Image key={idx} src={url} alt="Evidencia" width={48} height={48} unoptimized className="w-12 h-12 object-cover rounded border border-border" />
                                 ))}
                               </div>
                             )}
@@ -549,7 +550,7 @@ export default function TechnicianDashboard() {
                         <div className="mt-2 flex flex-wrap gap-2">
                           {newItemPhotos.map((p, i) => (
                             <div key={i} className="relative w-12 h-12 rounded overflow-hidden border border-border">
-                              <img src={URL.createObjectURL(p)} alt="preview" className="object-cover w-full h-full" />
+                              <Image src={URL.createObjectURL(p)} alt="Vista previa" fill sizes="48px" unoptimized className="object-cover" />
                               <button 
                                 type="button" 
                                 onClick={() => setNewItemPhotos(newItemPhotos.filter((_, index) => index !== i))}

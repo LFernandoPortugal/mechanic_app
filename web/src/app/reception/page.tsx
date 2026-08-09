@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { createJob, getJobsByVehicleId, getWorkshopSettings } from "@/lib/db";
 import { uploadJobImage } from "@/lib/storage";
 import { toast } from "sonner";
@@ -141,7 +142,7 @@ export default function Reception() {
       }
 
       // 2. Create the job with everything inline — no secondary updates needed
-      const jobId = await createJob({
+      await createJob({
         workshopId: userProfile?.workshopId || "demo-workshop",
         vehicleId: vehicle.plate,
         vin: vehicle.vin.trim() || undefined,
@@ -519,7 +520,7 @@ export default function Reception() {
                   <div className="mt-4 flex flex-wrap gap-2">
                     {photos.map((p, i) => (
                       <div key={i} className="relative w-16 h-16 rounded overflow-hidden border border-border">
-                        <img src={URL.createObjectURL(p)} alt="preview" className="object-cover w-full h-full" />
+                        <Image src={URL.createObjectURL(p)} alt="Vista previa" fill sizes="64px" unoptimized className="object-cover" />
                         <button 
                           type="button" 
                           onClick={() => setPhotos(photos.filter((_, index) => index !== i))}

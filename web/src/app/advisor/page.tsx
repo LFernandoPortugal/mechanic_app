@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { updateJob, registerPayment, type PaymentInput } from "@/lib/db";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,7 +25,7 @@ import { toDate } from "@/lib/dates";
 
 export default function AdvisorQuoteBuilder() {
   const { t } = useLanguage();
-  const { user, userProfile, workshopSettings } = useAuth();
+  const { user, workshopSettings } = useAuth();
   const { jobs, loading } = useRealtimeJobs({ statuses: ["Approval", "Approved", "Repair"] });
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [prices, setPrices] = useState<Record<string, number>>({});
@@ -400,7 +401,7 @@ export default function AdvisorQuoteBuilder() {
                             <div className="flex flex-wrap gap-2 mt-3">
                               {item.mediaUrls.map((url, idx) => (
                                 <a href={url} target="_blank" rel="noopener noreferrer" key={idx}>
-                                  <img src={url} alt="Evidencia" className="w-16 h-16 object-cover rounded border border-border shadow-sm hover:scale-105 transition-transform" />
+                                  <Image src={url} alt="Evidencia" width={64} height={64} unoptimized className="w-16 h-16 object-cover rounded border border-border shadow-sm hover:scale-105 transition-transform" />
                                 </a>
                               ))}
                             </div>

@@ -8,14 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { toDate } from "@/lib/dates";
 import { Activity, CircleDollarSign, Wrench, Users, TrendingUp, Calendar, ArrowLeft } from "lucide-react";
 
 export default function OwnerAnalytics() {
   const router = useRouter();
-  const { t } = useLanguage();
   const { userProfile, loading: authLoading, workshopSettings } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);

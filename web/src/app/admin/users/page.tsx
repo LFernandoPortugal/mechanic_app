@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getUsersByWorkshop, updateUserRoles } from "@/lib/db";
 import { toast } from "sonner";
 import { UserProfile, UserRole, ROLE_BADGE_CLASSES, ROLE_META } from "@/types";
@@ -22,13 +22,7 @@ export default function AdminUsersPage() {
   const [saving, setSaving] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!authLoading && userProfile) {
-      fetchUsers();
-    }
-  }, [authLoading, userProfile]);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     if (!userProfile?.workshopId) {
       setLoading(false);
       return;
@@ -42,7 +36,13 @@ export default function AdminUsersPage() {
     });
     setEditingRoles(initialRoles);
     setLoading(false);
-  };
+  }, [userProfile]);
+
+  useEffect(() => {
+    if (!authLoading && userProfile) {
+      void fetchUsers();
+    }
+  }, [authLoading, fetchUsers, userProfile]);
 
   const toggleRole = (uid: string, role: UserRole) => {
     setEditingRoles((prev) => {

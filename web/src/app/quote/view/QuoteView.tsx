@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -172,7 +173,7 @@ export default function ClientQuoteView() {
               </div>
             </div>
             {settings?.logoUrl && (
-              <img src={settings.logoUrl} alt="Logo" className="w-auto h-12 mx-auto mb-3 object-contain rounded" />
+              <Image src={settings.logoUrl} alt="Logo" width={240} height={80} unoptimized className="w-auto h-12 mx-auto mb-3 object-contain rounded" />
             )}
             <h1 className="text-2xl font-bold text-emerald-400">
               {isDelivered ? '¡Vehículo Entregado!' : '¡Cotización Aprobada!'}
@@ -249,7 +250,7 @@ export default function ClientQuoteView() {
       
       <div className="w-full max-w-3xl space-y-6">
         <header className="mb-8 text-center flex flex-col items-center justify-center">
-          {settings?.logoUrl && <img src={settings.logoUrl} alt="Logo" className="w-auto h-20 mb-4 object-contain rounded-md" />}
+          {settings?.logoUrl && <Image src={settings.logoUrl} alt="Logo" width={320} height={120} unoptimized className="w-auto h-20 mb-4 object-contain rounded-md" />}
           <h1 className="text-3xl font-bold text-amber-500">{settings?.workshopName ? `${settings.workshopName} - ` : ''}{t('clientPortal')}</h1>
           <p className="text-muted-foreground text-sm mt-2">{settings?.address || t('clientSubtitle')}</p>
           <div className="mt-4 p-2 bg-secondary dark:bg-zinc-950 inline-flex items-center rounded-full px-4 border border-border gap-1.5">
@@ -295,7 +296,7 @@ export default function ClientQuoteView() {
                           <div className="flex flex-wrap gap-2 mt-3">
                             {item.mediaUrls.map((url, idx) => (
                               <a href={url} target="_blank" rel="noopener noreferrer" key={idx}>
-                                <img src={url} alt="Evidencia de daño" className="w-16 h-16 object-cover rounded border border-border shadow-sm hover:scale-105 transition-transform" />
+                                <Image src={url} alt="Evidencia de daño" width={64} height={64} unoptimized className="w-16 h-16 object-cover rounded border border-border shadow-sm hover:scale-105 transition-transform" />
                               </a>
                             ))}
                           </div>

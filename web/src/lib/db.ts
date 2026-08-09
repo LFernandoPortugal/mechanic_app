@@ -1,6 +1,6 @@
 import { auth, db } from "./firebase";
-import { arrayUnion, collection, addDoc, Timestamp, doc, getDoc, getDocs, query, where, updateDoc, deleteDoc, setDoc, orderBy, limit as firestoreLimit, runTransaction } from "firebase/firestore";
-import { Job, UserProfile, UserRole, AuditLog, InventoryItem, InventoryTransaction, StockMovementType, WorkshopSettings } from "@/types";
+import { arrayUnion, collection, addDoc, Timestamp, doc, getDoc, getDocs, query, where, updateDoc, deleteDoc, setDoc, orderBy, runTransaction } from "firebase/firestore";
+import { Job, UserProfile, UserRole, InventoryItem, InventoryTransaction, StockMovementType, WorkshopSettings } from "@/types";
 import { calculateStockAfterMovement } from "@/lib/transactions";
 
 // ─── User Profile Functions (RBAC) ──────────────────────
@@ -281,8 +281,7 @@ export async function addInventoryItem(
 
 export async function updateInventoryItem(
   itemId: string,
-  data: Partial<Omit<InventoryItem, 'id' | 'createdAt'>>,
-  actorId?: string
+  data: Partial<Omit<InventoryItem, 'id' | 'createdAt'>>
 ): Promise<void> {
   try {
     await updateDoc(doc(db, "inventory", itemId), {

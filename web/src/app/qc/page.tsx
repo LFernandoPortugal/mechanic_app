@@ -3,11 +3,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useRealtimeJobs } from "@/hooks/useRealtimeJobs";
 import { updateJob } from "@/lib/db";
-import { Job } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,13 +17,7 @@ import { toast } from "sonner";
 import {
   ShieldCheck,
   ClipboardCheck,
-  Clock,
-  Car,
-  User,
-  Activity,
-  AlertTriangle,
   CheckCircle2,
-  XCircle,
   Wrench,
   Search,
   MessageSquare,
@@ -40,7 +32,6 @@ import { WorkflowStepper } from "@/components/WorkflowStepper";
 import { VehicleIcon } from "@/components/ui/vehicle-icons";
 
 export default function QualityControlPage() {
-  const { t } = useLanguage();
   const { user, userProfile } = useAuth();
   const router = useRouter();
 

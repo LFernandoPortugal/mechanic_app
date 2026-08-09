@@ -2,14 +2,13 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useLanguage } from "@/contexts/LanguageContext";
+import Image from "next/image";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { getClientJobs } from "@/lib/clients";
 import { useAuth } from "@/contexts/AuthContext";
 import { Job } from "@/types";
-import { Timestamp } from "firebase/firestore";
 import { toDate } from "@/lib/dates";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +17,6 @@ import {
   Phone,
   Mail,
   Car,
-  Calendar,
   DollarSign,
   Wrench,
   ClipboardList,
@@ -46,16 +44,6 @@ const fmtDate = (d: Date | null) => {
   return d.toLocaleDateString("es-PA", { day: "2-digit", month: "short", year: "numeric" });
 };
 
-const fmtDateFull = (d: Date | null) => {
-  if (!d) return "—";
-  return d.toLocaleDateString("es-PA", {
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-};
-
 const statusConfig: Record<string, { color: string; icon: React.ReactNode }> = {
   Reception: { color: "text-emerald-400 border-emerald-500/30 bg-emerald-950/20", icon: <ClipboardList className="w-3 h-3" /> },
   Diagnosis: { color: "text-amber-400 border-amber-500/30 bg-amber-950/20", icon: <Wrench className="w-3 h-3" /> },
@@ -76,7 +64,6 @@ const inspectionStatusIcon: Record<string, React.ReactNode> = {
 
 /* ─── Component ──────────────────────────────────────────── */
 export default function ClientDetailPage() {
-  const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { userProfile, loading: authLoading, workshopSettings } = useAuth();
@@ -261,7 +248,7 @@ export default function ClientDetailPage() {
 
                   {/* Timeline */}
                   <div className="relative border-l-2 border-cyan-500/20 ml-4 pl-6 space-y-4">
-                    {vehicleJobs.map((job, idx) => {
+                    {vehicleJobs.map((job) => {
                       const date = jobDate(job);
                       const isExpanded = expandedJobs.has(job.id);
                       const sc = statusConfig[job.status] || statusConfig.Reception;
@@ -414,9 +401,12 @@ export default function ClientDetailPage() {
                                       </h4>
                                       <div className="flex-1 flex items-center justify-center min-h-[50px] pt-1">
                                         {job.signatureBase64 ? (
-                                          <img 
+                                          <Image
                                             src={job.signatureBase64} 
                                             alt="Firma del Cliente" 
+                                            width={320}
+                                            height={96}
+                                            unoptimized
                                             className="max-h-12 max-w-full object-contain invert dark:invert-0 brightness-95 opacity-90"
                                           />
                                         ) : (
@@ -441,9 +431,12 @@ export default function ClientDetailPage() {
                                             onClick={() => setActivePhotoUrl(imgUrl)}
                                             className="group relative w-20 h-20 rounded-lg overflow-hidden border border-border/60 hover:border-teal-500/50 shadow-sm transition-all duration-300 hover:scale-105 text-left focus:outline-none"
                                           >
-                                            <img 
+                                            <Image
                                               src={imgUrl} 
                                               alt={`Evidencia de ingreso ${i + 1}`} 
+                                              fill
+                                              sizes="80px"
+                                              unoptimized
                                               className="w-full h-full object-cover"
                                             />
                                             <div className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-200">
@@ -609,9 +602,12 @@ export default function ClientDetailPage() {
             className="relative max-w-4xl max-h-[85vh] w-full flex items-center justify-center overflow-hidden rounded-lg shadow-2xl animate-scale-in"
             onClick={(e) => e.stopPropagation()}
           >
-            <img 
+            <Image
               src={activePhotoUrl} 
               alt="Evidencia en pantalla completa" 
+              width={1600}
+              height={900}
+              unoptimized
               className="max-w-full max-h-[85vh] object-contain rounded-lg border border-white/10"
             />
           </div>

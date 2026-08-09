@@ -44,6 +44,7 @@ export function generateQuotePDF(
   mode: 'advisor' | 'client' = 'advisor',
   workshop?: Partial<WorkshopSettings> | null
 ): void {
+  void mode;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const symbol = workshop?.currencySymbol || '$';
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -152,7 +153,6 @@ export function generateQuotePDF(
   };
 
   const tableRows = (job.inspectionItems || []).map(item => {
-    const statusColor = statusColors[item.status] || MUTED_COLOR;
     return [
       item.name,
       item.status,

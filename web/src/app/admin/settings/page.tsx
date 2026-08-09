@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -265,12 +266,12 @@ export default function SettingsPage() {
                   <div className="flex items-center gap-4">
                     {settings.logoUrl && !logoFile && (
                       <div className="w-20 h-20 rounded-lg overflow-hidden bg-white border border-border flex items-center justify-center p-2">
-                        <img src={settings.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain" />
+                        <Image src={settings.logoUrl} alt="Logo" width={80} height={80} unoptimized className="max-w-full max-h-full object-contain" />
                       </div>
                     )}
                     {logoFile && (
                       <div className="w-20 h-20 rounded-lg overflow-hidden bg-white border border-border flex items-center justify-center p-2">
-                        <img src={URL.createObjectURL(logoFile)} alt="Logo Preview" className="max-w-full max-h-full object-contain" />
+                        <Image src={URL.createObjectURL(logoFile)} alt="Logo Preview" width={80} height={80} unoptimized className="max-w-full max-h-full object-contain" />
                       </div>
                     )}
                     
