@@ -2,11 +2,11 @@
 
 ## Confirmar alcance
 
-- [ ] Rama actual y `HEAD` verificados.
-- [ ] `origin/main` actualizado y revisado; `main` es producción.
-- [ ] Árbol de trabajo revisado para no incluir cambios ajenos o secretos.
-- [ ] `web/.firebaserc` apunta a `mechanic-app-7d459`.
-- [ ] Deployment objetivo confirmado en Vercel.
+- [x] Rama actual y `HEAD` verificados.
+- [x] `origin/main` actualizado y revisado; `main` es producción.
+- [x] Árbol de trabajo revisado para no incluir cambios ajenos o secretos.
+- [x] `web/.firebaserc` apunta a `mechanic-app-7d459`.
+- [x] Deployment objetivo confirmado en Vercel.
 
 ## Variables
 
@@ -29,22 +29,22 @@ npm.cmd run test:all
 npm.cmd run build
 ```
 
-- [ ] Runtime audit sin vulnerabilidades.
-- [ ] TypeScript sin errores.
-- [ ] Lint sin errores; warnings revisados/aceptados.
-- [ ] Unit tests y Firestore Emulator Rules tests pasan.
-- [ ] Build Next.js completo pasa. Next.js genera `.next`, no `out/`.
+- [x] Runtime audit sin vulnerabilidades.
+- [x] TypeScript sin errores.
+- [x] Lint sin errores; warnings revisados/aceptados.
+- [x] Unit tests y Firestore Emulator Rules tests pasan.
+- [x] Build Next.js completo pasa. Next.js genera `.next`, no `out/`.
 
 ## Preview Vercel
 
 - [x] Crear preview desde la raíz del repositorio, porque el Root Directory del proyecto es `web`.
-- [ ] Verificar rutas server-side en el resumen de build.
-- [ ] Probar acceso no autenticado: admin/pagos deben responder 401.
-- [ ] Probar cotización pública con documento descartable y confirmar que el DTO no filtra nombre/contacto del cliente ni datos internos.
-- [ ] Probar firma/aprobación parcial y limpiar el documento temporal.
-- [ ] Probar pago autenticado descartable antes de producción.
+- [x] Verificar rutas server-side en el resumen de build.
+- [x] Probar acceso no autenticado: admin/pagos deben responder 401.
+- [x] Probar cotización pública con documento descartable y confirmar que el DTO no filtra nombre/contacto del cliente ni datos internos.
+- [x] Probar firma/aprobación parcial y limpiar el documento temporal.
+- [x] Probar pago autenticado descartable antes de producción.
 - [x] Probar QC autenticado: pago previo no debe omitir checklist; pass debe ir a Ready/Delivered según saldo y fail debe volver a Repair.
-- [ ] Probar creación/borrado de taller descartable con SUPER_ADMIN antes de producción.
+- [x] Probar creación/borrado de taller descartable con SUPER_ADMIN antes de producción.
 
 ## Firebase
 
@@ -57,20 +57,20 @@ firebase use
 firebase deploy --only firestore:rules,firestore:indexes --project mechanic-app-7d459
 ```
 
-- [ ] Reglas validadas localmente antes de desplegar.
-- [ ] No ejecutar `firebase deploy --only hosting`; la web vive en Vercel.
-- [ ] Storage solo se despliega si sus reglas cambiaron intencionalmente.
+- [x] Reglas validadas localmente antes de desplegar.
+- [x] No ejecutar `firebase deploy --only hosting`; la web vive en Vercel.
+- [x] Storage solo se despliega si sus reglas cambiaron intencionalmente.
 
 ## Integración y producción
 
-- [ ] Diff/PR revisado.
-- [ ] Rama integrada a `main`.
-- [ ] Build de Vercel Production exitoso.
-- [ ] Reglas Firestore desplegadas solo después de confirmar que la nueva API QC está activa en Vercel.
-- [ ] Smoke test: login → Reception → Diagnosis → Approval → firma cliente → Approved → Repair → QC → Ready → pago → Delivered.
+- [x] Diff/PR revisado.
+- [x] Rama integrada a `main`.
+- [x] Build de Vercel Production exitoso.
+- [x] Reglas Firestore desplegadas solo después de confirmar que la nueva API QC está activa en Vercel.
+- [x] Smoke test: login → Reception → Diagnosis → Approval → firma cliente → Approved → Repair → QC → pago → Delivered (el pago completo previo al pass de QC entrega sin omitir el checklist).
 - [ ] Tema claro/oscuro y viewport móvil revisados.
-- [ ] Logs de Vercel y Firebase revisados sin errores nuevos.
+- [ ] Logs de Vercel y Firebase revisados sin errores nuevos. Vercel quedó verificado; queda pendiente una revisión específica de logs Firebase cuando exista acceso a esa vista.
 - [x] Datos de prueba eliminados y eliminación verificada.
 - [x] Cuentas demo históricas con credenciales conocidas revisadas y eliminadas.
 - [ ] Scripts operativos ejecutados primero sin `--apply`; proyecto y confirmación exactos revisados.
-- [ ] Documentación y `docs/AI-Handoff.md` actualizados.
+- [x] Documentación y `docs/AI-Handoff.md` actualizados.
