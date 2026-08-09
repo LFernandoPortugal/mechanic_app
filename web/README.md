@@ -73,6 +73,7 @@ Un build correcto no reemplaza las pruebas. `test:all` ejecuta unit tests y Fire
 
 - `/api/public/quotes/[id]`: GET sanitizado y POST transaccional con firma.
 - `/api/jobs/[id]/payments`: requiere ADMIN/ADVISOR autenticado.
+- `/api/jobs/[id]/qc`: requiere ADMIN/ADVISOR/TECHNICIAN y evita que un pago omita el checklist.
 - `/api/admin/users`: requiere SUPER_ADMIN y coordina Firebase Auth + Firestore.
 - Vercel obtiene credenciales Google mediante OIDC + Workload Identity Federation; no se requieren claves JSON estáticas.
 

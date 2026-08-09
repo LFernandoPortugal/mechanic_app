@@ -138,6 +138,26 @@ beforeEach(async () => {
           actorId: "advisor-a",
         }],
       }),
+      setDoc(doc(db, "jobs", "job-qc"), {
+        ...job("ws-a"),
+        status: "QC",
+        approvedAmount: 150,
+        auditLog: [{
+          actorId: "tech-a",
+          action: "Enviado a QC",
+          notes: "ready for inspection",
+          timestamp: Timestamp.now(),
+        }],
+      }),
+      setDoc(doc(db, "jobs", "job-audited"), {
+        ...job("ws-a"),
+        auditLog: [{
+          actorId: "tech-a",
+          action: "Diagnóstico Enviado",
+          notes: "original immutable entry",
+          timestamp: Timestamp.now(),
+        }],
+      }),
       setDoc(doc(db, "inventory", "item-a"), {
         workshopId: "ws-a",
         sku: "TEST-001",
@@ -148,6 +168,18 @@ beforeEach(async () => {
         stock: 10,
         minStock: 2,
         unit: "pcs",
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      }),
+      setDoc(doc(db, "inventory", "item-unlimited"), {
+        workshopId: "ws-a",
+        sku: "SERVICE-001",
+        name: "Mano de obra",
+        category: "Mano de Obra",
+        unitPrice: 50,
+        stock: -1,
+        minStock: 0,
+        unit: "hora",
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       }),
@@ -217,7 +249,10 @@ describe("settings boundaries", () => {
       .firestore();
 
     await assertSucceeds(
-      updateDoc(doc(db, "settings", "ws-a"), { workshopName: "Taller A+" }),
+      updateDoc(doc(db, "settings", "ws-a"), {
+        workshopName: "Taller A+",
+        demoMode: true,
+      }),
     );
   });
 
@@ -395,6 +430,55 @@ describe("job workflow boundaries", () => {
       }),
     );
   });
+
+  it("keeps QC completion server-side so clients cannot skip the checklist", async () => {
+    const db = testEnv
+      .authenticatedContext("admin-a", { email: "admin-a@example.test" })
+      .firestore();
+    const original = await getDoc(doc(db, "jobs", "job-qc"));
+    const existingAudit = original.data()?.auditLog ?? [];
+
+    await assertFails(
+      updateDoc(doc(db, "jobs", "job-qc"), {
+        status: "Delivered",
+        auditLog: [...existingAudit, audit("admin-a", "QC omitido")],
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(db, "jobs", "job-qc"), {
+        status: "Ready",
+        auditLog: [...existingAudit, audit("admin-a", "QC directo")],
+      }),
+    );
+  });
+
+  it("does not allow rewriting previous audit entries while appending a new one", async () => {
+    const db = testEnv
+      .authenticatedContext("advisor-a", { email: "advisor-a@example.test" })
+      .firestore();
+    const snapshot = await getDoc(doc(db, "jobs", "job-audited"));
+    const existingAudit = snapshot.data()?.auditLog ?? [];
+
+    await assertSucceeds(
+      updateDoc(doc(db, "jobs", "job-audited"), {
+        totalEstimate: 175,
+        auditLog: [...existingAudit, audit("advisor-a", "Cotización actualizada")],
+      }),
+    );
+
+    const updated = await getDoc(doc(db, "jobs", "job-audited"));
+    const currentAudit = updated.data()?.auditLog ?? [];
+    await assertFails(
+      updateDoc(doc(db, "jobs", "job-audited"), {
+        totalEstimate: 180,
+        auditLog: [
+          { ...currentAudit[0], notes: "historial alterado" },
+          currentAudit[1],
+          audit("advisor-a", "Intento de reescritura"),
+        ],
+      }),
+    );
+  });
 });
 
 describe("inventory audit boundaries", () => {
@@ -433,6 +517,14 @@ describe("inventory audit boundaries", () => {
         quantity: 200,
       }),
     );
+
+    await assertFails(
+      updateDoc(doc(db, "inventory", "item-a"), {
+        stock: 14,
+        lastMovementId: "move-valid",
+        updatedAt: Timestamp.now(),
+      }),
+    );
   });
 
   it("rejects a movement that is not linked to its resulting item state", async () => {
@@ -452,5 +544,74 @@ describe("inventory audit boundaries", () => {
         createdAt: Timestamp.now(),
       }),
     );
+  });
+
+  it("validates initial stock and requires its matching initial movement", async () => {
+    const db = testEnv
+      .authenticatedContext("admin-a", { email: "admin-a@example.test" })
+      .firestore();
+    const initialItem = {
+      workshopId: "ws-a",
+      sku: "NEW-001",
+      name: "Artículo nuevo",
+      category: "Otro",
+      unitPrice: 12,
+      costPrice: 8,
+      stock: 3,
+      minStock: 1,
+      unit: "pcs",
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    };
+
+    await assertFails(setDoc(doc(db, "inventory", "item-without-movement"), initialItem));
+
+    const batch = writeBatch(db);
+    batch.set(doc(db, "inventory", "item-with-movement"), {
+      ...initialItem,
+      lastMovementId: "move-initial",
+    });
+    batch.set(doc(db, "inventory_transactions", "move-initial"), {
+      workshopId: "ws-a",
+      itemId: "item-with-movement",
+      itemName: "Artículo nuevo",
+      type: "IN",
+      quantity: 3,
+      unitPrice: 8,
+      actorId: "admin-a",
+      createdAt: Timestamp.now(),
+    });
+    await assertSucceeds(batch.commit());
+  });
+
+  it("allows metadata edits but rejects stock movements on unlimited services", async () => {
+    const db = testEnv
+      .authenticatedContext("admin-a", { email: "admin-a@example.test" })
+      .firestore();
+
+    await assertSucceeds(
+      updateDoc(doc(db, "inventory", "item-a"), {
+        name: "Repuesto actualizado",
+        updatedAt: Timestamp.now(),
+      }),
+    );
+
+    const batch = writeBatch(db);
+    batch.update(doc(db, "inventory", "item-unlimited"), {
+      stock: -1,
+      lastMovementId: "move-unlimited",
+      updatedAt: Timestamp.now(),
+    });
+    batch.set(doc(db, "inventory_transactions", "move-unlimited"), {
+      workshopId: "ws-a",
+      itemId: "item-unlimited",
+      itemName: "Mano de obra",
+      type: "IN",
+      quantity: 1,
+      unitPrice: 50,
+      actorId: "admin-a",
+      createdAt: Timestamp.now(),
+    });
+    await assertFails(batch.commit());
   });
 });

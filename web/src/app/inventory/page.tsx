@@ -52,8 +52,9 @@ const emptyForm = (): Partial<InventoryItem> => ({
 
 export default function InventoryPage() {
   const router = useRouter();
-  const { user, userProfile, hasRole, loading: authLoading } = useAuth();
+  const { user, userProfile, workshopSettings, hasRole, loading: authLoading } = useAuth();
   const isAdmin = hasRole('ADMIN');
+  const canDeleteInventory = isAdmin && workshopSettings?.allowResetData === true;
 
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,7 +78,7 @@ export default function InventoryPage() {
   const [historyLoading, setHistoryLoading] = useState(false);
 
   const fetchItems = useCallback(async () => {
-    const wId = userProfile?.workshopId || (userProfile ? "demo-workshop" : null);
+    const wId = userProfile?.workshopId || null;
     if (!wId) {
       setLoading(false);
       return;
@@ -117,18 +118,32 @@ export default function InventoryPage() {
 
   const handleSave = async () => {
     if (!form.name || !form.sku) { toast.warning('Nombre y SKU son requeridos.'); return; }
+    const wId = userProfile?.workshopId;
+    if (!wId || !user?.uid) {
+      toast.error('La sesión no tiene un taller operativo asociado.');
+      return;
+    }
     setSaving(true);
     try {
-      const wId = userProfile?.workshopId || "demo-workshop";
       if (editingItem) {
-        await updateInventoryItem(editingItem.id, { ...form, workshopId: wId });
+        await updateInventoryItem(editingItem.id, {
+          sku: String(form.sku || "").trim(),
+          name: String(form.name || "").trim(),
+          category: form.category || "Otro",
+          unitPrice: Number(form.unitPrice) || 0,
+          costPrice: Number(form.costPrice) || 0,
+          minStock: Number(form.minStock) || 0,
+          unit: String(form.unit || "unidad"),
+          description: String(form.description || ""),
+          supplier: String(form.supplier || ""),
+        });
         toast.success('Repuesto actualizado.');
       } else {
         const itemWithWorkshop = {
           ...form,
           workshopId: wId,
         } as Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>;
-        await addInventoryItem(itemWithWorkshop, user?.uid || 'unknown');
+        await addInventoryItem(itemWithWorkshop, user.uid);
         toast.success('Repuesto agregado al inventario.');
       }
       setShowForm(false);
@@ -141,6 +156,10 @@ export default function InventoryPage() {
   };
 
   const handleDelete = async (item: InventoryItem) => {
+    if (!canDeleteInventory) {
+      toast.error("La eliminación requiere que SUPER_ADMIN habilite temporalmente Danger Mode.");
+      return;
+    }
     if (!confirm(`¿Eliminar "${item.name}" del inventario?`)) return;
     try {
       await deleteInventoryItem(item.id);
@@ -153,6 +172,11 @@ export default function InventoryPage() {
 
   // ── Stock movement ───────────────────────────────────────
   const handleMovement = async () => {
+    const wId = userProfile?.workshopId;
+    if (!wId || !user?.uid) {
+      toast.error('La sesión no tiene un taller operativo asociado.');
+      return;
+    }
     const invalidQuantity = !Number.isInteger(movQty)
       || (movType === 'ADJUSTMENT' ? movQty < -1 : movQty <= 0);
     if (!isAdmin || !movementItem || invalidQuantity) {
@@ -161,7 +185,6 @@ export default function InventoryPage() {
     }
     setMovSaving(true);
     try {
-      const wId = userProfile?.workshopId || "demo-workshop";
       await recordStockMovement({
         itemId: movementItem.id,
         itemName: movementItem.name,
@@ -169,7 +192,7 @@ export default function InventoryPage() {
         quantity: movQty,
         unitPrice: movType === 'IN' ? (movementItem.costPrice ?? movementItem.unitPrice) : movementItem.unitPrice,
         notes: movNotes || undefined,
-        actorId: user?.uid || 'unknown',
+        actorId: user.uid,
         workshopId: wId,
       });
       toast.success(`Movimiento ${movType === 'IN' ? 'de entrada' : movType === 'OUT' ? 'de salida' : 'de ajuste'} registrado.`);
@@ -368,7 +391,8 @@ export default function InventoryPage() {
                                 <button
                                   title="Eliminar"
                                   onClick={() => handleDelete(item)}
-                                  className="p-1.5 rounded hover:bg-red-500/10 text-red-400 transition-colors"
+                                  disabled={!canDeleteInventory}
+                                  className="p-1.5 rounded hover:bg-red-500/10 text-red-400 transition-colors disabled:cursor-not-allowed disabled:opacity-30"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>

@@ -45,6 +45,60 @@ export interface PaymentCalculation {
   isFullyPaid: boolean;
 }
 
+export interface PaymentBalance {
+  totalPaid: number;
+  remainingBalance: number;
+  isFullyPaid: boolean;
+}
+
+type PayableJob = {
+  approvedAmount?: unknown;
+  totalEstimate?: unknown;
+  approvedAt?: unknown;
+};
+
+/**
+ * New approvals may legitimately authorize zero (for example, every priced
+ * item was declined). Legacy records without approvedAt keep the historical
+ * fallback to totalEstimate when approvedAmount was never populated.
+ */
+export function getPayableTotal(job: PayableJob): number {
+  const approvedAmount = Number(job.approvedAmount);
+  const totalEstimate = Number(job.totalEstimate);
+  const hasAuthoritativeApproval = job.approvedAt != null
+    || (Number.isFinite(approvedAmount) && approvedAmount > 0);
+  const payableTotal = roundCurrency(
+    hasAuthoritativeApproval ? approvedAmount : totalEstimate,
+  );
+
+  if (!Number.isFinite(payableTotal) || payableTotal < 0) {
+    throw new Error("La orden no tiene un total aprobado válido.");
+  }
+  return payableTotal;
+}
+
+export function calculatePaymentBalance(
+  approvedTotal: number,
+  existingAmounts: number[],
+): PaymentBalance {
+  const normalizedTotal = roundCurrency(approvedTotal);
+  if (!Number.isFinite(normalizedTotal) || normalizedTotal < 0) {
+    throw new Error("La orden no tiene un total aprobado válido.");
+  }
+  if (existingAmounts.some((amount) => !Number.isFinite(amount) || amount < 0)) {
+    throw new Error("La orden contiene pagos inválidos.");
+  }
+
+  const totalPaid = roundCurrency(existingAmounts.reduce((sum, amount) => sum + amount, 0));
+  const remainingBalance = roundCurrency(normalizedTotal - totalPaid);
+
+  return {
+    totalPaid,
+    remainingBalance: Math.max(0, remainingBalance),
+    isFullyPaid: remainingBalance <= 0,
+  };
+}
+
 export function calculatePayment(
   approvedTotal: number,
   existingAmounts: number[],
@@ -59,12 +113,8 @@ export function calculatePayment(
   if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
     throw new Error("El monto del pago debe ser mayor que cero.");
   }
-  if (existingAmounts.some((amount) => !Number.isFinite(amount) || amount < 0)) {
-    throw new Error("La orden contiene pagos inválidos.");
-  }
-
-  const alreadyPaid = roundCurrency(existingAmounts.reduce((sum, amount) => sum + amount, 0));
-  const currentBalance = roundCurrency(normalizedTotal - alreadyPaid);
+  const balance = calculatePaymentBalance(normalizedTotal, existingAmounts);
+  const currentBalance = balance.remainingBalance;
 
   if (currentBalance <= 0) {
     throw new Error("La orden ya está pagada.");
@@ -73,7 +123,7 @@ export function calculatePayment(
     throw new Error("El pago supera el saldo pendiente.");
   }
 
-  const totalPaid = roundCurrency(alreadyPaid + normalizedAmount);
+  const totalPaid = roundCurrency(balance.totalPaid + normalizedAmount);
   const remainingBalance = roundCurrency(normalizedTotal - totalPaid);
 
   return {

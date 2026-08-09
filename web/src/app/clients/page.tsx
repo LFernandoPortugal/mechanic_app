@@ -36,7 +36,7 @@ export default function ClientsPage() {
 
     const fetchClients = async () => {
       try {
-        const wId = userProfile?.workshopId || (userProfile ? "demo-workshop" : null);
+        const wId = userProfile?.workshopId || null;
         if (!wId) {
           setLoading(false);
           return;

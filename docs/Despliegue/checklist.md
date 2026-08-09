@@ -43,11 +43,14 @@ npm.cmd run build
 - [ ] Probar cotización pública con documento descartable y confirmar que el DTO no filtra nombre/contacto del cliente ni datos internos.
 - [ ] Probar firma/aprobación parcial y limpiar el documento temporal.
 - [ ] Probar pago autenticado descartable antes de producción.
+- [ ] Probar QC autenticado: pago previo no debe omitir checklist; pass debe ir a Ready/Delivered según saldo y fail debe volver a Repair.
 - [ ] Probar creación/borrado de taller descartable con SUPER_ADMIN antes de producción.
 
 ## Firebase
 
 Solo si cambiaron reglas/índices, desde `web/` y después de confirmar proyecto:
+
+> Compatibilidad de esta estabilización: `main` anterior todavía ejecuta QC directamente desde el cliente. Primero debe estar listo en Vercel el código con `/api/jobs/[id]/qc`; inmediatamente después se despliegan las reglas que niegan esa escritura directa.
 
 ```powershell
 firebase use
@@ -63,8 +66,11 @@ firebase deploy --only firestore:rules,firestore:indexes --project mechanic-app-
 - [ ] Diff/PR revisado.
 - [ ] Rama integrada a `main`.
 - [ ] Build de Vercel Production exitoso.
+- [ ] Reglas Firestore desplegadas solo después de confirmar que la nueva API QC está activa en Vercel.
 - [ ] Smoke test: login → Reception → Diagnosis → Approval → firma cliente → Approved → Repair → QC → Ready → pago → Delivered.
 - [ ] Tema claro/oscuro y viewport móvil revisados.
 - [ ] Logs de Vercel y Firebase revisados sin errores nuevos.
 - [ ] Datos de prueba eliminados y eliminación verificada.
+- [ ] Cuentas demo históricas con credenciales conocidas revisadas y deshabilitadas/eliminadas si ya no se necesitan.
+- [ ] Scripts operativos ejecutados primero sin `--apply`; proyecto y confirmación exactos revisados.
 - [ ] Documentación y `docs/AI-Handoff.md` actualizados.

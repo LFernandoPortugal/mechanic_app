@@ -151,6 +151,10 @@ export default function TechnicianDashboard() {
 
   const handleSubmitDiagnosis = async () => {
     if (!selectedJob) return;
+    if (!user?.uid) {
+      toast.error("La sesión no está disponible.");
+      return;
+    }
     
     // Safety check: block empty diagnosis submissions
     if (!selectedJob.inspectionItems || selectedJob.inspectionItems.length === 0) {
@@ -165,7 +169,7 @@ export default function TechnicianDashboard() {
       await updateJob(selectedJob.id, {
         inspectionItems: selectedJob.inspectionItems || [],
         status: "Approval"
-      }, user?.uid || "unknown", "Diagnóstico Enviado");
+      }, user.uid, "Diagnóstico Enviado");
       setSubmittedJob(selectedJob);  // save for WhatsApp
       setSubmittedJobId(selectedJob.vehicleId);
       setSelectedJob(null);
@@ -177,8 +181,12 @@ export default function TechnicianDashboard() {
 
   const handleStartRepair = async () => {
     if (!selectedJob) return;
+    if (!user?.uid) {
+      toast.error("La sesión no está disponible.");
+      return;
+    }
     try {
-      await updateJob(selectedJob.id, { status: "Repair" }, user?.uid || "unknown", "Reparación Iniciada");
+      await updateJob(selectedJob.id, { status: "Repair" }, user.uid, "Reparación Iniciada");
       toast.success("Reparación iniciada");
       setSelectedJob({ ...selectedJob, status: "Repair" } as Job);
       // Real-time listener handles refresh automatically
@@ -189,8 +197,12 @@ export default function TechnicianDashboard() {
 
   const handleSendToQC = async () => {
     if (!selectedJob) return;
+    if (!user?.uid) {
+      toast.error("La sesión no está disponible.");
+      return;
+    }
     try {
-      await updateJob(selectedJob.id, { status: "QC" }, user?.uid || "unknown", "Enviado a QC");
+      await updateJob(selectedJob.id, { status: "QC" }, user.uid, "Enviado a QC");
       toast.success("Vehículo enviado a control de calidad");
       setSelectedJob(null);
       // Real-time listener handles refresh automatically

@@ -28,6 +28,8 @@ npm.cmd run dev
 
 Completa las variables descritas en `web/.env.example` sin commitear `.env.local`.
 
+Los scripts administrativos Python viven en `execution/`, usan `execution/requirements.txt` y son vista previa por defecto. Requieren `--project mechanic-app-7d459`, `--apply` y confirmación explícita antes de cualquier escritura.
+
 ## Verificación
 
 Desde `web/`:

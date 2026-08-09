@@ -88,8 +88,8 @@ export async function POST(request: Request) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       throw new HttpError(400, "El correo no es válido.");
     }
-    if (password.length < 6 || password.length > 128) {
-      throw new HttpError(400, "La contraseña debe tener entre 6 y 128 caracteres.");
+    if (password.length < 12 || password.length > 128) {
+      throw new HttpError(400, "La contraseña debe tener entre 12 y 128 caracteres.");
     }
     if (Number.isNaN(expiration.getTime()) || expiration <= new Date() || expiration > maximumExpiration) {
       throw new HttpError(400, "La fecha de expiración no es válida.");

@@ -380,12 +380,19 @@ export interface PaymentInput {
   reference?: string;
 }
 
+export interface PaymentResult {
+  payment: NonNullable<Job["payments"]>[number];
+  status: Job["status"];
+  totalPaid: number;
+  remainingBalance: number;
+}
+
 /**
  * Registers a payment against a Job.
- * Appends to `payments[]`, updates `approvedAmount`, and optionally
- * transitions status to `Delivered` when the balance is cleared.
+ * The authenticated server appends to `payments[]` and only transitions a
+ * Ready order to Delivered when the balance is cleared.
  */
-export async function registerPayment(jobId: string, payment: PaymentInput): Promise<void> {
+export async function registerPayment(jobId: string, payment: PaymentInput): Promise<PaymentResult> {
   const currentUser = auth.currentUser;
   if (!currentUser) throw new Error("La sesi\u00f3n no est\u00e1 disponible.");
 
@@ -398,8 +405,43 @@ export async function registerPayment(jobId: string, payment: PaymentInput): Pro
     },
     body: JSON.stringify(payment),
   });
-  const result = await response.json().catch(() => ({})) as { error?: string };
+  const result = await response.json().catch(() => ({})) as Partial<PaymentResult> & { error?: string };
   if (!response.ok) throw new Error(result.error || "No se pudo registrar el pago.");
+  if (!result.payment || !result.status || typeof result.totalPaid !== "number") {
+    throw new Error("El servidor devolvió una respuesta de pago incompleta.");
+  }
+  return result as PaymentResult;
+}
+
+export interface QualityControlInput {
+  outcome: "pass" | "fail";
+  notes?: string;
+}
+
+export async function submitQualityControl(
+  jobId: string,
+  input: QualityControlInput,
+): Promise<{ status: Job["status"]; remainingBalance?: number }> {
+  const currentUser = auth.currentUser;
+  if (!currentUser) throw new Error("La sesión no está disponible.");
+
+  const token = await currentUser.getIdToken();
+  const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}/qc`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+  const result = await response.json().catch(() => ({})) as {
+    error?: string;
+    status?: Job["status"];
+    remainingBalance?: number;
+  };
+  if (!response.ok) throw new Error(result.error || "No se pudo registrar el control de calidad.");
+  if (!result.status) throw new Error("El servidor devolvió una respuesta de QC incompleta.");
+  return { status: result.status, remainingBalance: result.remainingBalance };
 }
 
 export async function getJobsByStatus(workshopId: string, statuses: string[]): Promise<Job[]> {
@@ -440,7 +482,7 @@ export async function getWorkshopSettings(workshopId: string): Promise<WorkshopS
       phone: "+51 900 123 456",
       taxId: "20123456789", // Default Peruvian RUC
       termsAndConditions: "Al firmar, el cliente autoriza los diagnósticos y reparaciones presupuestadas.",
-      demoMode: true,
+      demoMode: false,
       currencySymbol: "S/.",
       taxRate: 18,
       taxName: "IGV"
@@ -456,12 +498,7 @@ export async function getWorkshopSettings(workshopId: string): Promise<WorkshopS
       } as WorkshopSettings;
     }
 
-    // Only fallback to defaults if workshopId is the built-in 'demo-workshop'
-    if (workshopId === "demo-workshop") {
-      return defaults;
-    }
-
-    // For any deleted or non-existent workshop, return null to signify it does not exist
+    // Deleted or non-existent workshops are never synthesized client-side.
     return null;
   } catch (e) {
     console.error("Error fetching settings:", e);

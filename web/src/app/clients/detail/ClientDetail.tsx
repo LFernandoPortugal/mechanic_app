@@ -83,7 +83,7 @@ export default function ClientDetailPage() {
     if (authLoading) return;
     const load = async () => {
       try {
-        const wId = userProfile?.workshopId || (userProfile ? "demo-workshop" : null);
+        const wId = userProfile?.workshopId || null;
         if (!wId) {
           setLoading(false);
           return;

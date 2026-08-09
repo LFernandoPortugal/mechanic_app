@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserProfile, UserRole } from "@/types";
+import { extendExpiration } from "@/lib/dates";
 
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : "Error desconocido";
@@ -100,8 +101,8 @@ function SuperAdminContent() {
       toast.error("Por favor completa todos los campos.");
       return;
     }
-    if (newPassword.length < 6) {
-      toast.error("La contraseña debe tener al menos 6 caracteres.");
+    if (newPassword.length < 12) {
+      toast.error("La contraseña debe tener al menos 12 caracteres.");
       return;
     }
     setCreating(true);
@@ -141,8 +142,8 @@ function SuperAdminContent() {
   const extendTrial = async (wId: string, days: number) => {
     setActionLoading(`trial-${wId}`);
     try {
-      const newExp = new Date();
-      newExp.setDate(newExp.getDate() + days);
+      const currentExpiration = workshops.find((workshop) => workshop.id === wId)?.expiresAt;
+      const newExp = extendExpiration(currentExpiration, days);
       await updateWorkshopSettings(wId, { expiresAt: newExp.toISOString() });
       toast.success(`Trial extendido +${days} días.`);
       loadWorkshops();
@@ -183,7 +184,7 @@ function SuperAdminContent() {
         await callAdminUsersApi("DELETE", { uids: workshopUserIds });
       }
       const res = await deleteWorkshopCompletely(wId);
-      toast.success(`Taller eliminado por completo. Se borraron ${res.usersDeleted} usuarios y ${res.jobsDeleted} OTs.`);
+      toast.success(`Taller eliminado por completo. Se borraron ${workshopUserIds.length} cuentas y ${res.jobsDeleted} OTs.`);
       loadWorkshops(); loadUsers();
     } catch (err: unknown) {
       toast.error("Error: " + getErrorMessage(err));
@@ -300,9 +301,11 @@ function SuperAdminContent() {
                       <Input
                         id="w-pass"
                         type={showPassword ? "text" : "password"}
+                        autoComplete="new-password"
+                        minLength={12}
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="Mín. 6 caracteres"
+                        placeholder="Mín. 12 caracteres"
                         className="pr-10"
                         required
                       />
@@ -491,7 +494,7 @@ function SuperAdminContent() {
                           <div className="border-t border-border/40 bg-secondary/10 p-4">
                             {wsUsers.length === 0 ? (
                               <p className="text-xs text-muted-foreground text-center py-2">
-                                Ningún usuario ha iniciado sesión aún. El admin se creará automáticamente en el primer login.
+                                No hay perfiles de usuario asociados a este taller.
                               </p>
                             ) : (
                               <div className="space-y-3">

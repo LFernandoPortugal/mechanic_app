@@ -43,7 +43,7 @@ export default function SettingsPage() {
     if (authLoading) return;
     
     async function loadSettings() {
-      const wId = userProfile?.workshopId || (userProfile ? "demo-workshop" : null);
+      const wId = userProfile?.workshopId || null;
       if (!wId) {
         setLoading(false);
         return;
@@ -93,7 +93,6 @@ export default function SettingsPage() {
         currencySymbol: settings.currencySymbol,
         taxRate: Number(settings.taxRate),
         taxName: settings.taxName,
-        allowResetData: settings.allowResetData
       };
       
       await updateWorkshopSettings(userProfile.workshopId, newSettings);
@@ -333,7 +332,7 @@ export default function SettingsPage() {
               <CardContent className="p-6 space-y-4">
                 <div className="flex flex-col gap-2 text-foreground">
                   <p className="text-sm font-semibold">
-                    Limpiar todos los datos del Taller: <span className="font-mono text-xs bg-red-500/10 px-1.5 py-0.5 rounded text-red-400 border border-red-500/20">{userProfile?.workshopId || "demo-workshop"}</span>
+                    Limpiar todos los datos del Taller: <span className="font-mono text-xs bg-red-500/10 px-1.5 py-0.5 rounded text-red-400 border border-red-500/20">{userProfile?.workshopId || "sin taller asociado"}</span>
                   </p>
                   <p className="text-muted-foreground text-xs leading-relaxed">
                     Esta acción eliminará de forma permanente e irreversible de la base de datos:

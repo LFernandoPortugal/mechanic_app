@@ -22,6 +22,15 @@ import { useRealtimeJobs } from "@/hooks/useRealtimeJobs";
 import { WorkflowStepper } from "@/components/WorkflowStepper";
 import { VehicleIcon } from "@/components/ui/vehicle-icons";
 import { toDate } from "@/lib/dates";
+import { getPayableTotal } from "@/lib/transactions";
+
+const payableTotal = (job: Job) => {
+  try {
+    return getPayableTotal(job);
+  } catch {
+    return 0;
+  }
+};
 
 export default function AdvisorQuoteBuilder() {
   const { t } = useLanguage();
@@ -58,6 +67,10 @@ export default function AdvisorQuoteBuilder() {
 
   const handleSaveQuote = async () => {
     if (!selectedJob) return;
+    if (!user?.uid) {
+      toast.error("La sesión no está disponible.");
+      return;
+    }
 
     const updatedInspectionItems = selectedJob.inspectionItems.map(item => ({
       ...item,
@@ -69,7 +82,7 @@ export default function AdvisorQuoteBuilder() {
         inspectionItems: updatedInspectionItems,
         totalEstimate: calculateTotal(),
         status: "Approval"  // Awaiting client approval — NOT Ready
-      }, user?.uid || "unknown", "Quote Generated");
+      }, user.uid, "Quote Generated");
       // Keep the full job object for PDF/WhatsApp/Email
       const savedJob: Job = {
         ...selectedJob,
@@ -95,7 +108,11 @@ export default function AdvisorQuoteBuilder() {
 
     // Calculate current balance
     const paid = (selectedJob.payments || []).reduce((s, p) => s + p.amount, 0);
-    const balance = (selectedJob.approvedAmount || selectedJob.totalEstimate || 0) - paid;
+    const balance = payableTotal(selectedJob) - paid;
+    if (balance <= 0) {
+      toast.info("La orden ya tiene el pago completo registrado.");
+      return;
+    }
 
     let appliedAmount = amount;
     let change = 0;
@@ -111,35 +128,28 @@ export default function AdvisorQuoteBuilder() {
     }
 
     try {
-      await registerPayment(selectedJob.id, {
+      const result = await registerPayment(selectedJob.id, {
         amount: appliedAmount,
         method: paymentType,
       });
 
       // Update local state to reflect payment in real-time
-      const updatedPayments = [...(selectedJob.payments || []), {
-        id: Math.random().toString(36).substring(7),
-        amount: appliedAmount,
-        method: paymentType,
-        date: new Date().toISOString(),
-        actorId: user?.uid || "unknown"
-      }];
-      
-      const newPaid = updatedPayments.reduce((s, p) => s + p.amount, 0);
-      const isFullyPaid = newPaid >= (selectedJob.approvedAmount || selectedJob.totalEstimate || 0);
+      const updatedPayments = [...(selectedJob.payments || []), result.payment];
 
       setSelectedJob({
         ...selectedJob,
         payments: updatedPayments,
-        status: isFullyPaid ? 'Delivered' : selectedJob.status
+        status: result.status,
       });
 
       setPaymentAmount("");
       if (change > 0) {
         toast.success(`✅ Pago completo. Vuelto a entregar: ${workshopSettings?.currencySymbol || "$"}${change.toFixed(2)}`);
       } else {
-        toast.success(appliedAmount >= balance
-          ? `✅ Pago completo. Vehículo marcado como Entregado.`
+        toast.success(result.remainingBalance === 0
+          ? result.status === "Delivered"
+            ? "✅ Pago completo. Vehículo marcado como Entregado."
+            : "✅ Pago completo registrado. La entrega se cerrará después de aprobar QC."
           : `💰 Abono registrado: ${workshopSettings?.currencySymbol || "$"}${appliedAmount.toFixed(2)}`
         );
       }
@@ -489,14 +499,14 @@ export default function AdvisorQuoteBuilder() {
                     <div>
                       <p className="text-sm text-muted-foreground">Monto Total Aprobado</p>
                       <p className="text-3xl font-mono text-emerald-600 dark:text-emerald-400 font-bold">
-                        {workshopSettings?.currencySymbol || "$"}{(selectedJob.approvedAmount || selectedJob.totalEstimate || 0).toFixed(2)}
+                        {workshopSettings?.currencySymbol || "$"}{payableTotal(selectedJob).toFixed(2)}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-muted-foreground">Saldo Pendiente</p>
                       <p className="text-2xl font-mono text-amber-500 font-bold">
                         {workshopSettings?.currencySymbol || ""}{(
-                          (selectedJob.approvedAmount || selectedJob.totalEstimate || 0) - 
+                          payableTotal(selectedJob) -
                           (selectedJob.payments?.reduce((acc, p) => acc + p.amount, 0) || 0)
                         ).toFixed(2)}
                       </p>
@@ -504,8 +514,8 @@ export default function AdvisorQuoteBuilder() {
                   </div>
                   {workshopSettings && workshopSettings.taxRate > 0 && (
                     <div className="text-xs text-muted-foreground border-t border-border/30 pt-2 flex justify-between">
-                      <span>Subtotal (Neto): {workshopSettings.currencySymbol}{((selectedJob.approvedAmount || selectedJob.totalEstimate || 0) / (1 + workshopSettings.taxRate / 100)).toFixed(2)}</span>
-                      <span>{workshopSettings.taxName} ({workshopSettings.taxRate}%): {workshopSettings.currencySymbol}{((selectedJob.approvedAmount || selectedJob.totalEstimate || 0) - (selectedJob.approvedAmount || selectedJob.totalEstimate || 0) / (1 + workshopSettings.taxRate / 100)).toFixed(2)}</span>
+                      <span>Subtotal (Neto): {workshopSettings.currencySymbol}{(payableTotal(selectedJob) / (1 + workshopSettings.taxRate / 100)).toFixed(2)}</span>
+                      <span>{workshopSettings.taxName} ({workshopSettings.taxRate}%): {workshopSettings.currencySymbol}{(payableTotal(selectedJob) - payableTotal(selectedJob) / (1 + workshopSettings.taxRate / 100)).toFixed(2)}</span>
                     </div>
                   )}
                 </div>

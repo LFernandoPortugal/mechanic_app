@@ -35,8 +35,8 @@ describe("isWorkshopActive", () => {
     expect(isWorkshopActive({}, "ws-a", NOW)).toBe(true);
   });
 
-  it("keeps the explicit demo and control workshops active", () => {
-    expect(isWorkshopActive({ disabled: true }, "demo-workshop", NOW)).toBe(true);
+  it("keeps only the control workshop unconditionally active", () => {
+    expect(isWorkshopActive({ disabled: true }, "demo-workshop", NOW)).toBe(false);
     expect(isWorkshopActive({ disabled: true }, "master-control", NOW)).toBe(true);
   });
 });

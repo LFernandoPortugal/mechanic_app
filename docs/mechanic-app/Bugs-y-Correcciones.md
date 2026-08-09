@@ -56,6 +56,8 @@
 - **Botón "Limpiar Clave"**: aparece si `tempPassword` no está vacío, permite eliminarlo tras entregarlo al cliente.
 - Nuevas funciones en `db.ts`: `getActiveJobCountByWorkshop()` y `clearTempPassword()`.
 
+> **Obsoleto desde v1.4**: `tempPassword` y `clearTempPassword()` se eliminaron. Las contraseñas ya no se almacenan en Firestore.
+
 ### BUG-005: Estado de cotización del Asesor enviaba a "Ready" en lugar de "Approval"
 **Síntoma**: Al generar una cotización en `/advisor`, la orden pasaba directamente a "Listo para entrega" omitiendo la aprobación del cliente y el proceso técnico.
 **Fix**:
@@ -80,7 +82,7 @@
 
 **Fixes Aplicados**:
 - `db.ts` (`getWorkshopSettings`):
-  - Retorna estrictamente `null` cuando el taller no existe (sólo devuelve `defaults` si la ID es `"demo-workshop"`). `AuthContext` detecta este `null` y fuerza inmediatamente `firebaseSignOut(auth)`.
+  - Retorna estrictamente `null` cuando el taller no existe. Desde v1.5 tampoco sintetiza `demo-workshop`; `AuthContext` detecta el `null` y fuerza inmediatamente `firebaseSignOut(auth)`.
 - `db.ts` (`deleteWorkshopCompletely`):
   - Nueva función que elimina en cascada: los perfiles de usuarios de `users`, los datos operativos (`jobs`, `inventory`, `inventory_transactions`) y la configuración `settings`.
 - `super-admin/page.tsx`:
@@ -127,3 +129,30 @@
 - Vercel usa OIDC + Google Workload Identity Federation.
 - No se almacena ninguna clave JSON de cuenta de servicio.
 - Las API routes usan el SDK server de Firestore con transporte gRPC.
+
+---
+
+## v1.5 — Revisión integral previa a PR (2026-08-08)
+
+### BUG-011: Pago o cliente Firestore podía omitir QC
+
+- Los pagos completados durante `QC` conservan el estado; solo una orden `Ready` se entrega por pago.
+- La aprobación/rechazo de QC se movió a `/api/jobs/[id]/qc`, con token, rol, tenant, vigencia y transacción server-side.
+- Las reglas niegan cualquier transición directa desde `QC`.
+
+### BUG-012: Auditoría y movimientos reutilizables
+
+- Un update debe preservar todas las entradas históricas y añadir exactamente una entrada del actor autenticado.
+- Un `lastMovementId` previo no puede reutilizarse para alterar stock otra vez.
+- La creación con stock positivo exige su movimiento inicial enlazado en la misma operación.
+
+### BUG-013: Edición de inventario y extensión de trial
+
+- La edición de inventario ya no envía `id`, stock ni campos inmutables dentro del payload.
+- `+7d/+30d` extiende una fecha futura en lugar de reemplazarla desde hoy.
+
+### SEC-003: Herramientas administrativas heredadas
+
+- Eliminados scripts REST con identidad/API key reales embebidas.
+- Los scripts Python son dry-run por defecto, fijan y verifican `mechanic-app-7d459`, requieren confirmación fuerte y tienen dependencias reproducibles.
+- Eliminado el autollenado de cuentas demo con una contraseña conocida; `demo-workshop` ya no es incondicionalmente activo.

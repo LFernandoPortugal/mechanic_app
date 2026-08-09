@@ -1,4 +1,4 @@
-const ALWAYS_ACTIVE_WORKSHOPS = new Set(["demo-workshop", "master-control"]);
+const ALWAYS_ACTIVE_WORKSHOPS = new Set(["master-control"]);
 
 type TimestampLike = {
   toMillis?: () => number;

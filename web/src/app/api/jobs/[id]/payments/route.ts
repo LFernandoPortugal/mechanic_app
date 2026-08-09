@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getAdminFirestore } from "@/lib/firebase-admin";
 import { HttpError, requireRoles } from "@/lib/server-auth";
 import { isWorkshopActive } from "@/lib/server-workshop";
-import { calculatePayment } from "@/lib/transactions";
+import { calculatePayment, getPayableTotal } from "@/lib/transactions";
 import type { Job } from "@/types";
 
 export const runtime = "nodejs";
@@ -66,7 +66,12 @@ export async function POST(
       }
 
       const existingPayments = job.payments ?? [];
-      const payableTotal = job.approvedAmount > 0 ? job.approvedAmount : job.totalEstimate;
+      let payableTotal: number;
+      try {
+        payableTotal = getPayableTotal(job);
+      } catch (error) {
+        throw new HttpError(400, error instanceof Error ? error.message : "Pago inválido.");
+      }
       let calculation;
       try {
         calculation = calculatePayment(
@@ -96,7 +101,9 @@ export async function POST(
           notes: `${method} ${calculation.appliedAmount.toFixed(2)}${reference ? ` \u2014 Ref: ${reference}` : ""}`,
         },
       ];
-      const status = calculation.isFullyPaid && ["QC", "Ready"].includes(job.status)
+      // A payment must never skip the QC checklist. If the order was paid
+      // earlier, the authenticated QC endpoint delivers it after QC passes.
+      const status = calculation.isFullyPaid && job.status === "Ready"
         ? "Delivered"
         : job.status;
       if (status === "Delivered") {
@@ -113,7 +120,12 @@ export async function POST(
         auditLog,
         status,
       });
-      return { payment, status };
+      return {
+        payment,
+        status,
+        totalPaid: calculation.totalPaid,
+        remainingBalance: calculation.remainingBalance,
+      };
     });
 
     return json({ ok: true, ...result });

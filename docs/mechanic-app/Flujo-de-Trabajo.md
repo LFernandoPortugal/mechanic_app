@@ -17,8 +17,8 @@ Reception → Diagnosis → Approval → Approved → Repair → QC → Ready �
 | `Approval` | ADVISOR / ADMIN | El asesor construye la cotización: precios por item + mano de obra. Genera link y lo envía al cliente |
 | `Approved` | **Cliente** (`/quote/view?id=JOB_ID`) | Selecciona ítems, firma y acepta. El servidor calcula `approvedAmount`, `declinedItems` y `approvedAt` |
 | `Repair` | TECHNICIAN / ADMIN | El técnico inicia la reparación. Al terminar pulsa "Enviar a QC" |
-| `QC` | TECHNICIAN / ADVISOR / ADMIN | Inspector verifica 5 puntos del checklist. Puede aprobar (→ Ready) o rechazar (→ Repair) |
-| `Ready` | Sistema automático | Trabajo aprobado por QC, pendiente de cobro. El Advisor gestiona el pago |
+| `QC` | TECHNICIAN / ADVISOR / ADMIN | Inspector verifica 5 puntos del checklist mediante `/api/jobs/[id]/qc`. Puede aprobar (→ Ready) o rechazar (→ Repair). Si el pago ya estaba completo, la aprobación de QC cierra en Delivered |
+| `Ready` | Sistema automático | Trabajo aprobado por QC, pendiente de completar el cobro. El Advisor gestiona el pago |
 | `Delivered` | Sistema automático | Pago completado. Vehículo entregado |
 
 ## Notas importantes
@@ -26,7 +26,8 @@ Reception → Diagnosis → Approval → Approved → Repair → QC → Ready �
 - **`approvedAmount`**: es el monto que el **cliente aprobó** en el portal. No se debe sobreescribir con pagos acumulados.
 - **`totalEstimate`**: es el monto cotizado por el Asesor.
 - **`payments[]`**: array de abonos registrados por `/api/jobs/[id]/payments`; el actor e importe se validan server-side.
-- El status pasa a `Delivered` automáticamente cuando `sum(payments) >= approvedAmount` y el job está en `Ready` o `QC`.
+- Un pago completa `Delivered` automáticamente solo si el job ya está en `Ready`.
+- Si el pago se completa antes o durante `QC`, la orden conserva su estado y no omite el checklist; `/api/jobs/[id]/qc` decide `Ready` o `Delivered` al aprobar la inspección.
 
 ## Reglas de negocio clave
 
@@ -37,3 +38,4 @@ Reception → Diagnosis → Approval → Approved → Repair → QC → Ready �
 5. Los items `declined` por el cliente se guardan en `declinedItems[]` para el "blindaje de responsabilidad".
 6. La firma de recepción (`signatureBase64`) y la firma de aprobación (`approvalSignatureBase64`) son evidencias distintas y no se sobrescriben.
 7. El portal público no accede directamente a Firestore; usa un DTO sanitizado servido por Vercel.
+8. Un `approvedAmount` de cero es válido cuando la aprobación nueva tiene `approvedAt`; los registros históricos sin esa marca conservan el fallback a `totalEstimate`.

@@ -9,12 +9,12 @@
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
 - **Producción:** `origin/main` en `b0210d5`; continúa en `https://mechanic-app-zeta.vercel.app/` y no contiene esta estabilización.
-- **Rama de trabajo:** `codex/security-stabilization`, publicada en `origin`. El último commit funcional verificado es `c3a1680`; consultar Git para el HEAD actual porque las actualizaciones de este handoff generan commits posteriores.
+- **Rama de trabajo:** `codex/security-stabilization`, publicada en `origin`; consultar Git para el HEAD actual. El checkpoint evita fijar su propio hash para no quedar obsoleto al actualizarse.
 - **Árbol local al cerrar:** limpio y sincronizado con la rama remota.
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas nuevas todavía no se han desplegado.
-- **Último hito:** E2E SUPER_ADMIN aprobado en la preview de Vercel. El taller descartable y todas sus referencias Auth/Firestore se eliminaron y la sesión privilegiada quedó cerrada.
-- **Calidad verificada:** TypeScript, lint, 18 pruebas unitarias, 17 pruebas de reglas, build, auditoría runtime, CI y deployment preview correctos.
-- **Siguiente paso recomendado:** revisar el diff/PR de la rama; después desplegar las reglas verificadas, integrar a `main`, observar Vercel y ejecutar el smoke test completo de producción.
+- **Último hito:** revisión completa del diff previa a PR; se cerraron saltos de QC, reuso de movimientos, edición de inventario, extensión de trial y herramientas administrativas inseguras.
+- **Calidad verificada:** TypeScript, lint, 23 pruebas unitarias y 21 pruebas de reglas; ejecutar build/auditoría/CI/preview otra vez después del commit de esta revisión.
+- **Siguiente paso recomendado:** publicar el bloque, abrir PR draft y validar la nueva API de QC en preview. Tras aprobar el PR, desplegar primero el código Vercel y enseguida las reglas Firebase, porque las reglas nuevas bloquean el QC client-side de `main` actual.
 - **No repetir ni asumir:** no hace falta recrear los datos E2E ya eliminados; no afirmar que la estabilización está en producción hasta comprobar `main` y Vercel.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
@@ -43,6 +43,7 @@ La aplicación incorpora estas rutas server-side:
 
 - `GET/POST /api/public/quotes/[id]`: DTO público sanitizado y aprobación transaccional.
 - `POST /api/jobs/[id]/payments`: pagos autenticados y transaccionales.
+- `POST /api/jobs/[id]/qc`: aprobación/rechazo de QC autenticado; decide Ready/Delivered en servidor según saldo.
 - `POST/DELETE /api/admin/users`: aprovisionamiento y borrado coordinado de Firebase Auth + Firestore, exclusivo de SUPER_ADMIN.
 
 ## Flujo canónico
@@ -69,13 +70,17 @@ El cliente selecciona ítems, confirma una firma de aprobación separada de la f
 - Reglas con aislamiento de tenant, trial y transiciones/campos permitidos.
 - La configuración de trial y `allowResetData` ya no puede ser alterada por un ADMIN.
 - Pagos y aprovisionamiento se realizan en API routes autenticadas.
+- QC también se ejecuta server-side; Firestore niega transiciones directas desde ese estado.
+- Eliminados scripts REST con UID/email/API key reales y el autollenado con credenciales demo conocidas.
 
 ### Integridad
 
 - Stock inicial ya no se duplica.
 - Cada cambio de stock requiere un movimiento inmutable enlazado mediante `lastMovementId`.
+- Un movimiento anterior no puede reutilizarse y el stock inicial positivo exige su movimiento en la misma operación.
 - Pagos usan transacción y rechazan sobrepagos/concurrencia.
-- `auditLog` deja de usar read-modify-write en actualizaciones comunes.
+- `auditLog` deja de usar read-modify-write en actualizaciones comunes; las reglas preservan las entradas anteriores y exigen exactamente un append autenticado.
+- Pagar durante QC no omite el checklist; QC pass entrega solo si el saldo ya era cero.
 - La aprobación pública valida la cabecera PNG de la firma y limita su tamaño; el DTO no devuelve nombre ni contacto del cliente, firmas, pagos, auditoría o IDs internos del personal.
 
 ### Calidad y UI
@@ -83,6 +88,7 @@ El cliente selecciona ítems, confirma una firma de aprobación separada de la f
 - Tracker post-aprobación corregido: `Approved`/`Repair` resaltan Reparación, luego QC, Ready y Delivered.
 - Marca del taller usa `workshopName`; moneda usa el símbolo configurado.
 - Firma obligatoria en el portal; eliminado el botón de autoaprobación demo.
+- Restablecimiento de contraseña disponible en login y mínimo de 12 caracteres para nuevos ADMIN.
 - Mejor contraste de roles en tema claro y CTA visible en tarjetas móviles.
 - Limpieza de código muerto y migración de imágenes dinámicas a `next/image` sin optimizar URLs privadas/base64.
 - Next.js actualizado a 16.3.0 y dependencias runtime sin vulnerabilidades conocidas en `npm audit --omit=dev`.
@@ -105,9 +111,9 @@ Resultado del 2026-08-08:
 
 - TypeScript: 0 errores.
 - Lint: 0 errores, 0 warnings.
-- Unit tests: 18/18.
-- Firestore Rules tests: 17/17.
-- Build: 19/19 páginas generadas; 3 API routes dinámicas.
+- Unit tests: 23/23.
+- Firestore Rules tests: 21/21.
+- Build: correcto; 19/19 páginas estáticas y 4 API routes dinámicas.
 - Auditoría runtime: 0 vulnerabilidades.
 - Auditoría completa: 5 moderadas, todas transitivas de `firebase-tools`; el aviso alto y los moderados parcheables fueron eliminados sin `--force`.
 - E2E público local y Vercel preview: GET sanitizado, firma/aprobación parcial, monto 210, un `declinedItem`, tracker correcto y limpieza confirmada.
@@ -124,7 +130,6 @@ Las variables públicas Firebase y EmailJS están documentadas en `web/.env.exam
 
 ```text
 FIREBASE_ADMIN_PROJECT_ID
-GCP_PROJECT_ID
 GCP_PROJECT_NUMBER
 GCP_SERVICE_ACCOUNT_EMAIL
 GCP_WORKLOAD_IDENTITY_POOL_ID
@@ -139,13 +144,17 @@ Hay órdenes antiguas con `workshopId` `p2`, `prueba` y `master-control`, pero s
 
 También quedan cuentas Auth antiguas que no tienen perfil `users`. El flujo nuevo evita crear más fantasmas, pero la limpieza histórica debe hacerse con una lista exacta y verificación previa.
 
+Existen tres cuentas Auth demo históricas cuya contraseña anterior fue pública en el repositorio. Sus perfiles actuales no tienen `workshopId`, y el código/rules nuevos ya no autocompletan credenciales ni mantienen `demo-workshop` activo sin settings. Aun así, se recomienda deshabilitarlas o eliminarlas tras autorización explícita; no hacerlo automáticamente durante el PR.
+
 ## Pendiente antes de producción
 
-1. Revisar el diff y decidir si la rama se integra por PR.
-2. Desplegar `firestore.rules` desde `web/` al proyecto verificado `mechanic-app-7d459`.
-3. Integrar a `main` y observar el deploy Vercel.
-4. Ejecutar smoke test de login, recepción, diagnóstico, cotización, aprobación, reparación, QC, pago y entrega.
-5. Resolver o aceptar explícitamente los 5 avisos moderados dev-only de `npm audit`; la sugerencia automática implica degradar `firebase-tools` 15 a 14 y no se aplicó.
+1. Publicar el bloque de revisión, abrir PR draft y esperar CI/preview Vercel.
+2. Ejecutar E2E autenticado de `/api/jobs/[id]/qc` en preview con datos descartables y limpieza comprobada.
+3. Aprobar/integrar a `main` y observar hasta que el deploy Vercel con la ruta QC esté listo.
+4. Inmediatamente después, desplegar `firestore.rules` desde `web/` al proyecto verificado `mechanic-app-7d459`. No desplegarlas antes del código: el `main` anterior todavía actualiza QC desde el cliente.
+5. Ejecutar smoke test de login, recepción, diagnóstico, cotización, aprobación, reparación, QC, pago y entrega.
+6. Decidir si se deshabilitan/eliminan las tres cuentas demo Auth históricas.
+7. Resolver o aceptar explícitamente los avisos moderados dev-only de `npm audit` sin aplicar un downgrade automático de `firebase-tools`.
 
 ## Reglas para la próxima IA
 

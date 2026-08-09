@@ -18,7 +18,7 @@ export default function ExpiredPage() {
   };
 
   const contactNumber = "+51900123456"; // Or fetch from config/env
-  const whatsappMessage = `Hola, mi taller es "${userProfile?.workshopId || "demo-workshop"}" y mi email es "${userProfile?.email}". Mi período de prueba en SGA ha expirado y me gustaría solicitar una extensión.`;
+  const whatsappMessage = `Hola, mi taller es "${userProfile?.workshopId || "sin taller asociado"}" y mi email es "${userProfile?.email}". Mi período de prueba en SGA ha expirado y me gustaría solicitar una extensión.`;
   const whatsappLink = `https://wa.me/${contactNumber.replace(/[+\s]/g, "")}?text=${encodeURIComponent(whatsappMessage)}`;
 
   return (

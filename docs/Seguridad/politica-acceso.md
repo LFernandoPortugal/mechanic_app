@@ -29,6 +29,7 @@
 
 - `settings/{workshopId}` es privado.
 - Un ADMIN solo puede editar branding, contacto, moneda e impuestos.
+- `demoMode` puede activarse dentro del taller, pero no vuelve al taller inmune a expiración o deshabilitación.
 - `expiresAtTimestamp`, `disabled` y `allowResetData` son campos privilegiados.
 - Las reglas comprueban que el taller exista, no esté deshabilitado y no haya expirado.
 
@@ -49,11 +50,20 @@ Los IDs aleatorios reducen enumeración, pero no sustituyen un token de acceso. 
 - Los navegadores no pueden añadir pagos directamente a Firestore.
 - `/api/jobs/[id]/payments` verifica ID token, rol ADMIN/ADVISOR, tenant, trial, estado y saldo.
 - El servidor deriva `actorId`, calcula el saldo dentro de una transacción y rechaza sobrepagos o concurrencia inválida.
+- Un pago solo entrega automáticamente una orden que ya está en `Ready`; pagar durante `QC` no omite el checklist.
+
+## Control de calidad
+
+- Los clientes Firestore no pueden ejecutar directamente transiciones desde `QC`.
+- `/api/jobs/[id]/qc` verifica token, rol, tenant, vigencia y estado dentro de una transacción.
+- Un rechazo exige motivo y vuelve a `Repair`.
+- Una aprobación pasa a `Ready`, o a `Delivered` si el total aprobado ya estaba pagado.
 
 ## Inventario y auditoría
 
 - Solo ADMIN modifica stock.
 - Todo cambio de stock está enlazado a un documento inmutable en `inventory_transactions` mediante `lastMovementId`.
+- Un movimiento existente no puede reutilizarse para volver a alterar el stock y los servicios con stock ilimitado no aceptan entradas/salidas ficticias.
 - Las reglas validan tipo, cantidad, actor, tenant y la aritmética del stock.
 - Los cambios de estado de jobs requieren una transición permitida y un append de auditoría del actor autenticado.
 

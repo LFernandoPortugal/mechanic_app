@@ -19,3 +19,17 @@ export function toDate(value: unknown): Date | null {
 
   return null;
 }
+
+export function extendExpiration(
+  currentExpiration: unknown,
+  days: number,
+  now = new Date(),
+): Date {
+  if (!Number.isInteger(days) || days <= 0) {
+    throw new Error("Los días de extensión deben ser un entero positivo.");
+  }
+
+  const parsedExpiration = toDate(currentExpiration);
+  const base = parsedExpiration && parsedExpiration > now ? parsedExpiration : now;
+  return new Date(base.getTime() + days * 24 * 60 * 60 * 1000);
+}

@@ -45,7 +45,7 @@ export default function Reception() {
   useEffect(() => {
     async function loadSettings() {
       try {
-        const wId = userProfile?.workshopId || (userProfile ? "demo-workshop" : null);
+        const wId = userProfile?.workshopId || null;
         if (!wId) return;
         const settings = await getWorkshopSettings(wId);
         if (settings && settings.demoMode) {
@@ -129,6 +129,11 @@ export default function Reception() {
       toast.warning(t('alertNoPhoneWhatsApp'), { duration: 4000 });
     }
 
+    if (!userProfile?.workshopId || !user?.uid) {
+      toast.error("La sesión no tiene un taller operativo asociado.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       // 1. Compress photos to base64 (client-side, instant)
@@ -143,7 +148,7 @@ export default function Reception() {
 
       // 2. Create the job with everything inline — no secondary updates needed
       await createJob({
-        workshopId: userProfile?.workshopId || "demo-workshop",
+        workshopId: userProfile.workshopId,
         vehicleId: vehicle.plate,
         vin: vehicle.vin.trim() || undefined,
         make: vehicle.make.trim() || undefined,
@@ -153,7 +158,7 @@ export default function Reception() {
         clientId: client.name,
         clientPhone: client.phone.trim() || undefined,
         clientEmail: client.email.trim() || undefined,
-        advisorId: user?.uid || "unknown",
+        advisorId: user.uid,
         status: 'Reception',
         symptoms: symptoms.trim() || undefined,
         signatureBase64: signatureDataUrl,
@@ -176,7 +181,7 @@ export default function Reception() {
         declinedItems: [],
         totalEstimate: 0,
         approvedAmount: 0,
-      }, user?.uid || "unknown");
+      }, user.uid);
 
       setCreatedJobId(vehicle.plate);
       toast.success(t('receptionComplete') || "¡Recepción completada!");

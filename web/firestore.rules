@@ -33,8 +33,7 @@ service cloud.firestore {
 
     function isWorkshopActive(workshopId) {
       let settingsPath = /databases/$(database)/documents/settings/$(workshopId);
-      return workshopId == 'demo-workshop'
-        || workshopId == 'master-control'
+      return workshopId == 'master-control'
         || (exists(settingsPath)
           && (!('disabled' in get(settingsPath).data)
             || get(settingsPath).data.disabled != true)
@@ -73,8 +72,13 @@ service cloud.firestore {
     function hasValidAuditAppend() {
       return resource.data.auditLog is list
         && request.resource.data.auditLog is list
-        && request.resource.data.auditLog.size() >= resource.data.auditLog.size() + 1
-        && request.resource.data.auditLog.size() <= resource.data.auditLog.size() + 2
+        && request.resource.data.auditLog.size() == resource.data.auditLog.size() + 1
+        && request.resource.data.auditLog.hasAll(resource.data.auditLog)
+        && request.resource.data.auditLog[request.resource.data.auditLog.size() - 1].keys()
+          .hasOnly(['timestamp', 'action', 'actorId', 'notes'])
+        && request.resource.data.auditLog[request.resource.data.auditLog.size() - 1].timestamp is timestamp
+        && request.resource.data.auditLog[request.resource.data.auditLog.size() - 1].action is string
+        && request.resource.data.auditLog[request.resource.data.auditLog.size() - 1].notes is string
         && request.resource.data.auditLog[request.resource.data.auditLog.size() - 1].actorId == request.auth.uid;
     }
 
@@ -133,12 +137,6 @@ service cloud.firestore {
         && changesOnly(['inspectionItems', 'totalEstimate', 'auditLog']);
     }
 
-    function isQcJobUpdate() {
-      return resource.data.status == 'QC'
-        && request.resource.data.status in ['Ready', 'Delivered', 'Repair']
-        && changesOnly(['status', 'auditLog']);
-    }
-
     function isValidMovementShape(movement) {
       return movement.keys().hasOnly([
           'workshopId', 'itemId', 'itemName', 'type', 'quantity',
@@ -168,19 +166,71 @@ service cloud.firestore {
       let movementPath = /databases/$(database)/documents/inventory_transactions/$(request.resource.data.lastMovementId);
       let movement = getAfter(movementPath).data;
       return changesOnly(['stock', 'lastMovementId', 'updatedAt'])
+        && (!('lastMovementId' in resource.data)
+          || request.resource.data.lastMovementId != resource.data.lastMovementId)
+        && !exists(movementPath)
         && existsAfter(movementPath)
         && isValidMovementShape(movement)
         && movement.itemId == itemId
+        && movement.itemName == resource.data.name
         && movement.workshopId == resource.data.workshopId
+        && request.resource.data.updatedAt is timestamp
         && ((movement.type == 'ADJUSTMENT'
             && request.resource.data.stock == movement.quantity)
           || (movement.type == 'IN'
-            && ((resource.data.stock == -1 && request.resource.data.stock == -1)
-              || request.resource.data.stock == resource.data.stock + movement.quantity))
+            && resource.data.stock != -1
+            && request.resource.data.stock == resource.data.stock + movement.quantity)
           || (movement.type == 'OUT'
-            && ((resource.data.stock == -1 && request.resource.data.stock == -1)
-              || (request.resource.data.stock == resource.data.stock - movement.quantity
-                && request.resource.data.stock >= 0))));
+            && resource.data.stock != -1
+            && request.resource.data.stock == resource.data.stock - movement.quantity
+            && request.resource.data.stock >= 0));
+    }
+
+    function isValidInventoryShape(item) {
+      return item.keys().hasOnly([
+          'workshopId', 'sku', 'name', 'category', 'unitPrice', 'costPrice',
+          'stock', 'minStock', 'unit', 'description', 'supplier',
+          'lastMovementId', 'createdAt', 'updatedAt'
+        ])
+        && item.workshopId is string
+        && item.sku is string
+        && item.name is string
+        && item.category is string
+        && item.unitPrice is number
+        && item.unitPrice >= 0
+        && (!('costPrice' in item) || (item.costPrice is number && item.costPrice >= 0))
+        && item.stock is int
+        && item.stock >= -1
+        && item.minStock is int
+        && item.minStock >= 0
+        && item.unit is string
+        && (!('description' in item) || item.description is string)
+        && (!('supplier' in item) || item.supplier is string)
+        && (!('lastMovementId' in item) || item.lastMovementId is string)
+        && item.createdAt is timestamp
+        && item.updatedAt is timestamp;
+    }
+
+    function hasValidInitialMovement(itemId) {
+      let item = request.resource.data;
+      let movementPath = /databases/$(database)/documents/inventory_transactions/$(item.lastMovementId);
+      let movement = getAfter(movementPath).data;
+      return item.lastMovementId is string
+        && !exists(movementPath)
+        && existsAfter(movementPath)
+        && isValidMovementShape(movement)
+        && movement.type == 'IN'
+        && movement.quantity == item.stock
+        && movement.itemId == itemId
+        && movement.itemName == item.name
+        && movement.workshopId == item.workshopId;
+    }
+
+    function isValidInventoryCreate(itemId) {
+      let item = request.resource.data;
+      return isValidInventoryShape(item)
+        && ((item.stock > 0 && hasValidInitialMovement(itemId))
+          || (item.stock <= 0 && !('lastMovementId' in item)));
     }
 
     match /users/{userId} {
@@ -247,8 +297,6 @@ service cloud.firestore {
               && isTechnicianJobUpdate())
             || (getUserData().roles.hasAny(['ADMIN', 'ADVISOR'])
               && isAdvisorQuoteUpdate())
-            || (getUserData().roles.hasAny(['ADMIN', 'TECHNICIAN', 'ADVISOR'])
-              && isQcJobUpdate())
           ))
       );
       allow delete: if request.auth != null && (
@@ -268,16 +316,18 @@ service cloud.firestore {
         isSuperAdmin()
         || (request.resource.data.workshopId == getUserData().workshopId
           && isWorkshopActive(request.resource.data.workshopId)
-          && isAdmin())
+          && isAdmin()
+          && isValidInventoryCreate(itemId))
       );
       allow update: if request.auth != null && (
         (isSuperAdmin() || (isSameWorkshop(resource.data) && isAdmin()))
         && request.resource.data.workshopId == resource.data.workshopId
         && (
-          changesOnly([
-            'sku', 'name', 'category', 'unitPrice', 'costPrice', 'minStock',
-            'unit', 'description', 'supplier', 'updatedAt'
-          ])
+          (changesOnly([
+              'sku', 'name', 'category', 'unitPrice', 'costPrice', 'minStock',
+              'unit', 'description', 'supplier', 'updatedAt'
+            ])
+            && isValidInventoryShape(request.resource.data))
           || isValidStockUpdate(itemId)
         )
       );
@@ -328,6 +378,7 @@ service cloud.firestore {
           'phone',
           'taxId',
           'termsAndConditions',
+          'demoMode',
           'currencySymbol',
           'taxRate',
           'taxName'

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { calculatePayment, calculateStockAfterMovement } from "@/lib/transactions";
+import {
+  calculatePayment,
+  calculatePaymentBalance,
+  calculateStockAfterMovement,
+  getPayableTotal,
+} from "@/lib/transactions";
 
 describe("calculateStockAfterMovement", () => {
   it("applies entries, exits and absolute adjustments", () => {
@@ -24,6 +29,24 @@ describe("calculatePayment", () => {
       remainingBalance: 50,
       isFullyPaid: false,
     });
+  });
+
+  it("keeps an explicitly approved zero instead of charging the old estimate", () => {
+    expect(getPayableTotal({
+      approvedAmount: 0,
+      totalEstimate: 100,
+      approvedAt: new Date(),
+    })).toBe(0);
+    expect(calculatePaymentBalance(0, [])).toEqual({
+      totalPaid: 0,
+      remainingBalance: 0,
+      isFullyPaid: true,
+    });
+  });
+
+  it("preserves the legacy estimate fallback when no approval timestamp exists", () => {
+    expect(getPayableTotal({ approvedAmount: 0, totalEstimate: 100 })).toBe(100);
+    expect(getPayableTotal({ approvedAmount: 75, totalEstimate: 100 })).toBe(75);
   });
 
   it("uses currency precision and identifies the final payment", () => {

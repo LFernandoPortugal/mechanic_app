@@ -21,7 +21,7 @@ export default function OwnerAnalytics() {
   useEffect(() => {
     if (authLoading) return;
 
-    const wId = userProfile?.workshopId || (userProfile ? "demo-workshop" : null);
+    const wId = userProfile?.workshopId || null;
     if (wId) {
       fetchJobs(wId);
     } else {
