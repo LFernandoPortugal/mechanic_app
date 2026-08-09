@@ -4,6 +4,21 @@
 > Producción oficial: rama `main` en Vercel
 > Trabajo pendiente de integrar: `codex/security-stabilization`
 
+## Punto de reanudación rápido
+
+> Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
+
+- **Producción:** `origin/main` en `b0210d5`; continúa en `https://mechanic-app-zeta.vercel.app/` y no contiene esta estabilización.
+- **Rama de trabajo:** `codex/security-stabilization` en `c3a1680`, publicada en `origin` y 9 commits delante de `origin/main`.
+- **Árbol local al cerrar:** limpio y sincronizado con la rama remota.
+- **Firebase esperado:** `mechanic-app-7d459`; las reglas nuevas todavía no se han desplegado.
+- **Último hito:** E2E SUPER_ADMIN aprobado en la preview de Vercel. El taller descartable y todas sus referencias Auth/Firestore se eliminaron y la sesión privilegiada quedó cerrada.
+- **Calidad verificada:** TypeScript, lint, 18 pruebas unitarias, 17 pruebas de reglas, build, auditoría runtime, CI y deployment preview correctos.
+- **Siguiente paso recomendado:** revisar el diff/PR de la rama; después desplegar las reglas verificadas, integrar a `main`, observar Vercel y ejecutar el smoke test completo de producción.
+- **No repetir ni asumir:** no hace falta recrear los datos E2E ya eliminados; no afirmar que la estabilización está en producción hasta comprobar `main` y Vercel.
+
+Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
+
 ## Estado ejecutivo
 
 La aplicación es un SGA multitenant en Next.js 16, Firebase Auth/Firestore y Vercel. La rama de estabilización compila, pasa TypeScript y cuenta con pruebas unitarias y de reglas; todavía **no está desplegada en producción**.
