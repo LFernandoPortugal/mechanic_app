@@ -2,19 +2,19 @@
 
 > Última actualización: 2026-08-09
 > Producción oficial: rama `main` en Vercel
-> Producción verificada: `c903185` en `https://mechanic-app-zeta.vercel.app/`
+> Producción verificada: `26ae2ee` en `https://mechanic-app-zeta.vercel.app/`
 
 ## Punto de reanudación rápido
 
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
-- **Producción:** `origin/main` en `c903185`; la estabilización está desplegada en `https://mechanic-app-zeta.vercel.app/`.
-- **Rama de documentación:** `codex/post-deploy-handoff`, creada desde el `main` desplegado para registrar este cierre.
+- **Producción:** `origin/main` en `26ae2ee`; la estabilización está desplegada en `https://mechanic-app-zeta.vercel.app/`.
+- **Rama de trabajo:** `codex/visual-qa-polish`, publicada con PR draft #3 y preview Vercel verde.
 - **Árbol local al cerrar:** limpio y sincronizado con la rama remota.
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas de la estabilización están desplegadas y fueron releídas desde el proyecto activo.
-- **Último hito:** PR #1 integrado, CI de `main` verde, Vercel Production listo y smoke completo de producción aprobado con limpieza posterior.
-- **Calidad verificada:** TypeScript, lint, 23 pruebas unitarias, 21 pruebas de reglas, build, auditoría runtime, CI, preview y flujo integral en producción.
-- **Siguiente paso recomendado:** ejecutar QA visual/exploratoria en tema claro/oscuro y móvil; después decidir si se conserva o elimina el taller tester `p1`.
+- **Último hito:** primera ronda de QA visual implementada en PR #3: estados vacíos de Técnico/Asesor, persistencia de tema y moneda de inventario.
+- **Calidad verificada:** TypeScript, lint, 23 pruebas unitarias, 21 pruebas de reglas, build, revisión visual local claro/oscuro, CI y preview Vercel.
+- **Siguiente paso recomendado:** revisar PR #3 en viewport móvil y preview; después marcarla lista para integrar y continuar con formularios/modales.
 - **No repetir ni asumir:** no hace falta recrear el smoke ya eliminado; verificar siempre el deployment vigente antes de un nuevo cambio.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
@@ -23,7 +23,7 @@ Para retomar, leer este documento completo y luego seguir el orden obligatorio d
 
 La aplicación es un SGA multitenant en Next.js 16, Firebase Auth/Firestore y Vercel. La estabilización está integrada en `main`, desplegada en Vercel Production y acompañada por sus reglas Firestore en `mechanic-app-7d459`.
 
-- Producción sirve `c903185` en `https://mechanic-app-zeta.vercel.app/` desde `main`.
+- Producción sirve `26ae2ee` en `https://mechanic-app-zeta.vercel.app/` desde `main`; el código funcional de estabilización continúa en su historial como `c903185`.
 - Preview protegida de la rama (alias estable): `https://mechanic-app-git-codex-secur-abea4c-lfernandoportugals-projects.vercel.app`.
 - Las reglas nuevas se compilaron y publicaron únicamente como `firestore:rules`; no se desplegaron Hosting, Storage ni índices.
 - El taller tester `p1` fue reparado: conserva su cuenta Auth y ahora tiene un único perfil ADMIN y un `settings/p1` vacío/activo. No se combinaron usuarios antiguos.
@@ -93,6 +93,15 @@ El cliente selecciona ítems, confirma una firma de aprobación separada de la f
 - Limpieza de código muerto y migración de imágenes dinámicas a `next/image` sin optimizar URLs privadas/base64.
 - Next.js actualizado a 16.3.0 y dependencias runtime sin vulnerabilidades conocidas en `npm audit --omit=dev`.
 
+### Primera ronda visual posterior al despliegue
+
+- PR draft #3: `https://github.com/LFernandoPortugal/mechanic_app/pull/3`.
+- Preview: `https://mechanic-app-git-codex-visua-462c2f-lfernandoportugals-projects.vercel.app`.
+- Técnico y Asesor muestran estados vacíos informativos y responsive en lugar de paneles desproporcionados.
+- La preferencia de tema claro/oscuro sobrevive a recargas completas.
+- Inventario usa el símbolo de moneda configurado por el taller en métricas, tabla, formularios e historial.
+- Gates locales y CI pasan; Vercel reporta el preview listo. Esta rama todavía no está en producción.
+
 ## Verificación reproducible
 
 Desde `web/` en Windows:
@@ -156,10 +165,12 @@ La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos 
 
 ## Siguiente bloque recomendado
 
-1. QA visual y exploratoria de pantallas completas en escritorio/móvil y tema claro/oscuro.
-2. Validar notificaciones EmailJS con un destinatario controlado si forman parte del release.
-3. Resolver o aceptar explícitamente los avisos moderados dev-only de `npm audit` sin aplicar un downgrade automático de `firebase-tools`.
-4. Tras cerrar QA, decidir si `p1` se conserva como fixture de pruebas o se elimina coordinadamente de Auth, `users` y `settings`.
+1. Completar QA móvil de PR #3 y revisar su preview en tema claro/oscuro.
+2. Integrar PR #3 cuando la revisión responsive quede aprobada; observar Production sin volver a desplegar reglas Firebase.
+3. Continuar la auditoría visual con formularios largos, tablas y modales.
+4. Validar notificaciones EmailJS con un destinatario controlado si forman parte del release.
+5. Resolver o aceptar explícitamente los avisos moderados dev-only de `npm audit` sin aplicar un downgrade automático de `firebase-tools`.
+6. Tras cerrar QA, decidir si `p1` se conserva como fixture de pruebas o se elimina coordinadamente de Auth, `users` y `settings`.
 
 ## Reglas para la próxima IA
 
