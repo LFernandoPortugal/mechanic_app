@@ -99,7 +99,7 @@ Resultado del 2026-08-08:
 - E2E autenticado en Vercel preview: ADMIN tester registró 40.25 + 59.75, mantuvo `Ready` tras el abono, cambió a `Delivered` al completar, rechazó un tercer pago con 409, derivó el actor del token y limpió el job con 404 verificado.
 - Aislamiento privilegiado: el mismo ADMIN recibió 403 al intentar `/api/admin/users`.
 
-CI vive en `.github/workflows/ci.yml` y ejecuta instalación, auditoría runtime, TypeScript, lint, pruebas y build.
+CI vive en `.github/workflows/ci.yml`, se activa en PRs, `main`, ramas `codex/**` y manualmente, y ejecuta instalación, auditoría runtime, TypeScript, lint, pruebas y build.
 
 ## Variables requeridas
 
