@@ -387,12 +387,14 @@ export default function TechnicianDashboard() {
             <Card className="glass-panel border-l-4 border-l-orange-500">
               <CardContent className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <VehicleIcon type={selectedJob.vehicleType} className="w-5 h-5 text-muted-foreground shrink-0" />
-                    <Badge className="bg-orange-950/40 text-orange-400 border border-orange-500/30 font-mono text-sm">
-                      {selectedJob.vehicleId}
-                    </Badge>
-                    <span className="text-sm font-semibold text-foreground">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <span className="flex items-center gap-2">
+                      <VehicleIcon type={selectedJob.vehicleType} className="w-5 h-5 text-muted-foreground shrink-0" />
+                      <Badge className="bg-orange-950/40 text-orange-400 border border-orange-500/30 font-mono text-sm">
+                        {selectedJob.vehicleId}
+                      </Badge>
+                    </span>
+                    <span className="basis-full pl-7 text-sm font-semibold text-foreground break-words sm:basis-auto sm:pl-0">
                       {selectedJob.clientId}
                     </span>
                   </div>
@@ -620,7 +622,7 @@ export default function TechnicianDashboard() {
             )}
 
             {selectedJob.status === 'Approved' && (
-              <Card className="glass-panel p-8 text-center space-y-4">
+              <Card className="glass-panel p-5 text-center space-y-4 sm:p-8">
                 <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Wand2 className="w-8 h-8 text-emerald-500" />
                 </div>
@@ -633,7 +635,7 @@ export default function TechnicianDashboard() {
             )}
 
             {selectedJob.status === 'Repair' && (
-              <Card className="glass-panel p-8 text-center space-y-4 border-orange-500/50">
+              <Card className="glass-panel p-5 text-center space-y-4 border-orange-500/50 sm:p-8">
                 <div className="w-16 h-16 bg-orange-100 dark:bg-orange-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Wand2 className="w-8 h-8 text-orange-500" />
                 </div>
@@ -641,7 +643,7 @@ export default function TechnicianDashboard() {
                 <p className="text-muted-foreground font-light text-sm max-w-md mx-auto">
                   Una vez finalizadas todas las tareas y reparaciones mecánicas, envíe el vehículo al área de Control de Calidad (QC) para su inspección final.
                 </p>
-                <Button onClick={handleSendToQC} size="lg" className="w-full bg-orange-600 hover:bg-orange-700 text-white mt-4 h-14 font-semibold text-lg transition-all duration-300">
+                <Button onClick={handleSendToQC} size="lg" className="w-full min-h-14 h-auto whitespace-normal bg-orange-600 hover:bg-orange-700 text-white mt-4 py-3 font-semibold text-base sm:text-lg transition-all duration-300">
                   Finalizar Reparación y Enviar a QC
                 </Button>
               </Card>

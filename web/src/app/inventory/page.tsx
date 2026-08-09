@@ -211,7 +211,7 @@ export default function InventoryPage() {
   const openHistory = async (item: InventoryItem) => {
     setHistoryItem(item);
     setHistoryLoading(true);
-    const txs = await getStockMovements(item.id);
+    const txs = await getStockMovements(item.workshopId, item.id);
     setHistory(txs);
     setHistoryLoading(false);
   };
@@ -222,6 +222,12 @@ export default function InventoryPage() {
     type === 'IN' ? '+' : type === 'OUT' ? '-' : '=';
   const currencySymbol = workshopSettings?.currencySymbol || '$';
   const formatMoney = (amount: number) => `${currencySymbol}${amount.toFixed(2)}`;
+  const formatMovementDate = (value: unknown) => toDate(value)?.toLocaleString('es-PE', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }) || '—';
 
   return (
     <ProtectedRoute allowedRoles={['ADMIN', 'ADVISOR']}>
@@ -315,7 +321,97 @@ export default function InventoryPage() {
               {isAdmin && <Button onClick={openAdd} variant="outline" className="mt-4">+ Agregar el primero</Button>}
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-border">
+            <>
+            <div className="grid gap-3 md:hidden">
+              {filtered.map((item) => {
+                const isLow = item.stock >= 0 && item.stock <= item.minStock;
+                const isUnlimited = item.stock === -1;
+                return (
+                  <Card key={item.id} className="glass-panel overflow-hidden py-0">
+                    <CardContent className="space-y-4 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-mono text-[11px] text-muted-foreground break-all">{item.sku}</p>
+                          <h3 className="mt-1 font-semibold text-foreground break-words">{item.name}</h3>
+                        </div>
+                        <span className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-xs font-medium ${CATEGORY_COLORS[item.category] || CATEGORY_COLORS['Otro']}`}>
+                          {item.category}
+                        </span>
+                      </div>
+
+                      {item.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2">{item.description}</p>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/40 bg-secondary/30 p-3 text-xs">
+                        <div>
+                          <p className="text-muted-foreground">Precio de venta</p>
+                          <p className="mt-0.5 font-mono font-semibold text-emerald-500">{formatMoney(item.unitPrice)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Costo</p>
+                          <p className="mt-0.5 font-mono font-semibold">{item.costPrice ? formatMoney(item.costPrice) : '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Stock</p>
+                          <p className={`mt-0.5 flex items-center gap-1 font-semibold ${isLow ? 'text-red-400' : 'text-foreground'}`}>
+                            {isUnlimited ? '∞' : `${item.stock} ${item.unit}`}
+                            {isLow && <AlertTriangle className="h-3.5 w-3.5" />}
+                          </p>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-muted-foreground">Proveedor</p>
+                          <p className="mt-0.5 truncate font-semibold" title={item.supplier || undefined}>{item.supplier || '—'}</p>
+                        </div>
+                      </div>
+
+                      {isAdmin && (
+                        <div className="grid grid-cols-2 gap-2 border-t border-border/40 pt-3">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="border-emerald-500/30 text-emerald-500"
+                            onClick={() => { setMovementItem(item); setMovType('IN'); }}
+                            disabled={isUnlimited}
+                          >
+                            <ArrowDownCircle className="h-4 w-4" /> Entrada
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="border-red-500/30 text-red-400"
+                            onClick={() => { setMovementItem(item); setMovType('OUT'); }}
+                            disabled={item.stock <= 0}
+                          >
+                            <ArrowUpCircle className="h-4 w-4" /> Salida
+                          </Button>
+                          <Button type="button" size="sm" variant="outline" className="border-blue-500/30 text-blue-400" onClick={() => openHistory(item)}>
+                            <History className="h-4 w-4" /> Historial
+                          </Button>
+                          <Button type="button" size="sm" variant="outline" onClick={() => openEdit(item)}>
+                            <Pencil className="h-4 w-4" /> Editar
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="col-span-2 border-red-500/30 text-red-400"
+                            onClick={() => handleDelete(item)}
+                            disabled={!canDeleteInventory}
+                          >
+                            <Trash2 className="h-4 w-4" /> Eliminar
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            <div className="hidden overflow-x-auto rounded-xl border border-border md:block">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-secondary/60 text-muted-foreground text-left">
@@ -366,7 +462,9 @@ export default function InventoryPage() {
                             {isAdmin && (
                               <>
                                 <button
+                                  type="button"
                                   title="Entrada de stock"
+                                  aria-label={`Entrada de stock para ${item.name}`}
                                   onClick={() => { setMovementItem(item); setMovType('IN'); }}
                                   className="p-1.5 rounded hover:bg-emerald-500/10 text-emerald-400 transition-colors"
                                   disabled={item.stock === -1}
@@ -374,7 +472,9 @@ export default function InventoryPage() {
                                   <ArrowDownCircle className="w-4 h-4" />
                                 </button>
                                 <button
+                                  type="button"
                                   title="Salida de stock"
+                                  aria-label={`Salida de stock para ${item.name}`}
                                   onClick={() => { setMovementItem(item); setMovType('OUT'); }}
                                   className="p-1.5 rounded hover:bg-red-500/10 text-red-400 transition-colors"
                                   disabled={item.stock <= 0}
@@ -382,21 +482,27 @@ export default function InventoryPage() {
                                   <ArrowUpCircle className="w-4 h-4" />
                                 </button>
                                 <button
+                                  type="button"
                                   title="Historial"
+                                  aria-label={`Historial de ${item.name}`}
                                   onClick={() => openHistory(item)}
                                   className="p-1.5 rounded hover:bg-blue-500/10 text-blue-400 transition-colors"
                                 >
                                   <History className="w-4 h-4" />
                                 </button>
                                 <button
+                                  type="button"
                                   title="Editar"
+                                  aria-label={`Editar ${item.name}`}
                                   onClick={() => openEdit(item)}
                                   className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
                                 >
                                   <Pencil className="w-4 h-4" />
                                 </button>
                                 <button
+                                  type="button"
                                   title="Eliminar"
+                                  aria-label={`Eliminar ${item.name}`}
                                   onClick={() => handleDelete(item)}
                                   disabled={!canDeleteInventory}
                                   className="p-1.5 rounded hover:bg-red-500/10 text-red-400 transition-colors disabled:cursor-not-allowed disabled:opacity-30"
@@ -413,6 +519,7 @@ export default function InventoryPage() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
       </div>
@@ -605,7 +712,7 @@ export default function InventoryPage() {
                             {tx.type === 'IN' ? 'Entrada' : tx.type === 'OUT' ? 'Salida' : 'Ajuste'}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {toDate(tx.createdAt)?.toLocaleString('es-PA') || '—'}
+                            {formatMovementDate(tx.createdAt)}
                           </span>
                         </div>
                         {tx.notes && <p className="text-xs text-muted-foreground mt-0.5 truncate">{tx.notes}</p>}

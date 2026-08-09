@@ -189,7 +189,7 @@ export default function AdvisorQuoteBuilder() {
     
     return (
       <div className="min-h-screen page-bg flex items-center justify-center p-4">
-        <Card className="glass-panel text-center max-w-lg w-full p-8 border-blue-500/50">
+        <Card className="glass-panel text-center max-w-lg w-full p-5 sm:p-8 border-blue-500/50">
           <div className="w-16 h-16 bg-blue-100 dark:bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-8 h-8 text-blue-500 dark:text-blue-400" />
           </div>
@@ -251,11 +251,11 @@ export default function AdvisorQuoteBuilder() {
               {t('downloadPDF')}
             </Button>
 
-            <div className="flex gap-3 pt-2">
-              <Button onClick={() => router.push(`/quote/view?id=${submittedJobId}`)} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
+            <div className="flex flex-col gap-3 pt-2 sm:flex-row">
+              <Button onClick={() => router.push(`/quote/view?id=${submittedJobId}`)} className="w-full bg-blue-600 hover:bg-blue-700 text-white sm:flex-1">
                 <ExternalLink className="w-4 h-4 mr-2" /> {t('openClientView')}
               </Button>
-              <Button onClick={() => { setSubmittedJobId(null); setSubmittedJob(null); }} variant="ghost" className="flex-1 text-muted-foreground hover:text-foreground">
+              <Button onClick={() => { setSubmittedJobId(null); setSubmittedJob(null); }} variant="ghost" className="w-full text-muted-foreground hover:text-foreground sm:flex-1">
                 {t('backToDashboard')}
               </Button>
             </div>
@@ -445,7 +445,9 @@ export default function AdvisorQuoteBuilder() {
                         
                         {(item.status !== 'Pass') && (
                           <div className="w-full md:w-48">
-                            <Label className="text-xs text-muted-foreground mb-1 block">{t('partPrice')}</Label>
+                            <Label className="text-xs text-muted-foreground mb-1 block">
+                              {t('partPrice')} ({workshopSettings?.currencySymbol || "$"})
+                            </Label>
                             <Input 
                               type="number"
                               min="0"
@@ -466,7 +468,9 @@ export default function AdvisorQuoteBuilder() {
                 
                 <div className="flex flex-col md:flex-row gap-4 items-end justify-between bg-secondary/50 dark:bg-black/40 p-4 rounded-lg border border-border">
                    <div className="w-full md:w-1/3">
-                      <Label className="text-muted-foreground mb-1 block">{t('globalLabor')}</Label>
+                      <Label className="text-muted-foreground mb-1 block">
+                        {t('globalLabor')} ({workshopSettings?.currencySymbol || "$"})
+                      </Label>
                       <Input 
                         type="number" 
                         min="0"

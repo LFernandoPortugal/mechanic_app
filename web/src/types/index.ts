@@ -148,7 +148,7 @@ export interface InventoryItem {
   sku: string;                  // Internal code e.g. "FRE-001"
   name: string;                 // "Pastillas de Freno Delanteras"
   category: InventoryCategory;
-  unitPrice: number;            // Suggested sale price (USD)
+  unitPrice: number;            // Suggested sale price in the workshop currency
   costPrice?: number;           // Purchase cost (for margin tracking)
   stock: number;                // Current units in stock (-1 = unlimited/service)
   minStock: number;             // Alert threshold (e.g. 2)

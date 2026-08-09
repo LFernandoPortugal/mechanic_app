@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { AlertTriangle, CheckCircle, Download, Wrench, ShieldCheck, Coins, ClipboardList, Clock } from "lucide-react";
+import { AlertTriangle, CheckCircle, Download, Wrench, ShieldCheck, Coins, ClipboardList, Clock, Loader2, RefreshCw } from "lucide-react";
 import { generateQuotePDF } from "@/lib/pdf";
 import { VehicleIcon } from "@/components/ui/vehicle-icons";
 import { SignatureCanvas } from "@/components/SignatureCanvas";
@@ -24,7 +24,8 @@ export default function ClientQuoteView() {
   const [approvals, setApprovals] = useState<Record<string, boolean>>({});
   const [approvalSignature, setApprovalSignature] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [errorNotFound, setErrorNotFound] = useState(false);
+  const [loadError, setLoadError] = useState<"not-found" | "server" | null>(null);
+  const [retryToken, setRetryToken] = useState(0);
 
   const job = quote?.job ?? null;
   const settings = quote?.settings ?? null;
@@ -37,22 +38,25 @@ export default function ClientQuoteView() {
 
     async function fetchQuote() {
       if (!jobId) {
-        setErrorNotFound(true);
+        setLoadError("not-found");
         setLoading(false);
         return;
       }
 
       setLoading(true);
+      setLoadError(null);
+      setQuote(null);
       try {
         const response = await fetch(`/api/public/quotes/${encodeURIComponent(jobId)}`, {
           cache: "no-store",
         });
-        if (!response.ok) throw new Error("QUOTE_NOT_FOUND");
+        if (response.status === 404) throw new Error("QUOTE_NOT_FOUND");
+        if (!response.ok) throw new Error("QUOTE_LOAD_FAILED");
 
         const fetched = (await response.json()) as PublicQuote;
         if (!active) return;
         setQuote(fetched);
-        setErrorNotFound(false);
+        setLoadError(null);
 
         const initialApprovals: Record<string, boolean> = {};
         fetched.job.inspectionItems.forEach((item) => {
@@ -61,8 +65,10 @@ export default function ClientQuoteView() {
           }
         });
         setApprovals(initialApprovals);
-      } catch {
-        if (active) setErrorNotFound(true);
+      } catch (error) {
+        if (active) {
+          setLoadError(error instanceof Error && error.message === "QUOTE_NOT_FOUND" ? "not-found" : "server");
+        }
       } finally {
         if (active) setLoading(false);
       }
@@ -72,7 +78,7 @@ export default function ClientQuoteView() {
     return () => {
       active = false;
     };
-  }, [jobId]);
+  }, [jobId, retryToken]);
 
   const getLaborCost = (j: PublicQuoteJob) => {
     const partsTotal = j.inspectionItems?.reduce((acc, item) => acc + (item.price || 0), 0) || 0;
@@ -129,10 +135,33 @@ export default function ClientQuoteView() {
   };
 
   if (loading) {
-    return <div className="min-h-screen bg-background text-foreground p-6 flex items-center justify-center">{t('loadingQuote')}</div>;
+    return (
+      <div className="min-h-screen page-bg p-6 flex items-center justify-center">
+        <div className="glass-panel w-full max-w-sm rounded-2xl border border-border/50 p-8 text-center shadow-xl">
+          <Loader2 className="mx-auto h-9 w-9 animate-spin text-amber-500" />
+          <p className="mt-4 font-semibold text-foreground">{t('loadingQuote')}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t('loadingQuoteDesc')}</p>
+        </div>
+      </div>
+    );
   }
 
-  if (errorNotFound || !job) {
+  if (loadError === "server") {
+    return (
+      <div className="min-h-screen page-bg flex items-center justify-center p-4">
+        <div className="glass-panel w-full max-w-md rounded-2xl border border-red-500/25 p-7 text-center shadow-xl">
+          <AlertTriangle className="w-12 h-12 text-red-400 mx-auto" />
+          <h1 className="mt-4 text-2xl font-bold text-foreground">{t('quoteLoadError')}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{t('quoteLoadErrorDesc')}</p>
+          <Button className="mt-6 w-full" onClick={() => setRetryToken((value) => value + 1)}>
+            <RefreshCw className="h-4 w-4" /> {t('retry')}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError === "not-found" || !job) {
      return (
        <div className="min-h-screen page-bg flex items-center justify-center p-4">
          <div className="text-center space-y-4">
@@ -279,7 +308,7 @@ export default function ClientQuoteView() {
                   return (
                     <div key={item.id} className={`p-4 rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all duration-300 ${hasPrice ? (isApproved ? 'bg-secondary/60 dark:bg-black/60 border border-emerald-200 dark:border-emerald-900/50' : 'bg-secondary/20 dark:bg-black/20 border border-border opacity-60') : 'bg-secondary/40 dark:bg-black/40 border border-border'}`}>
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-1">
+                        <div className="flex flex-wrap items-center gap-3 mb-1">
                           <span className={`font-medium text-lg ${hasPrice && !isApproved ? 'text-muted-foreground line-through' : 'text-foreground'}`}>{item.name}</span>
                           <Badge className={`
                             ${item.status === 'Pass' ? 'bg-emerald-600' : ''}
@@ -287,7 +316,7 @@ export default function ClientQuoteView() {
                             ${item.status === 'Critical' ? 'bg-orange-600' : ''}
                             ${item.status === 'Recommended' ? 'bg-blue-600' : ''}
                           `}>
-                            {item.status}
+                            {t(`status${item.status}`) || item.status}
                           </Badge>
                         </div>
                         {item.notes && <p className="text-sm text-muted-foreground">{item.notes}</p>}

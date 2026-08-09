@@ -29,9 +29,13 @@ import {
 } from "lucide-react";
 import { WorkflowStepper } from "@/components/WorkflowStepper";
 import { VehicleIcon } from "@/components/ui/vehicle-icons";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function QualityControlPage() {
   const router = useRouter();
+  const { workshopSettings } = useAuth();
+  const currencySymbol = workshopSettings?.currencySymbol || "$";
+  const formatMoney = (amount: number) => `${currencySymbol}${amount.toFixed(2)}`;
 
   // Load all jobs currently in QC status, and also recently Ready/Repair jobs for history
   const { jobs, loading } = useRealtimeJobs({ all: true });
@@ -410,7 +414,7 @@ export default function QualityControlPage() {
                                   <span className="text-foreground font-medium truncate">{item.name}</span>
                                   {item.price && (
                                     <span className="ml-auto text-[10px] text-muted-foreground font-mono">
-                                      ${item.price.toFixed(2)}
+                                      {formatMoney(item.price)}
                                     </span>
                                   )}
                                 </div>

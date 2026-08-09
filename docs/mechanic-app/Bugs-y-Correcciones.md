@@ -156,3 +156,30 @@
 - Eliminados scripts REST con identidad/API key reales embebidas.
 - Los scripts Python son dry-run por defecto, fijan y verifican `mechanic-app-7d459`, requieren confirmación fuerte y tienen dependencias reproducibles.
 - Eliminado el autollenado de cuentas demo con una contraseña conocida; `demo-workshop` ya no es incondicionalmente activo.
+
+---
+
+## v1.6 — QA visual con datos reales (2026-08-09)
+
+### BUG-014: El historial de inventario quedaba vacío para un ADMIN
+
+**Síntoma**: los movimientos se registraban correctamente, pero abrir “Historial” devolvía `Missing or insufficient permissions`.
+
+**Causa raíz**: la regla permite leer únicamente documentos del taller del usuario, pero la consulta filtraba solo por `itemId`. Firestore no podía demostrar antes de ejecutar la consulta que todos los resultados pertenecían al mismo tenant.
+
+**Corrección**:
+
+- `getStockMovements` exige `workshopId` y consulta simultáneamente por taller e ítem.
+- Se añadió una prueba de reglas que acepta la consulta del propio taller y rechaza consultas sin tenant o hacia otro taller.
+- Las reglas no se relajaron y no requieren un nuevo despliegue.
+
+### UI-001: Contenido real revelaba desbordamientos e inconsistencias de moneda
+
+- Inventario usa tarjetas con acciones legibles en móvil y conserva la tabla en escritorio.
+- Recepción marca y enfoca placa, marca y cliente como campos requeridos.
+- Asesor y QC usan el símbolo configurado por el taller en lugar de etiquetas o importes fijos en USD/dólares.
+- La confirmación de cotización y el CTA de reparación se apilan o permiten varias líneas en pantallas pequeñas.
+- El portal público diferencia un enlace inexistente de un fallo temporal del servidor y ofrece reintento.
+- Estados de inspección, estado de orden y fechas de pago se presentan localizados.
+
+La ronda se verificó en 320x568, 390x844 y escritorio con una orden descartable completa, dos hallazgos, aprobación parcial, QC, dos pagos e inventario con movimientos. Gates locales: TypeScript y lint sin errores; 23 pruebas unitarias, 22 pruebas de reglas y build de 19 páginas/4 APIs.
