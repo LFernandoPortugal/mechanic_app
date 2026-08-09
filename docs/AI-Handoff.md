@@ -94,6 +94,7 @@ Resultado del 2026-08-08:
 - Firestore Rules tests: 17/17.
 - Build: 19/19 páginas generadas; 3 API routes dinámicas.
 - Auditoría runtime: 0 vulnerabilidades.
+- Auditoría completa: 5 moderadas, todas transitivas de `firebase-tools`; el aviso alto y los moderados parcheables fueron eliminados sin `--force`.
 - E2E público local y Vercel preview: GET sanitizado, firma/aprobación parcial, monto 210, un `declinedItem`, tracker correcto y limpieza confirmada.
 - E2E autenticado en Vercel preview: ADMIN tester registró 40.25 + 59.75, mantuvo `Ready` tras el abono, cambió a `Delivered` al completar, rechazó un tercer pago con 409, derivó el actor del token y limpió el job con 404 verificado.
 - Aislamiento privilegiado: el mismo ADMIN recibió 403 al intentar `/api/admin/users`.
@@ -128,7 +129,7 @@ También quedan cuentas Auth antiguas que no tienen perfil `users`. El flujo nue
 3. Desplegar `firestore.rules` desde `web/` al proyecto verificado `mechanic-app-7d459`.
 4. Integrar a `main` y observar el deploy Vercel.
 5. Ejecutar smoke test de login, recepción, diagnóstico, cotización, aprobación, reparación, QC, pago y entrega.
-6. Resolver o aceptar explícitamente los 8 avisos dev-only de `npm audit`.
+6. Resolver o aceptar explícitamente los 5 avisos moderados dev-only de `npm audit`; la sugerencia automática implica degradar `firebase-tools` 15 a 14 y no se aplicó.
 
 ## Reglas para la próxima IA
 
