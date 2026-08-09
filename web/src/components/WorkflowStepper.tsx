@@ -88,11 +88,11 @@ export function WorkflowStepper({ currentStatus }: WorkflowStepperProps) {
     <div className="w-full glass-panel border border-border/40 rounded-xl p-4 sm:p-5 shadow-lg bg-card/45 backdrop-blur-md">
       <div className="relative flex items-center justify-between w-full">
         {/* Connector backdrop */}
-        <div className="absolute left-6 right-6 top-[22px] h-[3px] bg-zinc-800 rounded-full z-0" />
+        <div className="absolute left-5 right-5 top-[18px] h-[3px] bg-zinc-800 rounded-full z-0 sm:left-6 sm:right-6 sm:top-[22px]" />
 
         {/* Progress line */}
         <div
-          className="absolute left-6 top-[22px] h-[3px] bg-gradient-to-r from-emerald-500 via-violet-500 to-cyan-400 transition-all duration-700 ease-out rounded-full z-0 shadow-[0_0_8px_rgba(16,185,129,0.4)]"
+          className="absolute left-5 top-[18px] h-[3px] bg-gradient-to-r from-emerald-500 via-violet-500 to-cyan-400 transition-all duration-700 ease-out rounded-full z-0 shadow-[0_0_8px_rgba(16,185,129,0.4)] sm:left-6 sm:top-[22px]"
           style={{
             width: `${currentStepIndex >= 0 ? (currentStepIndex / (STEPS.length - 1)) * 100 : 0}%`,
             maxWidth: "calc(100% - 48px)",
@@ -122,11 +122,11 @@ export function WorkflowStepper({ currentStatus }: WorkflowStepperProps) {
               {/* Clickable node */}
               <button
                 type="button"
-                className={`w-11 h-11 rounded-full flex items-center justify-center transition-all duration-500 ${nodeStyle} backdrop-blur-md relative`}
+                className={`w-9 h-9 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all duration-500 ${nodeStyle} backdrop-blur-md relative`}
                 onClick={() => setExpandedStep(isExpanded ? null : step.key)}
                 title={step.description}
               >
-                <Icon className={`w-5 h-5 transition-transform duration-300 ${isActive ? "scale-110" : ""}`} />
+                <Icon className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-300 ${isActive ? "scale-110" : ""}`} />
                 {isActive && (
                   <span className="absolute inset-0 rounded-full animate-ping opacity-20 bg-current" />
                 )}
@@ -136,10 +136,6 @@ export function WorkflowStepper({ currentStatus }: WorkflowStepperProps) {
               <span className={`text-[10px] sm:text-xs mt-2.5 text-center select-none ${labelStyle} hidden md:block`}>
                 {step.label}
               </span>
-              <span className={`text-[8px] mt-1 text-center select-none ${labelStyle} md:hidden block max-w-[60px] truncate`}>
-                {step.label}
-              </span>
-
               {/* "Aquí" badge */}
               {isActive && (
                 <span className="hidden md:block text-[9px] font-bold text-white bg-gradient-to-r from-violet-600 to-indigo-500 px-1.5 py-0.5 rounded-full mt-1 shadow-sm animate-pulse">
@@ -164,13 +160,13 @@ export function WorkflowStepper({ currentStatus }: WorkflowStepperProps) {
       </div>
 
       {/* Bottom bar */}
-      <div className="mt-4 pt-3 border-t border-border/20 flex items-center justify-between text-xs text-muted-foreground">
+      <div className="mt-4 pt-3 border-t border-border/20 flex flex-col items-start gap-2 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
         <span className="flex items-center gap-1.5 font-light">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           Ruta del Taller SGA
         </span>
         {currentStepIndex >= 0 ? (
-          <span className="text-right">
+          <span className="text-left sm:text-right">
             <span className="text-foreground font-semibold">{STEPS[currentStepIndex].label}</span>
             <span className="text-muted-foreground/60 ml-1.5">· {STEPS[currentStepIndex].role}</span>
           </span>

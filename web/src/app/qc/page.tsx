@@ -333,7 +333,7 @@ export default function QualityControlPage() {
                           />
                         </div>
 
-                        <div className="flex gap-3 justify-end pt-4">
+                        <div className="flex flex-col-reverse gap-3 justify-end pt-4 sm:flex-row">
                           <Button
                             variant="ghost"
                             onClick={() => setIsRejecting(false)}

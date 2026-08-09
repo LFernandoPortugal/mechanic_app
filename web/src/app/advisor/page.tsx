@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ArrowLeft, ArrowRight, DollarSign, Wand2, Copy, ExternalLink, CheckCircle, MessageCircle, Download, Mail } from "lucide-react";
+import { ArrowLeft, ArrowRight, DollarSign, Wand2, Copy, ExternalLink, CheckCircle, MessageCircle, Download, Mail, FileSearch } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { openWhatsAppQuote } from "@/lib/whatsapp";
 import { generateQuotePDF } from "@/lib/pdf";
@@ -23,6 +23,7 @@ import { WorkflowStepper } from "@/components/WorkflowStepper";
 import { VehicleIcon } from "@/components/ui/vehicle-icons";
 import { toDate } from "@/lib/dates";
 import { getPayableTotal } from "@/lib/transactions";
+import { WorkflowQueueEmptyState } from "@/components/WorkflowQueueEmptyState";
 
 const payableTotal = (job: Job) => {
   try {
@@ -261,6 +262,30 @@ export default function AdvisorQuoteBuilder() {
           </div>
         </Card>
       </div>
+    );
+  }
+
+  if (jobs.length === 0) {
+    return (
+      <ProtectedRoute allowedRoles={['ADMIN', 'ADVISOR']}>
+        <WorkflowQueueEmptyState
+          accent="violet"
+          icon={<FileSearch className="h-8 w-8" />}
+          eyebrow="Cotizaciones · 0 órdenes pendientes"
+          title="No hay presupuestos por preparar"
+          description="La bandeja está vacía. Las órdenes aparecerán aquí en tiempo real cuando el técnico complete un diagnóstico o cuando un trabajo aprobado necesite seguimiento."
+          steps={[
+            {
+              title: "El técnico completa el diagnóstico",
+              description: "Los hallazgos y evidencias pasan automáticamente al constructor de cotizaciones.",
+            },
+            {
+              title: "Cotiza y envía al cliente",
+              description: "Asigna precios, genera el enlace público y continúa el seguimiento desde este módulo.",
+            },
+          ]}
+        />
+      </ProtectedRoute>
     );
   }
 
@@ -545,7 +570,7 @@ export default function AdvisorQuoteBuilder() {
                 {/* Registrar Pago rápido */}
                 <div className="bg-secondary/50 p-4 rounded-lg border border-border mt-4">
                   <h3 className="font-semibold text-foreground mb-4">Registrar Nuevo Pago (Abono)</h3>
-                  <div className="flex gap-4">
+                  <div className="flex flex-col gap-4 sm:flex-row">
                     <div className="flex-1">
                       <Label>Monto</Label>
                       <Input 
@@ -600,7 +625,7 @@ export default function AdvisorQuoteBuilder() {
                   <ArrowRight className="w-4 h-4 text-cyan-500 group-hover:text-cyan-300 group-hover:translate-x-0.5 transition-transform shrink-0" />
                 </button>
 
-                <div className="pt-4 flex gap-4">
+                <div className="pt-4 flex flex-col gap-3 sm:flex-row sm:gap-4">
                   <Button onClick={() => router.push(`/quote/view?id=${selectedJob.id}`)} variant="outline" className="flex-1 border-blue-500/50 text-blue-500">
                     <ExternalLink className="w-4 h-4 mr-2" /> Ver Vista del Cliente
                   </Button>

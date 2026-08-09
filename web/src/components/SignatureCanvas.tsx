@@ -134,7 +134,7 @@ export function SignatureCanvas({ onConfirm, onClear, confirmedUrl }: SignatureC
       </div>
 
       {/* Action buttons */}
-      <div className="flex gap-2">
+      <div className="flex flex-col-reverse gap-2 sm:flex-row">
         {!confirmed ? (
           <>
             <Button
@@ -143,7 +143,7 @@ export function SignatureCanvas({ onConfirm, onClear, confirmedUrl }: SignatureC
               variant="outline"
               onClick={clear}
               disabled={!hasStrokes}
-              className="gap-1.5 border-border text-muted-foreground disabled:cursor-not-allowed disabled:opacity-45"
+              className="w-full gap-1.5 border-border text-muted-foreground disabled:cursor-not-allowed disabled:opacity-45 sm:w-auto"
             >
               <Trash2 className="w-3.5 h-3.5" />
               Limpiar
@@ -153,7 +153,7 @@ export function SignatureCanvas({ onConfirm, onClear, confirmedUrl }: SignatureC
               size="sm"
               onClick={confirm}
               disabled={!hasStrokes}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white gap-1.5 disabled:cursor-not-allowed disabled:opacity-45"
+              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white gap-1.5 disabled:cursor-not-allowed disabled:opacity-45 sm:flex-1"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
               Confirmar Firma
@@ -165,7 +165,7 @@ export function SignatureCanvas({ onConfirm, onClear, confirmedUrl }: SignatureC
             size="sm"
             variant="outline"
             onClick={clear}
-            className="gap-1.5 border-border text-muted-foreground"
+            className="w-full gap-1.5 border-border text-muted-foreground sm:w-auto"
           >
             <Trash2 className="w-3.5 h-3.5" />
             Volver a firmar
