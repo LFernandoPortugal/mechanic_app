@@ -21,7 +21,7 @@ const getErrorMessage = (error: unknown) =>
 
 const ROLE_OPTIONS: UserRole[] = ["ADMIN", "RECEPTION", "TECHNICIAN", "ADVISOR"];
 
-export default function SuperAdminPage() {
+function SuperAdminContent() {
   const { user, userProfile } = useAuth();
   const [workshops, setWorkshops] = useState<WorkshopListItem[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -226,8 +226,7 @@ export default function SuperAdminPage() {
   };
 
   return (
-    <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
-      <div className="min-h-screen page-bg text-foreground px-4 md:px-8 py-6">
+    <div className="min-h-screen page-bg text-foreground px-4 md:px-8 py-6">
         <div className="max-w-7xl mx-auto space-y-8 animate-fade-in">
 
           {/* Header */}
@@ -620,7 +619,14 @@ export default function SuperAdminPage() {
           </Card>
 
         </div>
-      </div>
+    </div>
+  );
+}
+
+export default function SuperAdminPage() {
+  return (
+    <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
+      <SuperAdminContent />
     </ProtectedRoute>
   );
 }

@@ -98,6 +98,8 @@ Resultado del 2026-08-08:
 - E2E público local y Vercel preview: GET sanitizado, firma/aprobación parcial, monto 210, un `declinedItem`, tracker correcto y limpieza confirmada.
 - E2E autenticado en Vercel preview: ADMIN tester registró 40.25 + 59.75, mantuvo `Ready` tras el abono, cambió a `Delivered` al completar, rechazó un tercer pago con 409, derivó el actor del token y limpió el job con 404 verificado.
 - Aislamiento privilegiado: el mismo ADMIN recibió 403 al intentar `/api/admin/users`.
+- E2E SUPER_ADMIN en Vercel preview: se creó un taller descartable con exactamente una cuenta Auth, un perfil ADMIN y un `settings` sin `tempPassword`; el borrado posterior eliminó Auth/perfil/settings, dejó 0 jobs/inventario/movimientos y restauró los conteos originales.
+- El contenido del panel SUPER_ADMIN se monta únicamente después de que `ProtectedRoute` confirma sesión y rol, evitando consultas Firestore transitorias antes de inicializar Auth.
 
 CI vive en `.github/workflows/ci.yml`, se activa en PRs, `main`, ramas `codex/**` y manualmente, y ejecuta instalación, auditoría runtime, TypeScript, lint, pruebas y build. El build usa identificadores Firebase ficticios y públicos para prerenderizar; no necesita ni recibe credenciales de producción.
 
@@ -125,11 +127,10 @@ También quedan cuentas Auth antiguas que no tienen perfil `users`. El flujo nue
 ## Pendiente antes de producción
 
 1. Revisar el diff y decidir si la rama se integra por PR.
-2. Probar con SUPER_ADMIN real la creación y eliminación de un taller descartable; no usar esa cuenta para pruebas rutinarias.
-3. Desplegar `firestore.rules` desde `web/` al proyecto verificado `mechanic-app-7d459`.
-4. Integrar a `main` y observar el deploy Vercel.
-5. Ejecutar smoke test de login, recepción, diagnóstico, cotización, aprobación, reparación, QC, pago y entrega.
-6. Resolver o aceptar explícitamente los 5 avisos moderados dev-only de `npm audit`; la sugerencia automática implica degradar `firebase-tools` 15 a 14 y no se aplicó.
+2. Desplegar `firestore.rules` desde `web/` al proyecto verificado `mechanic-app-7d459`.
+3. Integrar a `main` y observar el deploy Vercel.
+4. Ejecutar smoke test de login, recepción, diagnóstico, cotización, aprobación, reparación, QC, pago y entrega.
+5. Resolver o aceptar explícitamente los 5 avisos moderados dev-only de `npm audit`; la sugerencia automática implica degradar `firebase-tools` 15 a 14 y no se aplicó.
 
 ## Reglas para la próxima IA
 
