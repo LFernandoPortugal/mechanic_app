@@ -70,7 +70,7 @@ firebase deploy --only firestore:rules,firestore:indexes --project mechanic-app-
 - [ ] Smoke test: login → Reception → Diagnosis → Approval → firma cliente → Approved → Repair → QC → Ready → pago → Delivered.
 - [ ] Tema claro/oscuro y viewport móvil revisados.
 - [ ] Logs de Vercel y Firebase revisados sin errores nuevos.
-- [ ] Datos de prueba eliminados y eliminación verificada.
-- [ ] Cuentas demo históricas con credenciales conocidas revisadas y deshabilitadas/eliminadas si ya no se necesitan.
+- [x] Datos de prueba eliminados y eliminación verificada.
+- [x] Cuentas demo históricas con credenciales conocidas revisadas y eliminadas.
 - [ ] Scripts operativos ejecutados primero sin `--apply`; proyecto y confirmación exactos revisados.
 - [ ] Documentación y `docs/AI-Handoff.md` actualizados.

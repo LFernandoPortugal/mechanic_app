@@ -12,9 +12,9 @@
 - **Rama de trabajo:** `codex/security-stabilization`, publicada en `origin`; consultar Git para el HEAD actual. El checkpoint evita fijar su propio hash para no quedar obsoleto al actualizarse.
 - **Árbol local al cerrar:** limpio y sincronizado con la rama remota.
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas nuevas todavía no se han desplegado.
-- **Último hito:** PR draft #1 abierto; CI y Vercel preview correctos, incluida la nueva API de QC probada de extremo a extremo.
+- **Último hito:** PR draft #1 abierto y verde; E2E de QC correcto y datos históricos de prueba limpiados con verificación posterior.
 - **Calidad verificada:** TypeScript, lint, 23 pruebas unitarias, 21 pruebas de reglas, build, auditoría runtime, dos ejecuciones de CI y preview Vercel.
-- **Siguiente paso recomendado:** revisar el PR y decidir qué hacer con las tres cuentas demo históricas. Tras aprobar el PR, desplegar primero el código Vercel y enseguida las reglas Firebase, porque las reglas nuevas bloquean el QC client-side de `main` actual.
+- **Siguiente paso recomendado:** revisar y aprobar el PR. Después, desplegar primero el código Vercel y enseguida las reglas Firebase, porque las reglas nuevas bloquean el QC client-side de `main` actual.
 - **No repetir ni asumir:** no hace falta recrear los datos E2E ya eliminados; no afirmar que la estabilización está en producción hasta comprobar `main` y Vercel.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
@@ -139,22 +139,19 @@ GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID
 
 Vercel ya tiene esos identificadores en Preview y Production. No crear ni subir una clave JSON de cuenta de servicio.
 
-## Datos existentes que requieren decisión humana
+## Estado de datos después de la limpieza
 
-Hay órdenes antiguas con `workshopId` `p2`, `prueba` y `master-control`, pero sus documentos `settings` ya no existen (excepto otras configuraciones válidas). Son datos huérfanos históricos. No deben migrarse ni borrarse automáticamente sin decidir si se conservan como evidencia o se purgan.
+La limpieza autorizada eliminó 12 cuentas Auth de prueba: cuatro cuentas demo históricas y ocho cuentas huérfanas `p2/p3/p4/prueba*`. También se eliminaron tres perfiles demo sin taller, ocho órdenes de prueba huérfanas y el documento legado `settings/workshop`.
 
-También quedan cuentas Auth antiguas que no tienen perfil `users`. El flujo nuevo evita crear más fantasmas, pero la limpieza histórica debe hacerse con una lista exacta y verificación previa.
-
-Existen tres cuentas Auth demo históricas cuya contraseña anterior fue pública en el repositorio. Sus perfiles actuales no tienen `workshopId`, y el código/rules nuevos ya no autocompletan credenciales ni mantienen `demo-workshop` activo sin settings. Aun así, se recomienda deshabilitarlas o eliminarlas tras autorización explícita; no hacerlo automáticamente durante el PR.
+La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos perfiles `users`: la cuenta única SUPER_ADMIN y el ADMIN tester de `p1`. Firestore conserva únicamente `settings/p1`; `jobs`, `inventory`, `inventory_transactions` y `feedback` quedaron vacíos. SUPER_ADMIN y `master-control` no fueron modificados. `p1` se conserva temporalmente para el smoke test posterior al merge.
 
 ## Pendiente antes de producción
 
-1. Revisar el PR draft #1 y resolver la decisión pendiente sobre las cuentas demo históricas.
+1. Revisar el PR draft #1.
 2. Aprobar/integrar a `main` y observar hasta que el deploy Vercel con la ruta QC esté listo.
 3. Inmediatamente después, desplegar `firestore.rules` desde `web/` al proyecto verificado `mechanic-app-7d459`. No desplegarlas antes del código: el `main` anterior todavía actualiza QC desde el cliente.
 4. Ejecutar smoke test de login, recepción, diagnóstico, cotización, aprobación, reparación, QC, pago y entrega.
-6. Decidir si se deshabilitan/eliminan las tres cuentas demo Auth históricas.
-7. Resolver o aceptar explícitamente los avisos moderados dev-only de `npm audit` sin aplicar un downgrade automático de `firebase-tools`.
+5. Resolver o aceptar explícitamente los avisos moderados dev-only de `npm audit` sin aplicar un downgrade automático de `firebase-tools`.
 
 ## Reglas para la próxima IA
 
