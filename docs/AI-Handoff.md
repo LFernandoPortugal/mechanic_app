@@ -2,20 +2,20 @@
 
 > Última actualización: 2026-08-09
 > Producción oficial: rama `main` en Vercel
-> Código funcional de producción verificado: `eb74f84` en `https://mechanic-app-zeta.vercel.app/`
+> Código funcional de producción verificado: `68b2f49` en `https://mechanic-app-zeta.vercel.app/`
 
 ## Punto de reanudación rápido
 
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
-- **Producción:** `origin/main` incluye el commit funcional `eb74f84`; la estabilización y la primera ronda visual están desplegadas en `https://mechanic-app-zeta.vercel.app/`. El HEAD puede avanzar por commits exclusivamente documentales.
-- **Rama de trabajo:** ninguna funcional pendiente; PR #3 integrada por squash en `main`.
+- **Producción:** `origin/main` incluye el commit funcional `68b2f49`; la estabilización y las dos rondas visuales están desplegadas en `https://mechanic-app-zeta.vercel.app/`. El HEAD puede avanzar por commits exclusivamente documentales.
+- **Rama de trabajo:** ninguna funcional pendiente; PR #6 integrada por squash en `main`.
 - **Árbol local al cerrar:** limpio y sincronizado con `origin/main` después de integrar el checkpoint documental.
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas de la estabilización están desplegadas y fueron releídas desde el proyecto activo.
-- **Último hito:** PR #3 integrada y desplegada: estados vacíos de Técnico/Asesor, persistencia de tema, moneda de inventario y adaptación móvil de rutas, formularios y modales principales.
-- **Calidad verificada:** TypeScript, lint, 23 pruebas unitarias, 21 pruebas de reglas, build, revisión claro/oscuro en 320x568 y 390x844, CI de `main` y Vercel Production.
-- **Siguiente paso recomendado:** continuar QA visual con contenido real y estados de error/carga; después validar EmailJS con un destinatario controlado si entra en el release.
-- **No repetir ni asumir:** no hace falta recrear el smoke ya eliminado; verificar siempre el deployment vigente antes de un nuevo cambio.
+- **Último hito:** PR #6 integrada y desplegada: QA integral con datos reales descartables, historial de inventario compatible con reglas, tarjetas móviles, estados públicos de carga/error y correcciones responsive en Recepción, Técnico, Asesor, QC y detalle de cliente.
+- **Calidad verificada:** TypeScript, lint, 23 pruebas unitarias, 22 pruebas de reglas, build, flujo real completo, revisión móvil/desktop, CI de `main` y Vercel Production.
+- **Siguiente paso recomendado:** validar EmailJS con un destinatario controlado si forma parte del release; después decidir si `p1` se conserva como fixture de QA.
+- **No repetir ni asumir:** no hace falta recrear la orden ni el inventario ya eliminados; verificar siempre el deployment vigente antes de un nuevo cambio.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
 
@@ -23,7 +23,7 @@ Para retomar, leer este documento completo y luego seguir el orden obligatorio d
 
 La aplicación es un SGA multitenant en Next.js 16, Firebase Auth/Firestore y Vercel. La estabilización está integrada en `main`, desplegada en Vercel Production y acompañada por sus reglas Firestore en `mechanic-app-7d459`.
 
-- Producción sirve el código funcional de `eb74f84` en `https://mechanic-app-zeta.vercel.app/` desde `main`; commits posteriores pueden limitarse a documentación. La estabilización continúa en el historial como `c903185`.
+- Producción sirve el código funcional de `68b2f49` en `https://mechanic-app-zeta.vercel.app/` desde `main`; commits posteriores pueden limitarse a documentación. La estabilización continúa en el historial como `c903185`.
 - Preview protegida de la rama (alias estable): `https://mechanic-app-git-codex-secur-abea4c-lfernandoportugals-projects.vercel.app`.
 - Las reglas nuevas se compilaron y publicaron únicamente como `firestore:rules`; no se desplegaron Hosting, Storage ni índices.
 - El taller tester `p1` fue reparado: conserva su cuenta Auth y ahora tiene un único perfil ADMIN y un `settings/p1` vacío/activo. No se combinaron usuarios antiguos.
@@ -105,6 +105,18 @@ El cliente selecciona ítems, confirma una firma de aprobación separada de la f
 - El stepper de flujo reduce nodos en móvil y oculta etiquetas que se superponían; la firma y los botones de pago, aprobación, rechazo y restablecimiento se adaptan a una columna.
 - QA de navegador sin warnings ni errores de consola. TypeScript, lint, 23 pruebas unitarias, 21 pruebas de reglas y build de producción pasan localmente.
 
+### Segunda ronda visual con datos reales
+
+- PR #6: `https://github.com/LFernandoPortugal/mechanic_app/pull/6`, integrada por squash en `main` como `68b2f49`.
+- Preview validada: `https://mechanic-app-git-codex-real-387fde-lfernandoportugals-projects.vercel.app`.
+- El 2026-08-09 se recorrió con el ADMIN tester de `p1` el flujo completo Recepción → Diagnóstico → Aprobación parcial pública → Reparación → QC → dos pagos → Entrega.
+- La prueba incluyó datos deliberadamente largos, firma, dos ítems de inspección, moneda PEN, inventario con stock inicial y movimiento adicional, historial, rechazo parcial, QC y detalle financiero del cliente.
+- El historial de inventario ahora consulta por `workshopId` + `itemId`, en línea con las reglas; una prueba nueva cubre la consulta válida y rechaza lecturas sin tenant o de otro taller.
+- Inventario usa tarjetas móviles sin perder la tabla desktop; Recepción mejora el orden de validación nativa; Técnico y Asesor envuelven correctamente textos/acciones largos; QC y detalle de cliente respetan moneda, idioma y fechas.
+- El portal público diferencia 404 de errores del servidor, ofrece reintento en fallos transitorios y mantiene estados de carga, badges y tracker localizados.
+- Preview y Production se comprobaron a 390x844 sin desbordamiento horizontal ni errores de consola. `/`, `/login` y la vista pública respondieron HTTP 200; el API de la orden ya limpiada respondió el 404 esperado.
+- La orden, el artículo y sus dos movimientos descartables se eliminaron por sus IDs exactos. La verificación posterior dejó `jobs`, `inventory` e `inventory_transactions` vacías. No se tocaron Auth, `users`, `settings`, SUPER_ADMIN, reglas ni índices y no hubo despliegue Firebase.
+
 ## Verificación reproducible
 
 Desde `web/` en Windows:
@@ -119,12 +131,12 @@ npm.cmd run build
 npm.cmd audit --omit=dev
 ```
 
-Resultado del 2026-08-08:
+Resultado más reciente del 2026-08-09:
 
 - TypeScript: 0 errores.
 - Lint: 0 errores, 0 warnings.
 - Unit tests: 23/23.
-- Firestore Rules tests: 21/21.
+- Firestore Rules tests: 22/22.
 - Build: correcto; 19/19 páginas estáticas y 4 API routes dinámicas.
 - Auditoría runtime: 0 vulnerabilidades.
 - Auditoría completa: 5 moderadas, todas transitivas de `firebase-tools`; el aviso alto y los moderados parcheables fueron eliminados sin `--force`.
@@ -173,12 +185,21 @@ La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos 
 3. La revisión visual cubrió tema claro/oscuro y viewports de 320x568 y 390x844 sin desbordamientos horizontales ni errores de consola en las rutas principales.
 4. No cambiaron reglas, índices ni datos de Firebase; no se ejecutó ningún despliegue Firebase ni se utilizó la cuenta SUPER_ADMIN.
 
+## Cierre de QA visual con datos reales del 2026-08-09
+
+1. PR #6 integrada por squash en `main` como `68b2f49`; CI de `main` y Vercel Production completaron correctamente.
+2. Se verificó el flujo funcional completo con el ADMIN de `p1`, incluyendo aprobación parcial, movimiento de inventario, QC, pagos parciales y entrega.
+3. TypeScript, lint, 23 pruebas unitarias, 22 pruebas de reglas y build de producción pasaron antes del merge; el preview no presentó errores de consola ni desbordamiento a 390 px.
+4. Producción respondió HTTP 200 en `/`, `/login` y `/quote/view`; el API público respondió 404 para la orden después de su eliminación y la UI mostró el estado de no encontrado correcto.
+5. Se eliminaron exclusivamente la orden, el artículo y los dos movimientos creados para esta ronda. `jobs`, `inventory` e `inventory_transactions` quedaron en cero; no se modificaron cuentas ni configuración.
+6. No cambiaron ni se desplegaron reglas, índices, Storage o Firebase Hosting, y no se usó la cuenta SUPER_ADMIN.
+
 ## Siguiente bloque recomendado
 
-1. Continuar la auditoría visual con contenido real en formularios largos, tablas, modales y estados de error/carga.
-2. Validar notificaciones EmailJS con un destinatario controlado si forman parte del release.
-3. Resolver o aceptar explícitamente los avisos moderados dev-only de `npm audit` sin aplicar un downgrade automático de `firebase-tools`.
-4. Tras cerrar QA, decidir si `p1` se conserva como fixture de pruebas o se elimina coordinadamente de Auth, `users` y `settings`.
+1. Validar notificaciones EmailJS con un destinatario controlado si forman parte del release.
+2. Resolver o aceptar explícitamente los avisos moderados dev-only de `npm audit` sin aplicar un downgrade automático de `firebase-tools`.
+3. Decidir si `p1` se conserva como fixture de pruebas o se elimina coordinadamente de Auth, `users` y `settings`.
+4. Para futuras mejoras visuales, repetir QA con datos descartables solo en los componentes que cambien y limpiar por IDs exactos.
 
 ## Reglas para la próxima IA
 
