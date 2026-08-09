@@ -9,7 +9,7 @@
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
 - **Producción:** `origin/main` en `b0210d5`; continúa en `https://mechanic-app-zeta.vercel.app/` y no contiene esta estabilización.
-- **Rama de trabajo:** `codex/security-stabilization` en `c3a1680`, publicada en `origin` y 9 commits delante de `origin/main`.
+- **Rama de trabajo:** `codex/security-stabilization`, publicada en `origin`. El último commit funcional verificado es `c3a1680`; consultar Git para el HEAD actual porque las actualizaciones de este handoff generan commits posteriores.
 - **Árbol local al cerrar:** limpio y sincronizado con la rama remota.
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas nuevas todavía no se han desplegado.
 - **Último hito:** E2E SUPER_ADMIN aprobado en la preview de Vercel. El taller descartable y todas sus referencias Auth/Firestore se eliminaron y la sesión privilegiada quedó cerrada.
