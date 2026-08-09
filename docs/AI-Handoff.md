@@ -2,19 +2,19 @@
 
 > Última actualización: 2026-08-09
 > Producción oficial: rama `main` en Vercel
-> Producción verificada: `26ae2ee` en `https://mechanic-app-zeta.vercel.app/`
+> Producción verificada: `eb74f84` en `https://mechanic-app-zeta.vercel.app/`
 
 ## Punto de reanudación rápido
 
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
-- **Producción:** `origin/main` en `26ae2ee`; la estabilización está desplegada en `https://mechanic-app-zeta.vercel.app/`.
-- **Rama de trabajo:** `codex/visual-qa-polish`, publicada con PR draft #3 y preview Vercel verde.
-- **Árbol local al cerrar:** limpio y sincronizado con la rama remota.
+- **Producción:** `origin/main` en `eb74f84`; la estabilización y la primera ronda visual están desplegadas en `https://mechanic-app-zeta.vercel.app/`.
+- **Rama de trabajo:** ninguna funcional pendiente; PR #3 integrada por squash en `main`.
+- **Árbol local al cerrar:** limpio y sincronizado con `origin/main` después de integrar el checkpoint documental.
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas de la estabilización están desplegadas y fueron releídas desde el proyecto activo.
-- **Último hito:** primera ronda de QA visual implementada en PR #3: estados vacíos de Técnico/Asesor, persistencia de tema y moneda de inventario.
-- **Calidad verificada:** TypeScript, lint, 23 pruebas unitarias, 21 pruebas de reglas, build, revisión visual local claro/oscuro, CI y preview Vercel.
-- **Siguiente paso recomendado:** revisar PR #3 en viewport móvil y preview; después marcarla lista para integrar y continuar con formularios/modales.
+- **Último hito:** PR #3 integrada y desplegada: estados vacíos de Técnico/Asesor, persistencia de tema, moneda de inventario y adaptación móvil de rutas, formularios y modales principales.
+- **Calidad verificada:** TypeScript, lint, 23 pruebas unitarias, 21 pruebas de reglas, build, revisión claro/oscuro en 320x568 y 390x844, CI de `main` y Vercel Production.
+- **Siguiente paso recomendado:** continuar QA visual con contenido real y estados de error/carga; después validar EmailJS con un destinatario controlado si entra en el release.
 - **No repetir ni asumir:** no hace falta recrear el smoke ya eliminado; verificar siempre el deployment vigente antes de un nuevo cambio.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
@@ -23,7 +23,7 @@ Para retomar, leer este documento completo y luego seguir el orden obligatorio d
 
 La aplicación es un SGA multitenant en Next.js 16, Firebase Auth/Firestore y Vercel. La estabilización está integrada en `main`, desplegada en Vercel Production y acompañada por sus reglas Firestore en `mechanic-app-7d459`.
 
-- Producción sirve `26ae2ee` en `https://mechanic-app-zeta.vercel.app/` desde `main`; el código funcional de estabilización continúa en su historial como `c903185`.
+- Producción sirve `eb74f84` en `https://mechanic-app-zeta.vercel.app/` desde `main`; el código funcional de estabilización continúa en su historial como `c903185`.
 - Preview protegida de la rama (alias estable): `https://mechanic-app-git-codex-secur-abea4c-lfernandoportugals-projects.vercel.app`.
 - Las reglas nuevas se compilaron y publicaron únicamente como `firestore:rules`; no se desplegaron Hosting, Storage ni índices.
 - El taller tester `p1` fue reparado: conserva su cuenta Auth y ahora tiene un único perfil ADMIN y un `settings/p1` vacío/activo. No se combinaron usuarios antiguos.
@@ -165,6 +165,13 @@ La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos 
 4. Smoke integral aprobado en producción: login, recepción, diagnóstico, cotización, portal público, firma/aprobación, reparación, QC, pago y entrega.
 5. El job descartable fue eliminado; Firestore volvió a 0 jobs, inventario, movimientos y feedback. Permanecen solo SUPER_ADMIN y el tester `p1`.
 6. Los logs del deployment mostraron 200 en las operaciones del smoke, un 401 intencional sin sesión y 0 warnings, errores o fatales.
+
+## Cierre visual de producción del 2026-08-09
+
+1. PR #3 integrada por squash en `main` como `eb74f84`; CI de `main` completó correctamente.
+2. Vercel Production completó el deployment asociado y tanto `/` como `/login` respondieron HTTP 200 en la URL oficial.
+3. La revisión visual cubrió tema claro/oscuro y viewports de 320x568 y 390x844 sin desbordamientos horizontales ni errores de consola en las rutas principales.
+4. No cambiaron reglas, índices ni datos de Firebase; no se ejecutó ningún despliegue Firebase ni se utilizó la cuenta SUPER_ADMIN.
 
 ## Siguiente bloque recomendado
 
