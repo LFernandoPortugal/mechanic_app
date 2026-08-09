@@ -12,9 +12,9 @@
 - **Rama de trabajo:** `codex/security-stabilization`, publicada en `origin`; consultar Git para el HEAD actual. El checkpoint evita fijar su propio hash para no quedar obsoleto al actualizarse.
 - **Árbol local al cerrar:** limpio y sincronizado con la rama remota.
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas nuevas todavía no se han desplegado.
-- **Último hito:** revisión completa del diff previa a PR; se cerraron saltos de QC, reuso de movimientos, edición de inventario, extensión de trial y herramientas administrativas inseguras.
-- **Calidad verificada:** TypeScript, lint, 23 pruebas unitarias y 21 pruebas de reglas; ejecutar build/auditoría/CI/preview otra vez después del commit de esta revisión.
-- **Siguiente paso recomendado:** publicar el bloque, abrir PR draft y validar la nueva API de QC en preview. Tras aprobar el PR, desplegar primero el código Vercel y enseguida las reglas Firebase, porque las reglas nuevas bloquean el QC client-side de `main` actual.
+- **Último hito:** PR draft #1 abierto; CI y Vercel preview correctos, incluida la nueva API de QC probada de extremo a extremo.
+- **Calidad verificada:** TypeScript, lint, 23 pruebas unitarias, 21 pruebas de reglas, build, auditoría runtime, dos ejecuciones de CI y preview Vercel.
+- **Siguiente paso recomendado:** revisar el PR y decidir qué hacer con las tres cuentas demo históricas. Tras aprobar el PR, desplegar primero el código Vercel y enseguida las reglas Firebase, porque las reglas nuevas bloquean el QC client-side de `main` actual.
 - **No repetir ni asumir:** no hace falta recrear los datos E2E ya eliminados; no afirmar que la estabilización está en producción hasta comprobar `main` y Vercel.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
@@ -118,6 +118,7 @@ Resultado del 2026-08-08:
 - Auditoría completa: 5 moderadas, todas transitivas de `firebase-tools`; el aviso alto y los moderados parcheables fueron eliminados sin `--force`.
 - E2E público local y Vercel preview: GET sanitizado, firma/aprobación parcial, monto 210, un `declinedItem`, tracker correcto y limpieza confirmada.
 - E2E autenticado en Vercel preview: ADMIN tester registró 40.25 + 59.75, mantuvo `Ready` tras el abono, cambió a `Delivered` al completar, rechazó un tercer pago con 409, derivó el actor del token y limpió el job con 404 verificado.
+- E2E QC en Vercel preview: una orden rechazada volvió a `Repair`; otra con pago completo previo solo pasó a `Delivered` después de completar el checklist. Ambas conservaron actor y auditoría del servidor, y sus dos documentos desechables fueron eliminados con `not found` verificado.
 - Aislamiento privilegiado: el mismo ADMIN recibió 403 al intentar `/api/admin/users`.
 - E2E SUPER_ADMIN en Vercel preview: se creó un taller descartable con exactamente una cuenta Auth, un perfil ADMIN y un `settings` sin `tempPassword`; el borrado posterior eliminó Auth/perfil/settings, dejó 0 jobs/inventario/movimientos y restauró los conteos originales.
 - El contenido del panel SUPER_ADMIN se monta únicamente después de que `ProtectedRoute` confirma sesión y rol, evitando consultas Firestore transitorias antes de inicializar Auth.
@@ -148,11 +149,10 @@ Existen tres cuentas Auth demo históricas cuya contraseña anterior fue públic
 
 ## Pendiente antes de producción
 
-1. Publicar el bloque de revisión, abrir PR draft y esperar CI/preview Vercel.
-2. Ejecutar E2E autenticado de `/api/jobs/[id]/qc` en preview con datos descartables y limpieza comprobada.
-3. Aprobar/integrar a `main` y observar hasta que el deploy Vercel con la ruta QC esté listo.
-4. Inmediatamente después, desplegar `firestore.rules` desde `web/` al proyecto verificado `mechanic-app-7d459`. No desplegarlas antes del código: el `main` anterior todavía actualiza QC desde el cliente.
-5. Ejecutar smoke test de login, recepción, diagnóstico, cotización, aprobación, reparación, QC, pago y entrega.
+1. Revisar el PR draft #1 y resolver la decisión pendiente sobre las cuentas demo históricas.
+2. Aprobar/integrar a `main` y observar hasta que el deploy Vercel con la ruta QC esté listo.
+3. Inmediatamente después, desplegar `firestore.rules` desde `web/` al proyecto verificado `mechanic-app-7d459`. No desplegarlas antes del código: el `main` anterior todavía actualiza QC desde el cliente.
+4. Ejecutar smoke test de login, recepción, diagnóstico, cotización, aprobación, reparación, QC, pago y entrega.
 6. Decidir si se deshabilitan/eliminan las tres cuentas demo Auth históricas.
 7. Resolver o aceptar explícitamente los avisos moderados dev-only de `npm audit` sin aplicar un downgrade automático de `firebase-tools`.
 
