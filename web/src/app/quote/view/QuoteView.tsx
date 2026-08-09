@@ -2,58 +2,79 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { getJobById, updateJob, getWorkshopSettings } from "@/lib/db";
+import Image from "next/image";
 import { toast } from "sonner";
-import { Job } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Wand2, AlertTriangle, CheckCircle, Download, Wrench, ShieldCheck, Coins, ClipboardList, Clock } from "lucide-react";
+import { AlertTriangle, CheckCircle, Download, Wrench, ShieldCheck, Coins, ClipboardList, Clock } from "lucide-react";
 import { generateQuotePDF } from "@/lib/pdf";
 import { VehicleIcon } from "@/components/ui/vehicle-icons";
+import { SignatureCanvas } from "@/components/SignatureCanvas";
+import type { PublicQuote, PublicQuoteJob } from "@/lib/public-quote";
 
 export default function ClientQuoteView() {
   const { t } = useLanguage();
   const searchParams = useSearchParams();
   const jobId = searchParams.get("id") as string;
   
-  const [job, setJob] = useState<Job | null>(null);
-  const [settings, setSettings] = useState<any>(null);
+  const [quote, setQuote] = useState<PublicQuote | null>(null);
   const [loading, setLoading] = useState(true);
   const [approvals, setApprovals] = useState<Record<string, boolean>>({});
+  const [approvalSignature, setApprovalSignature] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [errorNotFound, setErrorNotFound] = useState(false);
 
+  const job = quote?.job ?? null;
+  const settings = quote?.settings ?? null;
+  const configuredCurrencySymbol = settings?.currencySymbol || "$";
+  const currencySymbol = `${configuredCurrencySymbol}${/[A-Za-z./]$/.test(configuredCurrencySymbol) ? " " : ""}`;
+  const formatMoney = (amount: number) => `${currencySymbol}${amount.toFixed(2)}`;
+
   useEffect(() => {
-    if (jobId) {
-      fetchJob();
+    let active = true;
+
+    async function fetchQuote() {
+      if (!jobId) {
+        setErrorNotFound(true);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const response = await fetch(`/api/public/quotes/${encodeURIComponent(jobId)}`, {
+          cache: "no-store",
+        });
+        if (!response.ok) throw new Error("QUOTE_NOT_FOUND");
+
+        const fetched = (await response.json()) as PublicQuote;
+        if (!active) return;
+        setQuote(fetched);
+        setErrorNotFound(false);
+
+        const initialApprovals: Record<string, boolean> = {};
+        fetched.job.inspectionItems.forEach((item) => {
+          if (typeof item.price === "number" && item.price > 0) {
+            initialApprovals[item.id] = item.approved !== false;
+          }
+        });
+        setApprovals(initialApprovals);
+      } catch {
+        if (active) setErrorNotFound(true);
+      } finally {
+        if (active) setLoading(false);
+      }
     }
+
+    void fetchQuote();
+    return () => {
+      active = false;
+    };
   }, [jobId]);
 
-  const fetchJob = async () => {
-    setLoading(true);
-    const fetched = await getJobById(jobId);
-    if (fetched) {
-      setJob(fetched);
-      const fetchedSettings = await getWorkshopSettings(fetched.workshopId);
-      setSettings(fetchedSettings);
-      
-      const initialApprovals: Record<string, boolean> = {};
-      fetched.inspectionItems?.forEach(item => {
-        if (item.price) {
-            initialApprovals[item.id] = true;
-        }
-      });
-      setApprovals(initialApprovals);
-    } else {
-      setErrorNotFound(true);
-      const fetchedSettings = await getWorkshopSettings("demo-workshop");
-      setSettings(fetchedSettings);
-    }
-    setLoading(false);
-  };
-
-  const getLaborCost = (j: Job) => {
+  const getLaborCost = (j: PublicQuoteJob) => {
     const partsTotal = j.inspectionItems?.reduce((acc, item) => acc + (item.price || 0), 0) || 0;
     return Math.max(0, j.totalEstimate - partsTotal);
   };
@@ -80,29 +101,31 @@ export default function ClientQuoteView() {
 
   const handleAcceptQuote = async () => {
     if (!job) return;
+    if (!approvalSignature) {
+      toast.warning("Confirma tu firma antes de aprobar la cotizaci\u00f3n.");
+      return;
+    }
 
-    const finalAmount = calculateTotalToPay();
-    const updatedInspectionItems = job.inspectionItems.map(item => ({
-      ...item,
-      approved: item.price ? (approvals[item.id] !== false) : true
-    }));
-
+    setSubmitting(true);
     try {
-      await updateJob(job.id, {
-        inspectionItems: updatedInspectionItems,
-        approvedAmount: finalAmount,
-        status: "Approved"
-      }, "client", "Quote Approved");
+      const response = await fetch(`/api/public/quotes/${encodeURIComponent(job.id)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          decisions: approvals,
+          signatureBase64: approvalSignature,
+        }),
+      });
+      if (!response.ok) throw new Error("No se pudo guardar la aprobación.");
+
+      const updated = (await response.json()) as PublicQuote;
+      setQuote(updated);
       toast.success(t('thankYouApproval'));
-      setJob({ ...job, status: "Approved", approvedAmount: finalAmount, inspectionItems: updatedInspectionItems });
     } catch (e) {
       toast.error("Error saving: " + e);
+    } finally {
+      setSubmitting(false);
     }
-  };
-
-  const handleAutoApprove = () => {
-    if (!job) return;
-    handleAcceptQuote();
   };
 
   if (loading) {
@@ -123,10 +146,10 @@ export default function ClientQuoteView() {
 
   const statusToTrackIndex: Record<string, number> = {
     Approved: 0,
-    Repair: 1,
-    QC: 2,
-    Ready: 3,
-    Delivered: 4,
+    Repair: 0,
+    QC: 1,
+    Ready: 2,
+    Delivered: 3,
   };
   const TRACK_STEPS = [
     { label: "Reparación", icon: Wrench, desc: "Los técnicos trabajan en tu vehículo." },
@@ -139,7 +162,6 @@ export default function ClientQuoteView() {
   if (isPostApproval) {
     const trackIdx = statusToTrackIndex[job.status] ?? 0;
     const isDelivered = job.status === 'Delivered';
-    const currencySymbol = settings?.currencySymbol || '$';
     return (
       <div className="min-h-screen page-bg flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-md space-y-5">
@@ -151,7 +173,7 @@ export default function ClientQuoteView() {
               </div>
             </div>
             {settings?.logoUrl && (
-              <img src={settings.logoUrl} alt="Logo" className="w-auto h-12 mx-auto mb-3 object-contain rounded" />
+              <Image src={settings.logoUrl} alt="Logo" width={240} height={80} unoptimized className="w-auto h-12 mx-auto mb-3 object-contain rounded" />
             )}
             <h1 className="text-2xl font-bold text-emerald-400">
               {isDelivered ? '¡Vehículo Entregado!' : '¡Cotización Aprobada!'}
@@ -179,7 +201,6 @@ export default function ClientQuoteView() {
               {TRACK_STEPS.map((step, idx) => {
                 const Icon = step.icon;
                 const isDone = idx < trackIdx;
-                const isCurrent = idx === trackIdx - (isDelivered ? 0 : 0);
                 return (
                   <div key={step.label} className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-300 ${
                     isDone
@@ -217,7 +238,6 @@ export default function ClientQuoteView() {
           {/* Vehicle info */}
           <div className="glass-panel rounded-xl border border-border/30 px-4 py-3 flex items-center justify-between text-xs text-muted-foreground">
             <span>Vehículo: <span className="text-foreground font-mono font-medium">{job.vehicleId}</span></span>
-            <span>Cliente: <span className="text-foreground font-medium">{job.clientId}</span></span>
           </div>
         </div>
       </div>
@@ -229,8 +249,8 @@ export default function ClientQuoteView() {
       
       <div className="w-full max-w-3xl space-y-6">
         <header className="mb-8 text-center flex flex-col items-center justify-center">
-          {settings?.logoUrl && <img src={settings.logoUrl} alt="Logo" className="w-auto h-20 mb-4 object-contain rounded-md" />}
-          <h1 className="text-3xl font-bold text-amber-500">{settings?.name ? `${settings.name} - ` : ''}{t('clientPortal')}</h1>
+          {settings?.logoUrl && <Image src={settings.logoUrl} alt="Logo" width={320} height={120} unoptimized className="w-auto h-20 mb-4 object-contain rounded-md" />}
+          <h1 className="text-3xl font-bold text-amber-500">{settings?.workshopName ? `${settings.workshopName} - ` : ''}{t('clientPortal')}</h1>
           <p className="text-muted-foreground text-sm mt-2">{settings?.address || t('clientSubtitle')}</p>
           <div className="mt-4 p-2 bg-secondary dark:bg-zinc-950 inline-flex items-center rounded-full px-4 border border-border gap-1.5">
             <VehicleIcon type={job.vehicleType} className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -240,15 +260,11 @@ export default function ClientQuoteView() {
         </header>
 
         <Card className="glass-panel">
-          <CardHeader className="flex flex-row justify-between items-start">
+          <CardHeader>
             <div>
               <CardTitle className="text-xl">{t('repairDetails')}</CardTitle>
               <CardDescription>{t('repairDetailsDesc')}</CardDescription>
             </div>
-            <Button onClick={handleAutoApprove} variant="outline" className="text-amber-500 dark:text-amber-400 border-amber-500/50 hover:bg-amber-50 dark:hover:bg-amber-950/30">
-              <Wand2 className="w-4 h-4 mr-2" />
-              {t('autoApproveDemo')}
-            </Button>
           </CardHeader>
           <CardContent className="space-y-6">
             
@@ -279,7 +295,7 @@ export default function ClientQuoteView() {
                           <div className="flex flex-wrap gap-2 mt-3">
                             {item.mediaUrls.map((url, idx) => (
                               <a href={url} target="_blank" rel="noopener noreferrer" key={idx}>
-                                <img src={url} alt="Evidencia de daño" className="w-16 h-16 object-cover rounded border border-border shadow-sm hover:scale-105 transition-transform" />
+                                <Image src={url} alt="Evidencia de daño" width={64} height={64} unoptimized className="w-16 h-16 object-cover rounded border border-border shadow-sm hover:scale-105 transition-transform" />
                               </a>
                             ))}
                           </div>
@@ -288,7 +304,7 @@ export default function ClientQuoteView() {
                       
                       {hasPrice ? (
                         <div className="flex items-center gap-4 w-full md:w-auto mt-2 md:mt-0">
-                            <span className="text-emerald-600 dark:text-emerald-400 font-mono text-xl w-24 text-right">${item.price?.toFixed(2)}</span>
+                            <span className="text-emerald-600 dark:text-emerald-400 font-mono text-xl w-28 text-right">{formatMoney(item.price ?? 0)}</span>
                             <button 
                               onClick={() => toggleApproval(item.id)}
                               className={`px-4 py-2 rounded font-bold transition-all w-28 text-center ${isApproved ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30' : 'bg-secondary dark:bg-zinc-800 text-muted-foreground border border-border hover:bg-accent'}`}
@@ -311,17 +327,17 @@ export default function ClientQuoteView() {
                 <div className="w-full md:w-1/2 space-y-2">
                     <div className="flex justify-between text-muted-foreground">
                         <span>{t('shopCharges')}</span>
-                        <span className="font-mono">${getLaborCost(job).toFixed(2)}</span>
+                        <span className="font-mono">{formatMoney(getLaborCost(job))}</span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
                         <span>{t('partsVariable')}</span>
-                        <span className="font-mono">${(calculateTotalToPay() - getLaborCost(job)).toFixed(2)}</span>
+                        <span className="font-mono">{formatMoney(calculateTotalToPay() - getLaborCost(job))}</span>
                     </div>
                 </div>
                 <div className="text-right">
                   <p className="text-muted-foreground text-sm mb-1">{t('totalToPay')}</p>
                   <p className="text-4xl font-mono text-amber-500 font-bold drop-shadow-[0_0_10px_rgba(245,158,11,0.4)]">
-                    ${calculateTotalToPay().toFixed(2)}
+                    {formatMoney(calculateTotalToPay())}
                   </p>
                 </div>
             </div>
@@ -329,12 +345,28 @@ export default function ClientQuoteView() {
           </CardContent>
         </Card>
 
+        <Card className="glass-panel">
+          <CardHeader>
+            <CardTitle className="text-xl">Firma de aprobaci&oacute;n</CardTitle>
+            <CardDescription>
+              Confirma que autorizas los trabajos seleccionados por el monto mostrado.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SignatureCanvas
+              onConfirm={setApprovalSignature}
+              onClear={() => setApprovalSignature(null)}
+            />
+          </CardContent>
+        </Card>
+
         <Button 
           size="lg" 
-          className="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold h-14 shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all mt-6"
+          className="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold h-14 shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all mt-6 disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none"
           onClick={handleAcceptQuote}
+          disabled={!approvalSignature || submitting}
         >
-          {t('acceptQuoteBtn')}
+          {submitting ? "Registrando aprobaci\u00f3n\u2026" : t('acceptQuoteBtn')}
         </Button>
 
         <Button

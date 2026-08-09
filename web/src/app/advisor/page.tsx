@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { updateJob, registerPayment } from "@/lib/db";
+import Image from "next/image";
+import { updateJob, registerPayment, type PaymentInput } from "@/lib/db";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Job } from "@/types";
@@ -20,10 +21,20 @@ import { sendQuoteEmail, isEmailConfigured } from "@/lib/email";
 import { useRealtimeJobs } from "@/hooks/useRealtimeJobs";
 import { WorkflowStepper } from "@/components/WorkflowStepper";
 import { VehicleIcon } from "@/components/ui/vehicle-icons";
+import { toDate } from "@/lib/dates";
+import { getPayableTotal } from "@/lib/transactions";
+
+const payableTotal = (job: Job) => {
+  try {
+    return getPayableTotal(job);
+  } catch {
+    return 0;
+  }
+};
 
 export default function AdvisorQuoteBuilder() {
   const { t } = useLanguage();
-  const { user, userProfile, workshopSettings } = useAuth();
+  const { user, workshopSettings } = useAuth();
   const { jobs, loading } = useRealtimeJobs({ statuses: ["Approval", "Approved", "Repair"] });
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [prices, setPrices] = useState<Record<string, number>>({});
@@ -33,7 +44,7 @@ export default function AdvisorQuoteBuilder() {
   const [copied, setCopied] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState("");
-  const [paymentType, setPaymentType] = useState("Efectivo");
+  const [paymentType, setPaymentType] = useState<PaymentInput["method"]>("Efectivo");
   
   const router = useRouter();
 
@@ -56,6 +67,10 @@ export default function AdvisorQuoteBuilder() {
 
   const handleSaveQuote = async () => {
     if (!selectedJob) return;
+    if (!user?.uid) {
+      toast.error("La sesión no está disponible.");
+      return;
+    }
 
     const updatedInspectionItems = selectedJob.inspectionItems.map(item => ({
       ...item,
@@ -67,7 +82,7 @@ export default function AdvisorQuoteBuilder() {
         inspectionItems: updatedInspectionItems,
         totalEstimate: calculateTotal(),
         status: "Approval"  // Awaiting client approval — NOT Ready
-      }, user?.uid || "unknown", "Quote Generated");
+      }, user.uid, "Quote Generated");
       // Keep the full job object for PDF/WhatsApp/Email
       const savedJob: Job = {
         ...selectedJob,
@@ -93,7 +108,11 @@ export default function AdvisorQuoteBuilder() {
 
     // Calculate current balance
     const paid = (selectedJob.payments || []).reduce((s, p) => s + p.amount, 0);
-    const balance = (selectedJob.approvedAmount || selectedJob.totalEstimate || 0) - paid;
+    const balance = payableTotal(selectedJob) - paid;
+    if (balance <= 0) {
+      toast.info("La orden ya tiene el pago completo registrado.");
+      return;
+    }
 
     let appliedAmount = amount;
     let change = 0;
@@ -109,36 +128,28 @@ export default function AdvisorQuoteBuilder() {
     }
 
     try {
-      await registerPayment(selectedJob.id, {
+      const result = await registerPayment(selectedJob.id, {
         amount: appliedAmount,
-        method: paymentType as any,
-        actorId: user?.uid || "unknown"
+        method: paymentType,
       });
 
       // Update local state to reflect payment in real-time
-      const updatedPayments = [...(selectedJob.payments || []), {
-        id: Math.random().toString(36).substring(7),
-        amount: appliedAmount,
-        method: paymentType as any,
-        date: new Date().toISOString(),
-        actorId: user?.uid || "unknown"
-      }];
-      
-      const newPaid = updatedPayments.reduce((s, p) => s + p.amount, 0);
-      const isFullyPaid = newPaid >= (selectedJob.approvedAmount || selectedJob.totalEstimate || 0);
+      const updatedPayments = [...(selectedJob.payments || []), result.payment];
 
       setSelectedJob({
         ...selectedJob,
         payments: updatedPayments,
-        status: isFullyPaid ? 'Delivered' : selectedJob.status
+        status: result.status,
       });
 
       setPaymentAmount("");
       if (change > 0) {
         toast.success(`✅ Pago completo. Vuelto a entregar: ${workshopSettings?.currencySymbol || "$"}${change.toFixed(2)}`);
       } else {
-        toast.success(appliedAmount >= balance
-          ? `✅ Pago completo. Vehículo marcado como Entregado.`
+        toast.success(result.remainingBalance === 0
+          ? result.status === "Delivered"
+            ? "✅ Pago completo. Vehículo marcado como Entregado."
+            : "✅ Pago completo registrado. La entrega se cerrará después de aprobar QC."
           : `💰 Abono registrado: ${workshopSettings?.currencySymbol || "$"}${appliedAmount.toFixed(2)}`
         );
       }
@@ -254,9 +265,9 @@ export default function AdvisorQuoteBuilder() {
   }
 
   // Helper: human-readable relative date
-  const formatJobTime = (date: any): string => {
-    if (!date) return '';
-    const d = date instanceof Date ? date : (date?.toDate ? date.toDate() : new Date(date));
+  const formatJobTime = (date: unknown): string => {
+    const d = toDate(date);
+    if (!d) return '';
     const now = new Date();
     const diffMs = now.getTime() - d.getTime();
     const diffMin = Math.floor(diffMs / 60000);
@@ -337,7 +348,7 @@ export default function AdvisorQuoteBuilder() {
                           variant="outline"
                           className={`shrink-0 text-[10px] px-1.5 py-0 font-medium ${statusColor}`}
                         >
-                          {t(`status${job.status}` as any) || job.status}
+                          {t(`status${job.status}`) || job.status}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2 mt-1.5">
@@ -392,7 +403,7 @@ export default function AdvisorQuoteBuilder() {
                               ${item.status === 'Critical' ? 'bg-orange-600' : ''}
                               ${item.status === 'Recommended' ? 'bg-blue-600' : ''}
                             `}>
-                              {t(`status${item.status}` as any) || item.status}
+                              {t(`status${item.status}`) || item.status}
                             </Badge>
                           </div>
                           {item.notes && <p className="text-sm text-muted-foreground bg-secondary dark:bg-black/50 p-2 rounded border-l-2 border-border">{item.notes}</p>}
@@ -400,7 +411,7 @@ export default function AdvisorQuoteBuilder() {
                             <div className="flex flex-wrap gap-2 mt-3">
                               {item.mediaUrls.map((url, idx) => (
                                 <a href={url} target="_blank" rel="noopener noreferrer" key={idx}>
-                                  <img src={url} alt="Evidencia" className="w-16 h-16 object-cover rounded border border-border shadow-sm hover:scale-105 transition-transform" />
+                                  <Image src={url} alt="Evidencia" width={64} height={64} unoptimized className="w-16 h-16 object-cover rounded border border-border shadow-sm hover:scale-105 transition-transform" />
                                 </a>
                               ))}
                             </div>
@@ -478,7 +489,7 @@ export default function AdvisorQuoteBuilder() {
                     </CardTitle>
                     <CardDescription>Vehículo: {selectedJob.vehicleId}</CardDescription>
                   </div>
-                  <Badge className="bg-emerald-600">{t(`status${selectedJob.status}` as any) || selectedJob.status}</Badge>
+                  <Badge className="bg-emerald-600">{t(`status${selectedJob.status}`) || selectedJob.status}</Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -488,14 +499,14 @@ export default function AdvisorQuoteBuilder() {
                     <div>
                       <p className="text-sm text-muted-foreground">Monto Total Aprobado</p>
                       <p className="text-3xl font-mono text-emerald-600 dark:text-emerald-400 font-bold">
-                        {workshopSettings?.currencySymbol || "$"}{(selectedJob.approvedAmount || selectedJob.totalEstimate || 0).toFixed(2)}
+                        {workshopSettings?.currencySymbol || "$"}{payableTotal(selectedJob).toFixed(2)}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-muted-foreground">Saldo Pendiente</p>
                       <p className="text-2xl font-mono text-amber-500 font-bold">
                         {workshopSettings?.currencySymbol || ""}{(
-                          (selectedJob.approvedAmount || selectedJob.totalEstimate || 0) - 
+                          payableTotal(selectedJob) -
                           (selectedJob.payments?.reduce((acc, p) => acc + p.amount, 0) || 0)
                         ).toFixed(2)}
                       </p>
@@ -503,8 +514,8 @@ export default function AdvisorQuoteBuilder() {
                   </div>
                   {workshopSettings && workshopSettings.taxRate > 0 && (
                     <div className="text-xs text-muted-foreground border-t border-border/30 pt-2 flex justify-between">
-                      <span>Subtotal (Neto): {workshopSettings.currencySymbol}{((selectedJob.approvedAmount || selectedJob.totalEstimate || 0) / (1 + workshopSettings.taxRate / 100)).toFixed(2)}</span>
-                      <span>{workshopSettings.taxName} ({workshopSettings.taxRate}%): {workshopSettings.currencySymbol}{((selectedJob.approvedAmount || selectedJob.totalEstimate || 0) - (selectedJob.approvedAmount || selectedJob.totalEstimate || 0) / (1 + workshopSettings.taxRate / 100)).toFixed(2)}</span>
+                      <span>Subtotal (Neto): {workshopSettings.currencySymbol}{(payableTotal(selectedJob) / (1 + workshopSettings.taxRate / 100)).toFixed(2)}</span>
+                      <span>{workshopSettings.taxName} ({workshopSettings.taxRate}%): {workshopSettings.currencySymbol}{(payableTotal(selectedJob) - payableTotal(selectedJob) / (1 + workshopSettings.taxRate / 100)).toFixed(2)}</span>
                     </div>
                   )}
                 </div>
@@ -551,7 +562,7 @@ export default function AdvisorQuoteBuilder() {
                       <select 
                         className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm"
                         value={paymentType}
-                        onChange={(e) => setPaymentType(e.target.value)}
+                        onChange={(e) => setPaymentType(e.target.value as PaymentInput["method"])}
                       >
                         <option value="Efectivo">Efectivo 💵</option>
                         <option value="Tarjeta">Tarjeta 💳</option>

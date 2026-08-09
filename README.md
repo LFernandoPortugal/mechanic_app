@@ -1,57 +1,55 @@
-# Mechanic App - Setup Instructions
+# SGA — Sistema de Gestión Automotriz
 
-Este proyecto utiliza una arquitectura de 3 capas (Directivas, Orquestación y Ejecución). Sigue estos pasos para completar la configuración:
+Aplicación multitenant para gestionar recepción, diagnóstico, cotización, aprobación, reparación, control de calidad, pagos y entrega de vehículos.
 
-## 1. Variables de Entorno
+## Arquitectura real
 
-1. Copia el archivo `.env.example` y cámbialo a `.env`.
-2. Agrega tu `GEMINI_API_KEY` o cualquier otro token necesario.
+- La aplicación Next.js 16 está en `web/`.
+- Vercel aloja la web y sus Route Handlers; `main` es la rama oficial de producción.
+- Firebase se usa para Authentication, Cloud Firestore y reglas. **No se usa Firebase Hosting.**
+- Las APIs privilegiadas usan Vercel OIDC y Google Workload Identity Federation, sin claves JSON estáticas.
 
-## 2. Google Cloud Platform (Opcional - Para Google Sheets/Slides)
+El flujo canónico es:
 
-Si planeas enviar los reportes a servicios de Google:
-
-1. Ve a [Google Cloud Console](https://console.cloud.google.com/).
-2. Crea un proyecto y habilita las APIs de **Google Sheets** y **Google Drive**.
-3. Crea una **Cuenta de Servicio** o **Credenciales OAuth 2.0**.
-4. Descarga el archivo JSON de credenciales y guárdalo como `credentials.json` en la raíz de este proyecto.
-5. El archivo `token.json` se generará automáticamente la primera vez que ejecutes un script que requiera autenticación.
-
-## 3. Instalación de Dependencias
-
-Asegúrate de tener instalado Python y las librerías necesarias:
-
-```bash
-pip install python-dotenv google-auth google-auth-oauthlib google-api-python-client
+```text
+Reception → Diagnosis → Approval → Approved → Repair → QC → Ready → Delivered
 ```
 
-## Arquitectura de Referencia
+El portal público vigente usa `/quote/view?id=JOB_ID`; los documentos completos de Firestore no son públicos.
 
-Consulta [gemini.md](gemini.md) para entender cómo opera el sistema entre las directivas y los scripts de ejecución.
+## Desarrollo
 
-## Ejecución del Prototipo Web
+```powershell
+cd web
+npm.cmd ci
+Copy-Item .env.example .env.local
+npm.cmd run dev
+```
 
-El prototipo de la aplicación se encuentra en la carpeta `web`. Para visualizar el avance:
+Completa las variables descritas en `web/.env.example` sin commitear `.env.local`.
 
-1. Abre una terminal y navega a la carpeta `web`:
-   ```bash
-   cd web
-   ```
-2. Instala las dependencias (solo la primera vez):
-   ```bash
-   npm install
-   ```
-3. Ejecuta el servidor de desarrollo:
-   ```bash
-   npm run dev
-   ```
-4. Abre tu navegador en [http://localhost:3000](http://localhost:3000)
+Los scripts administrativos Python viven en `execution/`, usan `execution/requirements.txt` y son vista previa por defecto. Requieren `--project mechanic-app-7d459`, `--apply` y confirmación explícita antes de cualquier escritura.
 
-## Flujo de Usuario (Demo)
+## Verificación
 
-Para probar la plataforma completa SGA, sigue este flujo natural de trabajo:
+Desde `web/`:
 
-1. **Recepción (`/reception`)**: Registra un nuevo vehículo completando los datos del cliente, auditoría de fluidos y firma el ingreso. Esto creará un Trabajo ("Job").
-2. **Técnico (`/technician`)**: Abre el panel del mecánico. Selecciona el trabajo recién ingresado. Registra fallas y revisiones dando clic a "Log Item". Al finalizar toda su inspección, dale "Submit Diagnosis" para mandarla a cotizar.
-3. **Asesor / Cotizador (`/advisor`)**: El asesor verá la orden pendiente, revisará las fallas del técnico y le pondrá el precio por repuesto. Luego sumará una mano de obra global, para presionar "Generar Cotización".
-4. **Vista Cliente / Firma (`/client`)**: El cliente verá su vehículo y la cotización de forma interactiva. Podrá apagar o encender las reparaciones (viendo el total ajustarse en tiempo real) y finalmente "Aceptar Cotización y Firmar Electrónicamente".
+```powershell
+npx.cmd tsc --noEmit --incremental false
+npm.cmd run lint
+npm.cmd run test:all
+npm.cmd run build
+npm.cmd audit --omit=dev
+```
+
+Las pruebas de reglas requieren Java 21. Un build correcto no sustituye las pruebas unitarias y de Firestore Rules.
+
+## Despliegue
+
+- Un merge/push a `main` activa el despliegue oficial en Vercel.
+- Las ramas de trabajo son previews no oficiales.
+- Firebase CLI se limita al recurso solicitado, por ejemplo reglas o índices, y debe ejecutarse desde `web/` tras confirmar `web/.firebaserc` y el proyecto `mechanic-app-7d459`.
+
+## Guía para personas y agentes
+
+Empieza por `AGENTS.md`; allí está el orden obligatorio de lectura, las restricciones de seguridad y cómo distinguir producción, preview, Vercel y Firebase. El estado técnico más reciente vive en `docs/AI-Handoff.md` y el flujo funcional en `docs/mechanic-app/Flujo-de-Trabajo.md`.

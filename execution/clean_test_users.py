@@ -1,15 +1,21 @@
 """
 clean_test_users.py — Remueve cuentas de prueba antiguas e inicializa las nuevas cuentas demo aisladas.
 
-Uso:
-  python execution/clean_test_users.py
+Uso seguro:
+  # Vista previa (no conecta ni modifica datos)
+  python execution/clean_test_users.py --project mechanic-app-7d459
+
+  # Ejecución explícita; la contraseña se toma del entorno y nunca del código
+  set DEMO_ACCOUNT_PASSWORD=<contraseña-fuerte>
+  python execution/clean_test_users.py --project mechanic-app-7d459 --apply
 
 Requisitos:
   pip install firebase-admin python-dotenv
 """
 
-import sys
+import argparse
 import os
+import sys
 from pathlib import Path
 
 # Load env variables
@@ -29,17 +35,31 @@ except ImportError:
     sys.exit(1)
 
 
-def init_firebase():
+EXPECTED_PROJECT_ID = "mechanic-app-7d459"
+
+
+def init_firebase(project_id):
     if firebase_admin._apps:
-        return firebase_admin.get_app()
+        app = firebase_admin.get_app()
+        if app.project_id != project_id:
+            raise RuntimeError(
+                f"Firebase ya está inicializado para '{app.project_id}', no para '{project_id}'."
+            )
+        return app
 
     sa_path = os.environ.get("FIREBASE_SERVICE_ACCOUNT_PATH") or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
     if sa_path and Path(sa_path).exists():
         cred = credentials.Certificate(sa_path)
-        return firebase_admin.initialize_app(cred)
+        app = firebase_admin.initialize_app(cred, {"projectId": project_id})
+        if app.project_id != project_id:
+            raise RuntimeError(f"Proyecto Firebase inesperado: {app.project_id}")
+        return app
 
     try:
-        return firebase_admin.initialize_app()
+        app = firebase_admin.initialize_app(options={"projectId": project_id})
+        if app.project_id != project_id:
+            raise RuntimeError(f"Proyecto Firebase inesperado: {app.project_id}")
+        return app
     except Exception as e:
         print(f"[ERROR] Error al inicializar Firebase: {e}")
         sys.exit(1)
@@ -98,8 +118,43 @@ def delete_user(email):
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description="Recreate isolated demo users with explicit safeguards."
+    )
+    parser.add_argument("--project", required=True, help="Exact Firebase project ID")
+    parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="Apply the destructive delete/recreate operation (default: preview only)",
+    )
+    args = parser.parse_args()
+
+    if args.project != EXPECTED_PROJECT_ID:
+        print(
+            f"[ERROR] Proyecto rechazado. Este repositorio espera exactamente '{EXPECTED_PROJECT_ID}'."
+        )
+        sys.exit(1)
+
+    if not args.apply:
+        print(f"[DRY RUN] Proyecto: {args.project}")
+        print("[DRY RUN] Se eliminarían y recrearían las cuentas demo declaradas en el script.")
+        print("[DRY RUN] No se conectó a Firebase y no se modificó ningún dato.")
+        return
+
+    demo_password = os.environ.get("DEMO_ACCOUNT_PASSWORD", "")
+    if len(demo_password) < 12:
+        print("[ERROR] DEMO_ACCOUNT_PASSWORD debe tener al menos 12 caracteres.")
+        sys.exit(1)
+
+    confirmation = input(
+        f"Escribe 'RECREATE DEMO USERS IN {args.project}' para continuar: "
+    )
+    if confirmation != f"RECREATE DEMO USERS IN {args.project}":
+        print("Operación cancelada.")
+        return
+
     print("[INFO] Conectando a Firebase...")
-    init_firebase()
+    init_firebase(args.project)
     db = firestore.client()
     print("[OK] Conectado.\n")
 
@@ -118,14 +173,14 @@ def main():
         if uid:
             db.collection("users").document(uid).delete()
 
-    print("\n[INFO] Fase 2: Sembrando nuevas cuentas demo limpias (Password: password123)...")
+    print("\n[INFO] Fase 2: Sembrando nuevas cuentas demo con una contraseña externa...")
     for acc in DEMO_ACCOUNTS:
         email = acc["email"]
         try:
             # Create in Auth
             user = auth.create_user(
                 email=email,
-                password="password123",
+                password=demo_password,
                 display_name=acc["displayName"]
             )
             print(f"  [OK] Creado en Auth: {email} (UID: {user.uid})")

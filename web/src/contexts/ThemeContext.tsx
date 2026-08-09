@@ -17,13 +17,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Check local storage or system preference on mount
     const savedTheme = localStorage.getItem("app-theme") as Theme | null;
-    if (savedTheme) {
-      setTheme(savedTheme);
-    } else if (window.matchMedia("(prefers-color-scheme: light)").matches) {
-       // Our default was dark, but if they explicitly prefer light, we set it.
-       // Actually, for mechanics, dark looks cooler, but let's respect OS if they forced light.
-      setTheme("light");
-    }
+    const preferredTheme = savedTheme
+      || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    const frame = window.requestAnimationFrame(() => setTheme(preferredTheme));
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {

@@ -1,104 +1,389 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // ─── Users Collection ──────────────────────────────
-    match /users/{userId} {
-      allow read: if request.auth != null && (
-        request.auth.uid == userId || 
-        isSuperAdmin() ||
-        (isAdmin() && isSameWorkshop(resource.data))
-      );
-      allow create: if request.auth != null && (request.auth.uid == userId || isSuperAdmin());
-      allow update: if request.auth != null && (
-        (
-          request.auth.uid == userId && 
-          request.resource.data.roles == resource.data.roles && 
-          request.resource.data.workshopId == resource.data.workshopId
-        ) ||
-        isSuperAdmin() ||
-        (
-          isAdmin() && 
-          resource.data.workshopId == getUserData().workshopId && 
-          request.resource.data.workshopId == resource.data.workshopId && 
-          !request.resource.data.roles.hasAny(['SUPER_ADMIN'])
-        )
-      );
-      allow delete: if request.auth != null && (isSuperAdmin() || (isAdmin() && isSameWorkshop(resource.data) && isResetAllowed(resource.data.workshopId)));
-    }
 
-    // ─── Jobs Collection ───────────────────────────────
-    match /jobs/{jobId} {
-      allow read: if request.auth != null && isSameWorkshop(resource.data);
-      allow create: if request.auth != null && (isSuperAdmin() || (request.resource.data.workshopId == getUserData().workshopId && hasAnyRole(['ADMIN', 'RECEPTION'])));
-      allow update: if request.auth != null && (isSuperAdmin() || (isSameWorkshop(resource.data) && request.resource.data.workshopId == getUserData().workshopId && (
-        isAdmin() || 
-        (hasAnyRole(['RECEPTION']) && resource.data.status == 'Reception') ||
-        (hasAnyRole(['TECHNICIAN']) && resource.data.status in ['Reception', 'Diagnosis', 'Approved', 'Repair']) ||
-        (hasAnyRole(['ADVISOR']))
-      )));
-      allow delete: if request.auth != null && (isSuperAdmin() || (isAdmin() && isSameWorkshop(resource.data) && isResetAllowed(resource.data.workshopId)));
-
-      allow get: if resource.data.status in ['Approval', 'Approved', 'Repair', 'QC', 'Ready', 'Delivered'];
-      allow update: if resource.data.status in ['Approval', 'Ready'] 
-                     && request.resource.data.status == 'Approved'
-                     && request.resource.data.workshopId == resource.data.workshopId;
-    }
-
-    // ─── Inventory Collection ──────────────────────────
-    match /inventory/{itemId} {
-      allow read: if request.auth != null && (isSuperAdmin() || (isSameWorkshop(resource.data) && hasAnyRole(['ADMIN', 'ADVISOR'])));
-      allow create: if request.auth != null && (isSuperAdmin() || (request.resource.data.workshopId == getUserData().workshopId && isAdmin()));
-      allow update: if request.auth != null && (isSuperAdmin() || (isSameWorkshop(resource.data) && request.resource.data.workshopId == getUserData().workshopId && isAdmin()));
-      allow delete: if request.auth != null && (isSuperAdmin() || (isAdmin() && isSameWorkshop(resource.data) && isResetAllowed(resource.data.workshopId)));
-    }
-
-    // ─── Inventory Transactions Collection ─────────────
-    match /inventory_transactions/{txId} {
-      allow read: if request.auth != null && (isSuperAdmin() || (isSameWorkshop(resource.data) && isAdmin()));
-      allow create: if request.auth != null && (isSuperAdmin() || (request.resource.data.workshopId == getUserData().workshopId && hasAnyRole(['ADMIN', 'ADVISOR'])));
-      allow update: if request.auth != null && (isSuperAdmin() || (isSameWorkshop(resource.data) && request.resource.data.workshopId == getUserData().workshopId && isAdmin()));
-      allow delete: if request.auth != null && (isSuperAdmin() || (isAdmin() && isSameWorkshop(resource.data) && isResetAllowed(resource.data.workshopId)));
-    }
-
-    // ─── Settings Collection ───────────────────────────
-    match /settings/{documentId} {
-      allow get: if true;
-      allow list: if request.auth != null;
-      allow write: if request.auth != null && (isSuperAdmin() || (isAdmin() && getUserData().workshopId == documentId));
-    }
-
-    // ─── Helper Functions ──────────────────────────────
     function hasUserProfile() {
-      return request.auth != null && exists(/databases/$(database)/documents/users/$(request.auth.uid));
-    }
-
-    function isWorkshopActive(workshopId) {
-      return workshopId == "demo-workshop" || workshopId == "master-control" || exists(/databases/$(database)/documents/settings/$(workshopId));
+      return request.auth != null
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    function isSameWorkshop(resourceData) {
-      return isSuperAdmin() || (hasUserProfile() && resourceData.workshopId == getUserData().workshopId && isWorkshopActive(resourceData.workshopId));
+    function isSuperAdmin() {
+      return hasUserProfile()
+        && getUserData().roles is list
+        && getUserData().roles.hasAny(['SUPER_ADMIN']);
     }
 
     function isAdmin() {
-      return isSuperAdmin() || (hasUserProfile() && getUserData().roles.hasAny(['ADMIN']));
-    }
-
-    function isSuperAdmin() {
-      return request.auth != null && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().roles.hasAny(['SUPER_ADMIN']);
+      return isSuperAdmin()
+        || (hasUserProfile()
+          && getUserData().roles is list
+          && getUserData().roles.hasAny(['ADMIN']));
     }
 
     function hasAnyRole(roles) {
-      return isSuperAdmin() || (hasUserProfile() && getUserData().roles.hasAny(roles));
+      return isSuperAdmin()
+        || (hasUserProfile()
+          && getUserData().roles is list
+          && getUserData().roles.hasAny(roles));
+    }
+
+    function isWorkshopActive(workshopId) {
+      let settingsPath = /databases/$(database)/documents/settings/$(workshopId);
+      return workshopId == 'master-control'
+        || (exists(settingsPath)
+          && (!('disabled' in get(settingsPath).data)
+            || get(settingsPath).data.disabled != true)
+          && (!('expiresAtTimestamp' in get(settingsPath).data)
+            || get(settingsPath).data.expiresAtTimestamp > request.time));
+    }
+
+    function isSameWorkshop(resourceData) {
+      return isSuperAdmin()
+        || (hasUserProfile()
+          && resourceData.workshopId == getUserData().workshopId
+          && isWorkshopActive(resourceData.workshopId));
+    }
+
+    function isValidWorkshopRoles(roles) {
+      return roles is list
+        && roles.size() > 0
+        && roles.size() <= 4
+        && roles.hasOnly(['ADMIN', 'RECEPTION', 'TECHNICIAN', 'ADVISOR']);
     }
 
     function isResetAllowed(workshopId) {
-      return exists(/databases/$(database)/documents/settings/$(workshopId)) && get(/databases/$(database)/documents/settings/$(workshopId)).data.allowResetData == true;
+      let settingsPath = /databases/$(database)/documents/settings/$(workshopId);
+      return exists(settingsPath)
+        && get(settingsPath).data.allowResetData == true;
+    }
+
+    function changesOnly(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
+    }
+
+    function hasOperationalRole(roles) {
+      return isAdmin() || hasAnyRole(roles);
+    }
+
+    function hasValidAuditAppend() {
+      return resource.data.auditLog is list
+        && request.resource.data.auditLog is list
+        && request.resource.data.auditLog.size() == resource.data.auditLog.size() + 1
+        && request.resource.data.auditLog.hasAll(resource.data.auditLog)
+        && request.resource.data.auditLog[request.resource.data.auditLog.size() - 1].keys()
+          .hasOnly(['timestamp', 'action', 'actorId', 'notes'])
+        && request.resource.data.auditLog[request.resource.data.auditLog.size() - 1].timestamp is timestamp
+        && request.resource.data.auditLog[request.resource.data.auditLog.size() - 1].action is string
+        && request.resource.data.auditLog[request.resource.data.auditLog.size() - 1].notes is string
+        && request.resource.data.auditLog[request.resource.data.auditLog.size() - 1].actorId == request.auth.uid;
+    }
+
+    function isValidJobCreate() {
+      return request.resource.data.keys().hasOnly([
+          'workshopId', 'vehicleId', 'vin', 'make', 'model', 'color',
+          'vehicleType', 'clientId', 'clientPhone', 'clientEmail', 'advisorId',
+          'status', 'symptoms', 'receptionImages', 'signatureBase64',
+          'fluidAudit', 'valuables', 'startingFuel', 'odometer',
+          'inspectionItems', 'declinedItems', 'totalEstimate',
+          'approvedAmount', 'createdAt', 'auditLog'
+        ])
+        && request.resource.data.status == 'Reception'
+        && request.resource.data.advisorId == request.auth.uid
+        && request.resource.data.vehicleId is string
+        && request.resource.data.clientId is string
+        && request.resource.data.inspectionItems is list
+        && request.resource.data.inspectionItems.size() == 0
+        && request.resource.data.declinedItems is list
+        && request.resource.data.declinedItems.size() == 0
+        && request.resource.data.totalEstimate == 0
+        && request.resource.data.approvedAmount == 0
+        && request.resource.data.auditLog is list
+        && request.resource.data.auditLog.size() == 1
+        && request.resource.data.auditLog[0].actorId == request.auth.uid;
+    }
+
+    function isTechnicianJobUpdate() {
+      return (
+          (resource.data.status == 'Reception'
+            && request.resource.data.status == 'Diagnosis'
+            && request.resource.data.technicianId == request.auth.uid
+            && changesOnly(['technicianId', 'status', 'auditLog']))
+          || (resource.data.status == 'Diagnosis'
+            && request.resource.data.status == 'Approval'
+            && request.resource.data.inspectionItems is list
+            && request.resource.data.inspectionItems.size() <= 200
+            && changesOnly(['inspectionItems', 'status', 'auditLog']))
+          || (resource.data.status == 'Approved'
+            && request.resource.data.status == 'Repair'
+            && changesOnly(['status', 'auditLog']))
+          || (resource.data.status == 'Repair'
+            && request.resource.data.status == 'QC'
+            && changesOnly(['status', 'auditLog']))
+        );
+    }
+
+    function isAdvisorQuoteUpdate() {
+      return resource.data.status == 'Approval'
+        && request.resource.data.status == 'Approval'
+        && request.resource.data.inspectionItems is list
+        && request.resource.data.inspectionItems.size() <= 200
+        && request.resource.data.totalEstimate is number
+        && request.resource.data.totalEstimate >= 0
+        && request.resource.data.approvedAmount == resource.data.approvedAmount
+        && changesOnly(['inspectionItems', 'totalEstimate', 'auditLog']);
+    }
+
+    function isValidMovementShape(movement) {
+      return movement.keys().hasOnly([
+          'workshopId', 'itemId', 'itemName', 'type', 'quantity',
+          'unitPrice', 'jobId', 'notes', 'actorId', 'createdAt'
+        ])
+        && movement.itemId is string
+        && movement.itemName is string
+        && movement.type in ['IN', 'OUT', 'ADJUSTMENT']
+        && movement.quantity is int
+        && ((movement.type == 'ADJUSTMENT' && movement.quantity >= -1)
+          || (movement.type in ['IN', 'OUT'] && movement.quantity > 0))
+        && movement.unitPrice is number
+        && movement.unitPrice >= 0
+        && movement.actorId == request.auth.uid
+        && movement.createdAt is timestamp;
+    }
+
+    function isValidInventoryTransaction(txId) {
+      let itemPath = /databases/$(database)/documents/inventory/$(request.resource.data.itemId);
+      return isValidMovementShape(request.resource.data)
+        && existsAfter(itemPath)
+        && getAfter(itemPath).data.workshopId == request.resource.data.workshopId
+        && getAfter(itemPath).data.lastMovementId == txId;
+    }
+
+    function isValidStockUpdate(itemId) {
+      let movementPath = /databases/$(database)/documents/inventory_transactions/$(request.resource.data.lastMovementId);
+      let movement = getAfter(movementPath).data;
+      return changesOnly(['stock', 'lastMovementId', 'updatedAt'])
+        && (!('lastMovementId' in resource.data)
+          || request.resource.data.lastMovementId != resource.data.lastMovementId)
+        && !exists(movementPath)
+        && existsAfter(movementPath)
+        && isValidMovementShape(movement)
+        && movement.itemId == itemId
+        && movement.itemName == resource.data.name
+        && movement.workshopId == resource.data.workshopId
+        && request.resource.data.updatedAt is timestamp
+        && ((movement.type == 'ADJUSTMENT'
+            && request.resource.data.stock == movement.quantity)
+          || (movement.type == 'IN'
+            && resource.data.stock != -1
+            && request.resource.data.stock == resource.data.stock + movement.quantity)
+          || (movement.type == 'OUT'
+            && resource.data.stock != -1
+            && request.resource.data.stock == resource.data.stock - movement.quantity
+            && request.resource.data.stock >= 0));
+    }
+
+    function isValidInventoryShape(item) {
+      return item.keys().hasOnly([
+          'workshopId', 'sku', 'name', 'category', 'unitPrice', 'costPrice',
+          'stock', 'minStock', 'unit', 'description', 'supplier',
+          'lastMovementId', 'createdAt', 'updatedAt'
+        ])
+        && item.workshopId is string
+        && item.sku is string
+        && item.name is string
+        && item.category is string
+        && item.unitPrice is number
+        && item.unitPrice >= 0
+        && (!('costPrice' in item) || (item.costPrice is number && item.costPrice >= 0))
+        && item.stock is int
+        && item.stock >= -1
+        && item.minStock is int
+        && item.minStock >= 0
+        && item.unit is string
+        && (!('description' in item) || item.description is string)
+        && (!('supplier' in item) || item.supplier is string)
+        && (!('lastMovementId' in item) || item.lastMovementId is string)
+        && item.createdAt is timestamp
+        && item.updatedAt is timestamp;
+    }
+
+    function hasValidInitialMovement(itemId) {
+      let item = request.resource.data;
+      let movementPath = /databases/$(database)/documents/inventory_transactions/$(item.lastMovementId);
+      let movement = getAfter(movementPath).data;
+      return item.lastMovementId is string
+        && !exists(movementPath)
+        && existsAfter(movementPath)
+        && isValidMovementShape(movement)
+        && movement.type == 'IN'
+        && movement.quantity == item.stock
+        && movement.itemId == itemId
+        && movement.itemName == item.name
+        && movement.workshopId == item.workshopId;
+    }
+
+    function isValidInventoryCreate(itemId) {
+      let item = request.resource.data;
+      return isValidInventoryShape(item)
+        && ((item.stock > 0 && hasValidInitialMovement(itemId))
+          || (item.stock <= 0 && !('lastMovementId' in item)));
+    }
+
+    match /users/{userId} {
+      allow get: if request.auth != null && (
+        request.auth.uid == userId
+        || isSuperAdmin()
+        || (isAdmin() && isSameWorkshop(resource.data))
+      );
+      allow list: if request.auth != null && (
+        isSuperAdmin()
+        || (isAdmin() && isSameWorkshop(resource.data))
+      );
+
+      // Profiles are provisioned only by the authenticated server endpoint.
+      allow create: if false;
+
+      allow update: if request.auth != null && (
+        isSuperAdmin()
+        || (
+          request.auth.uid == userId
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['displayName', 'updatedAt'])
+        )
+        || (
+          isAdmin()
+          && isSameWorkshop(resource.data)
+          && request.resource.data.workshopId == resource.data.workshopId
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.email == resource.data.email
+          && isValidWorkshopRoles(request.resource.data.roles)
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['displayName', 'roles', 'updatedAt'])
+        )
+      );
+
+      allow delete: if request.auth != null && (
+        isSuperAdmin()
+        || (isAdmin()
+          && isSameWorkshop(resource.data)
+          && isResetAllowed(resource.data.workshopId))
+      );
+    }
+
+    match /jobs/{jobId} {
+      // Public quote access goes through the sanitized Vercel API route.
+      allow read: if request.auth != null && isSameWorkshop(resource.data);
+      allow create: if request.auth != null && (
+        isSuperAdmin()
+        || (request.resource.data.workshopId == getUserData().workshopId
+          && isWorkshopActive(request.resource.data.workshopId)
+          && hasOperationalRole(['RECEPTION'])
+          && isValidJobCreate())
+      );
+      allow update: if request.auth != null && (
+        isSuperAdmin()
+        || (hasUserProfile()
+          && resource.data.workshopId == getUserData().workshopId
+          && isWorkshopActive(resource.data.workshopId)
+          && request.resource.data.workshopId == resource.data.workshopId
+          && request.resource.data.createdAt == resource.data.createdAt
+          && hasValidAuditAppend()
+          && (
+            (getUserData().roles.hasAny(['ADMIN', 'TECHNICIAN'])
+              && isTechnicianJobUpdate())
+            || (getUserData().roles.hasAny(['ADMIN', 'ADVISOR'])
+              && isAdvisorQuoteUpdate())
+          ))
+      );
+      allow delete: if request.auth != null && (
+        isSuperAdmin()
+        || (isAdmin()
+          && isSameWorkshop(resource.data)
+          && isResetAllowed(resource.data.workshopId))
+      );
+    }
+
+    match /inventory/{itemId} {
+      allow read: if request.auth != null && (
+        isSuperAdmin()
+        || (isSameWorkshop(resource.data) && hasAnyRole(['ADMIN', 'ADVISOR']))
+      );
+      allow create: if request.auth != null && (
+        isSuperAdmin()
+        || (request.resource.data.workshopId == getUserData().workshopId
+          && isWorkshopActive(request.resource.data.workshopId)
+          && isAdmin()
+          && isValidInventoryCreate(itemId))
+      );
+      allow update: if request.auth != null && (
+        (isSuperAdmin() || (isSameWorkshop(resource.data) && isAdmin()))
+        && request.resource.data.workshopId == resource.data.workshopId
+        && (
+          (changesOnly([
+              'sku', 'name', 'category', 'unitPrice', 'costPrice', 'minStock',
+              'unit', 'description', 'supplier', 'updatedAt'
+            ])
+            && isValidInventoryShape(request.resource.data))
+          || isValidStockUpdate(itemId)
+        )
+      );
+      allow delete: if request.auth != null && (
+        isSuperAdmin()
+        || (isAdmin()
+          && isSameWorkshop(resource.data)
+          && isResetAllowed(resource.data.workshopId))
+      );
+    }
+
+    match /inventory_transactions/{txId} {
+      allow read: if request.auth != null && (
+        isSuperAdmin()
+        || (isSameWorkshop(resource.data) && isAdmin())
+      );
+      allow create: if request.auth != null
+        && isValidInventoryTransaction(txId)
+        && (
+          isSuperAdmin()
+          || (request.resource.data.workshopId == getUserData().workshopId
+          && isWorkshopActive(request.resource.data.workshopId)
+          && isAdmin())
+        );
+      allow update: if false;
+      allow delete: if request.auth != null && (
+        isSuperAdmin()
+        || (isAdmin()
+          && isSameWorkshop(resource.data)
+          && isResetAllowed(resource.data.workshopId))
+      );
+    }
+
+    match /settings/{workshopId} {
+      allow get: if request.auth != null && (
+        isSuperAdmin()
+        || (hasUserProfile() && getUserData().workshopId == workshopId)
+      );
+      allow list: if isSuperAdmin();
+      allow create, delete: if isSuperAdmin();
+      allow update: if isSuperAdmin() || (
+        isAdmin()
+        && getUserData().workshopId == workshopId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'workshopName',
+          'logoUrl',
+          'address',
+          'phone',
+          'taxId',
+          'termsAndConditions',
+          'demoMode',
+          'currencySymbol',
+          'taxRate',
+          'taxName'
+        ])
+      );
     }
   }
 }

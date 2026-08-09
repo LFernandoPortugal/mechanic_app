@@ -64,6 +64,8 @@ export const uploadJobImage = async (
   _jobId: string,
   _type: "reception" | "evidence" | "logo"
 ): Promise<string> => {
+  void _jobId;
+  void _type;
   return compressImageToBase64(file);
 };
 
@@ -75,6 +77,7 @@ export const uploadSignature = async (
   dataUrl: string,
   _jobId: string
 ): Promise<string> => {
+  void _jobId;
   // The SignatureCanvas already provides a base64 data URL — just return it.
   return dataUrl;
 };

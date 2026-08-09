@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { ROLE_ROUTE_MAP, ROLE_META } from '@/types';
-import { ClipboardList, Wrench, DollarSign, BarChart3, ShieldCheck, Package, ArrowRight, Settings, Users2, Wand2, Crown } from 'lucide-react';
+import { ROLE_BADGE_CLASSES, ROLE_ROUTE_MAP, ROLE_META } from '@/types';
+import { ClipboardList, Wrench, DollarSign, BarChart3, ShieldCheck, Package, ArrowRight, Settings, Users2, Crown } from 'lucide-react';
 import { useRealtimeJobs } from '@/hooks/useRealtimeJobs';
 
 interface NavCard {
@@ -152,7 +152,7 @@ export default function Home() {
           {userProfile.roles.map((role) => {
             const meta = ROLE_META[role];
             return (
-              <span key={role} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${meta.color}`}>
+              <span key={role} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border ${ROLE_BADGE_CLASSES[role]}`}>
                 {meta.emoji} {t(meta.labelKey)}
               </span>
             );
@@ -279,16 +279,16 @@ export default function Home() {
           <Link
             key={card.href}
             href={card.href}
-            className={`group relative flex flex-col p-6 glass-panel rounded-2xl ${card.hoverBorder} ${card.hoverShadow} transition-all duration-300 hover:-translate-y-1`}
+            className={`group relative flex flex-col p-5 sm:p-6 glass-panel rounded-2xl ${card.hoverBorder} ${card.hoverShadow} transition-all duration-300 hover:-translate-y-1`}
           >
             {/* Icon badge */}
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-5 transition-all duration-300 ${card.accentBg}`}>
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 sm:mb-5 transition-all duration-300 ${card.accentBg}`}>
               {card.icon}
             </div>
             <h2 className={`text-lg font-bold mb-2 ${card.titleColor}`}>{t(card.titleKey)}</h2>
             <p className="text-muted-foreground text-sm flex-1 leading-relaxed">{t(card.descKey)}</p>
             {/* Arrow */}
-            <div className={`mt-4 flex items-center gap-1 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${card.titleColor}`}>
+            <div className={`mt-4 flex items-center gap-1 text-xs font-medium opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 ${card.titleColor}`}>
               <span>Abrir</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </div>
@@ -298,14 +298,14 @@ export default function Home() {
         {hasRole('ADMIN') && (
           <Link
             href="/admin/users"
-            className="group relative flex flex-col p-6 glass-panel rounded-2xl hover:border-purple-500/60 hover:shadow-[0_0_30px_rgba(168,85,247,0.12)] transition-all duration-300 hover:-translate-y-1"
+            className="group relative flex flex-col p-5 sm:p-6 glass-panel rounded-2xl hover:border-purple-500/60 hover:shadow-[0_0_30px_rgba(168,85,247,0.12)] transition-all duration-300 hover:-translate-y-1"
           >
             <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-5 bg-purple-500/10 group-hover:bg-purple-500/20 transition-all duration-300">
               <ShieldCheck className="w-7 h-7 text-purple-400" />
             </div>
             <h2 className="text-lg font-bold mb-2 text-purple-400">{t('userManagement')}</h2>
             <p className="text-muted-foreground text-sm flex-1 leading-relaxed">{t('userManagementDesc')}</p>
-            <div className="mt-4 flex items-center gap-1 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-purple-400">
+            <div className="mt-4 flex items-center gap-1 text-xs font-medium opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200 text-purple-400">
               <span>Abrir</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </div>

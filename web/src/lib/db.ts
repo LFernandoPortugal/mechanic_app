@@ -1,100 +1,16 @@
-import { db } from "./firebase";
-import { collection, addDoc, Timestamp, doc, getDoc, getDocs, query, where, updateDoc, deleteDoc, setDoc, orderBy, limit as firestoreLimit, increment } from "firebase/firestore";
-import { Job, UserProfile, UserRole, AuditLog, InventoryItem, InventoryTransaction, StockMovementType, WorkshopSettings } from "@/types";
+import { auth, db } from "./firebase";
+import { arrayUnion, collection, addDoc, Timestamp, doc, getDoc, getDocs, query, where, updateDoc, deleteDoc, setDoc, orderBy, runTransaction } from "firebase/firestore";
+import { Job, UserProfile, UserRole, InventoryItem, InventoryTransaction, StockMovementType, WorkshopSettings } from "@/types";
+import { calculateStockAfterMovement } from "@/lib/transactions";
 
 // ─── User Profile Functions (RBAC) ──────────────────────
-
-export async function createUserProfile(uid: string, email: string, displayName?: string, roles?: UserRole[], workshopIdOverride?: string) {
-  try {
-    const userRef = doc(db, "users", uid);
-    const existing = await getDoc(userRef);
-    if (existing.exists()) return existing.data() as UserProfile;
-
-    const normalizedEmail = email.trim().toLowerCase();
-
-    let finalWorkshopId = "demo-workshop";
-    let finalRoles = roles || ['RECEPTION'];
-    let isAuthorized = false;
-
-    // If workshopId is explicitly provided (e.g. from super-admin panel), skip auto-lookup
-    if (workshopIdOverride) {
-      finalWorkshopId = workshopIdOverride;
-      finalRoles = roles || ['ADMIN'];
-      isAuthorized = true;
-    } else {
-      // Auto-promote to SUPER_ADMIN if email matches configuration
-      const superAdminEmail = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL || "admin@demo.com").trim().toLowerCase();
-      if (normalizedEmail === superAdminEmail) {
-        finalRoles = ['SUPER_ADMIN'];
-        finalWorkshopId = "master-control";
-        isAuthorized = true;
-      } else {
-        // Auto-onboard if this email is registered in settings as a workshop admin
-        try {
-          const settingsRef = collection(db, "settings");
-          const q = query(settingsRef, where("adminEmail", "==", normalizedEmail));
-          const snap = await getDocs(q);
-          if (!snap.empty) {
-            const settingsDoc = snap.docs[0];
-            finalWorkshopId = settingsDoc.id;
-            finalRoles = ['ADMIN'];
-            isAuthorized = true;
-            console.log(`Auto-onboarding invited admin: ${normalizedEmail} for workshop ${finalWorkshopId}`);
-          } else {
-            console.log(`Auto-onboarding check failed: email ${normalizedEmail} not found in settings adminEmail list`);
-          }
-        } catch (inviteError) {
-          console.error("Error checking invitations:", inviteError);
-        }
-      }
-
-      // Check if it's a demo account
-      const demoEmails = ["demo-admin@demo.com", "tech@demo.com", "reception@demo.com", "advisor@demo.com"];
-      if (demoEmails.includes(normalizedEmail)) {
-        isAuthorized = true;
-      }
-
-      if (!isAuthorized) {
-        throw new Error(`Acceso denegado: Esta cuenta (${normalizedEmail}) no está registrada como autorizada o su acceso fue revocado.`);
-      }
-    }
-
-    const profile: Omit<UserProfile, 'createdAt' | 'updatedAt'> & { createdAt: any; updatedAt: any } = {
-      uid,
-      email: normalizedEmail,
-      displayName: displayName || normalizedEmail.split('@')[0],
-      roles: finalRoles,
-      workshopId: finalWorkshopId,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
-    };
-    await setDoc(userRef, profile);
-    return profile as unknown as UserProfile;
-  } catch (e) {
-    console.error("Error creating user profile:", e);
-    throw e;
-  }
-}
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   try {
     const userRef = doc(db, "users", uid);
     const snap = await getDoc(userRef);
     if (snap.exists()) {
-      const data = snap.data() as UserProfile;
-      const superAdminEmail = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAIL || "admin@demo.com";
-      if (data.email === superAdminEmail && !data.roles.includes('SUPER_ADMIN')) {
-        console.log(`Auto-promoting existing user: ${data.email} to SUPER_ADMIN`);
-        const updatedRoles: UserRole[] = ['SUPER_ADMIN'];
-        await updateDoc(userRef, { 
-          roles: updatedRoles, 
-          workshopId: "master-control", 
-          updatedAt: Timestamp.now() 
-        });
-        data.roles = updatedRoles;
-        data.workshopId = "master-control";
-      }
-      return data;
+      return snap.data() as UserProfile;
     }
     return null;
   } catch (e) {
@@ -141,41 +57,6 @@ export async function getUsersByWorkshop(workshopId: string): Promise<UserProfil
   } catch (e) {
     console.error("Error fetching users by workshop:", e);
     return [];
-  }
-}
-
-export async function deleteUserProfile(uid: string) {
-  try {
-    const userRef = doc(db, "users", uid);
-    await deleteDoc(userRef);
-  } catch (e) {
-    console.error("Error deleting user profile:", e);
-    throw e;
-  }
-}
-
-export async function createWorkshopTester(workshopId: string, name: string, adminEmail: string, expiresAt: string, tempPassword?: string) {
-  try {
-    const settingsRef = doc(db, "settings", workshopId);
-    await setDoc(settingsRef, {
-      workshopName: name,
-      logoUrl: "",
-      address: "Av. Principal 123",
-      phone: "",
-      taxId: "",
-      termsAndConditions: "Al firmar, el cliente autoriza los diagnósticos y reparaciones presupuestadas.",
-      demoMode: true,
-      currencySymbol: "$",
-      taxRate: 0,
-      taxName: "IVA",
-      expiresAt,
-      allowResetData: false,
-      adminEmail,
-      tempPassword: tempPassword || "",
-    });
-  } catch (e) {
-    console.error("Error creating workshop tester:", e);
-    throw e;
   }
 }
 
@@ -227,18 +108,12 @@ export async function getAssignedJobs(workshopId: string) {
 export async function assignTechnician(jobId: string, technicianUid: string) {
   try {
     const jobRef = doc(db, "jobs", jobId);
-    const jobSnap = await getDoc(jobRef);
-    if (!jobSnap.exists()) throw new Error("Job not found");
-
-    const existingLog = jobSnap.data()?.auditLog || [];
-
     await updateDoc(jobRef, {
       technicianId: technicianUid,
       status: "Diagnosis",
-      auditLog: [
-        ...existingLog,
+      auditLog: arrayUnion(
         createAuditEntry("Diagnóstico Iniciado", technicianUid, "Técnico asignado"),
-      ],
+      ),
     });
   } catch (e) {
     console.error("Error assigning technician:", e);
@@ -266,16 +141,13 @@ export async function updateJob(jobId: string, data: Partial<Job>, actorId?: str
   try {
     const jobRef = doc(db, "jobs", jobId);
 
-    const updateData: any = { ...data };
+    const updateData: Record<string, unknown> = { ...data };
 
     // If an audit entry is requested, append it
     if (actorId && auditAction) {
-      const jobSnap = await getDoc(jobRef);
-      const existingLog = jobSnap.exists() ? (jobSnap.data()?.auditLog || []) : [];
-      updateData.auditLog = [
-        ...existingLog,
+      updateData.auditLog = arrayUnion(
         createAuditEntry(auditAction, actorId, `Status → ${data.status || 'updated'}`),
-      ];
+      );
     }
 
     await updateDoc(jobRef, updateData);
@@ -370,25 +242,37 @@ export async function addInventoryItem(
   actorId: string
 ): Promise<string> {
   try {
-    const ref = await addDoc(collection(db, "inventory"), {
-      ...item,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
-    });
-    // Record the initial stock as an IN movement
-    if (item.stock > 0) {
-      await recordStockMovement({
-        itemId: ref.id,
-        itemName: item.name,
-        type: 'IN',
-        quantity: item.stock,
-        unitPrice: item.costPrice ?? item.unitPrice,
-        notes: 'Stock inicial',
-        actorId,
-        workshopId: item.workshopId,
+    calculateStockAfterMovement(0, "ADJUSTMENT", item.stock);
+
+    const itemRef = doc(collection(db, "inventory"));
+    const movementRef = doc(collection(db, "inventory_transactions"));
+
+    await runTransaction(db, async (transaction) => {
+      const now = Timestamp.now();
+      transaction.set(itemRef, {
+        ...item,
+        ...(item.stock > 0 ? { lastMovementId: movementRef.id } : {}),
+        createdAt: now,
+        updatedAt: now,
       });
-    }
-    return ref.id;
+
+      // The item already starts with this quantity; only record the audit movement.
+      if (item.stock > 0) {
+        transaction.set(movementRef, {
+          itemId: itemRef.id,
+          itemName: item.name,
+          type: "IN",
+          quantity: item.stock,
+          unitPrice: item.costPrice ?? item.unitPrice,
+          notes: "Stock inicial",
+          actorId,
+          workshopId: item.workshopId,
+          createdAt: now,
+        });
+      }
+    });
+
+    return itemRef.id;
   } catch (e) {
     console.error("Error adding inventory item:", e);
     throw e;
@@ -397,8 +281,7 @@ export async function addInventoryItem(
 
 export async function updateInventoryItem(
   itemId: string,
-  data: Partial<Omit<InventoryItem, 'id' | 'createdAt'>>,
-  actorId?: string
+  data: Partial<Omit<InventoryItem, 'id' | 'createdAt'>>
 ): Promise<void> {
   try {
     await updateDoc(doc(db, "inventory", itemId), {
@@ -438,22 +321,32 @@ export interface StockMovementInput {
  */
 export async function recordStockMovement(movement: StockMovementInput): Promise<void> {
   try {
-    // 1. Write the transaction log entry
-    await addDoc(collection(db, "inventory_transactions"), {
-      ...movement,
-      createdAt: Timestamp.now(),
-    });
-
-    // 2. Update the item stock atomically
     const itemRef = doc(db, "inventory", movement.itemId);
-    if (movement.type === 'IN') {
-      await updateDoc(itemRef, { stock: increment(movement.quantity), updatedAt: Timestamp.now() });
-    } else if (movement.type === 'OUT') {
-      await updateDoc(itemRef, { stock: increment(-movement.quantity), updatedAt: Timestamp.now() });
-    } else {
-      // ADJUSTMENT: caller should pass the new absolute stock as quantity
-      await updateDoc(itemRef, { stock: movement.quantity, updatedAt: Timestamp.now() });
-    }
+    const movementRef = doc(collection(db, "inventory_transactions"));
+
+    await runTransaction(db, async (transaction) => {
+      const itemSnap = await transaction.get(itemRef);
+      if (!itemSnap.exists()) throw new Error("Inventory item not found");
+
+      const itemData = itemSnap.data() as Partial<InventoryItem>;
+      if (itemData.workshopId !== movement.workshopId) {
+        throw new Error("El artículo no pertenece al taller indicado.");
+      }
+
+      const nextStock = calculateStockAfterMovement(
+        itemData.stock ?? 0,
+        movement.type,
+        movement.quantity,
+      );
+      const now = Timestamp.now();
+
+      transaction.update(itemRef, {
+        stock: nextStock,
+        lastMovementId: movementRef.id,
+        updatedAt: now,
+      });
+      transaction.set(movementRef, { ...movement, createdAt: now });
+    });
   } catch (e) {
     console.error("Error recording stock movement:", e);
     throw e;
@@ -485,69 +378,70 @@ export interface PaymentInput {
   amount: number;
   method: 'Efectivo' | 'Tarjeta' | 'Transferencia' | 'Yape/Plin';
   reference?: string;
-  actorId: string;
+}
+
+export interface PaymentResult {
+  payment: NonNullable<Job["payments"]>[number];
+  status: Job["status"];
+  totalPaid: number;
+  remainingBalance: number;
 }
 
 /**
  * Registers a payment against a Job.
- * Appends to `payments[]`, updates `approvedAmount`, and optionally
- * transitions status to `Delivered` when the balance is cleared.
+ * The authenticated server appends to `payments[]` and only transitions a
+ * Ready order to Delivered when the balance is cleared.
  */
-export async function registerPayment(jobId: string, payment: PaymentInput): Promise<void> {
-  try {
-    const jobRef = doc(db, "jobs", jobId);
-    const jobSnap = await getDoc(jobRef);
-    if (!jobSnap.exists()) throw new Error("Job not found");
+export async function registerPayment(jobId: string, payment: PaymentInput): Promise<PaymentResult> {
+  const currentUser = auth.currentUser;
+  if (!currentUser) throw new Error("La sesi\u00f3n no est\u00e1 disponible.");
 
-    const data = jobSnap.data();
-    const existingPayments: any[] = data?.payments || [];
-    const totalEstimate: number = data?.totalEstimate || 0;
-    // approvedAmount = what the client agreed to pay (set when client approves quote).
-    // If it hasn't been set yet, fall back to totalEstimate.
-    const clientApprovedTotal: number = data?.approvedAmount && data.approvedAmount > 0
-      ? data.approvedAmount
-      : totalEstimate;
-
-    const newPayment = {
-      id: `pay_${Date.now()}`,
-      amount: payment.amount,
-      method: payment.method,
-      reference: payment.reference || "",
-      date: new Date().toISOString(),
-      actorId: payment.actorId,
-    };
-
-    const allPayments = [...existingPayments, newPayment];
-    const totalPaid = allPayments.reduce((sum: number, p: any) => sum + p.amount, 0);
-    const isFullyPaid = totalPaid >= clientApprovedTotal;
-
-    const existingLog: any[] = data?.auditLog || [];
-    const auditEntry = createAuditEntry(
-      "Pago Registrado",
-      payment.actorId,
-      `${payment.method} $${payment.amount.toFixed(2)}${payment.reference ? ` — Ref: ${payment.reference}` : ""}`
-    );
-
-    const updates: any = {
-      payments: allPayments,
-      // Do NOT overwrite approvedAmount here — it's set by the client approval flow
-      auditLog: [...existingLog, auditEntry],
-    };
-
-    if (isFullyPaid && (data?.status === "Ready" || data?.status === "QC")) {
-      updates.status = "Delivered";
-      updates.auditLog = [
-        ...existingLog,
-        auditEntry,
-        createAuditEntry("Entregado", payment.actorId, "Pago total — vehículo entregado"),
-      ];
-    }
-
-    await updateDoc(jobRef, updates);
-  } catch (e) {
-    console.error("Error registering payment:", e);
-    throw e;
+  const token = await currentUser.getIdToken();
+  const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}/payments`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payment),
+  });
+  const result = await response.json().catch(() => ({})) as Partial<PaymentResult> & { error?: string };
+  if (!response.ok) throw new Error(result.error || "No se pudo registrar el pago.");
+  if (!result.payment || !result.status || typeof result.totalPaid !== "number") {
+    throw new Error("El servidor devolvió una respuesta de pago incompleta.");
   }
+  return result as PaymentResult;
+}
+
+export interface QualityControlInput {
+  outcome: "pass" | "fail";
+  notes?: string;
+}
+
+export async function submitQualityControl(
+  jobId: string,
+  input: QualityControlInput,
+): Promise<{ status: Job["status"]; remainingBalance?: number }> {
+  const currentUser = auth.currentUser;
+  if (!currentUser) throw new Error("La sesión no está disponible.");
+
+  const token = await currentUser.getIdToken();
+  const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}/qc`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+  const result = await response.json().catch(() => ({})) as {
+    error?: string;
+    status?: Job["status"];
+    remainingBalance?: number;
+  };
+  if (!response.ok) throw new Error(result.error || "No se pudo registrar el control de calidad.");
+  if (!result.status) throw new Error("El servidor devolvió una respuesta de QC incompleta.");
+  return { status: result.status, remainingBalance: result.remainingBalance };
 }
 
 export async function getJobsByStatus(workshopId: string, statuses: string[]): Promise<Job[]> {
@@ -588,7 +482,7 @@ export async function getWorkshopSettings(workshopId: string): Promise<WorkshopS
       phone: "+51 900 123 456",
       taxId: "20123456789", // Default Peruvian RUC
       termsAndConditions: "Al firmar, el cliente autoriza los diagnósticos y reparaciones presupuestadas.",
-      demoMode: true,
+      demoMode: false,
       currencySymbol: "S/.",
       taxRate: 18,
       taxName: "IGV"
@@ -604,12 +498,7 @@ export async function getWorkshopSettings(workshopId: string): Promise<WorkshopS
       } as WorkshopSettings;
     }
 
-    // Only fallback to defaults if workshopId is the built-in 'demo-workshop'
-    if (workshopId === "demo-workshop") {
-      return defaults;
-    }
-
-    // For any deleted or non-existent workshop, return null to signify it does not exist
+    // Deleted or non-existent workshops are never synthesized client-side.
     return null;
   } catch (e) {
     console.error("Error fetching settings:", e);
@@ -620,7 +509,11 @@ export async function getWorkshopSettings(workshopId: string): Promise<WorkshopS
 export async function updateWorkshopSettings(workshopId: string, data: Partial<WorkshopSettings>) {
   try {
     const docRef = doc(db, "settings", workshopId);
-    await setDoc(docRef, data, { merge: true });
+    const payload: Record<string, unknown> = { ...data };
+    if (data.expiresAt) {
+      payload.expiresAtTimestamp = Timestamp.fromDate(new Date(data.expiresAt));
+    }
+    await setDoc(docRef, payload, { merge: true });
   } catch (e) {
     console.error("Error updating settings:", e);
     throw e;
@@ -681,13 +574,24 @@ export async function resetWorkshopData(workshopId: string): Promise<{ jobsDelet
   }
 }
 
-export async function getAllWorkshops(): Promise<{ id: string; workshopName: string; expiresAt?: string; allowResetData?: boolean; adminEmail?: string; [key: string]: any }[]> {
+export type WorkshopListItem = Partial<WorkshopSettings> & {
+  id: string;
+  workshopName: string;
+  name?: string;
+};
+
+export async function getAllWorkshops(): Promise<WorkshopListItem[]> {
   try {
     const ref = collection(db, "settings");
     const snap = await getDocs(ref);
-    const workshops: any[] = [];
-    snap.forEach((doc) => {
-      workshops.push({ id: doc.id, ...doc.data() });
+    const workshops: WorkshopListItem[] = [];
+    snap.forEach((document) => {
+      const data = document.data() as Partial<WorkshopSettings> & { name?: string };
+      workshops.push({
+        ...data,
+        id: document.id,
+        workshopName: data.workshopName || data.name || document.id,
+      });
     });
     return workshops;
   } catch (e) {
@@ -756,15 +660,3 @@ export async function getActiveJobCountByWorkshop(workshopId: string): Promise<n
     return 0;
   }
 }
-
-/** Clears the tempPassword field in a workshop's settings document */
-export async function clearTempPassword(workshopId: string): Promise<void> {
-  try {
-    const docRef = doc(db, "settings", workshopId);
-    await updateDoc(docRef, { tempPassword: "" });
-  } catch (e) {
-    console.error("Error clearing temp password:", e);
-    throw e;
-  }
-}
-

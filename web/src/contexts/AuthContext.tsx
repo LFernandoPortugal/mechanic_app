@@ -40,30 +40,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [trialExpired, setTrialExpired] = useState(false);
 
-  const fetchProfileAndSettings = async (uid: string) => {
-    const profile = await getUserProfile(uid);
-    setUserProfile(profile);
-    
-    let settings: WorkshopSettings | null = null;
-    if (profile?.workshopId) {
-      settings = await getWorkshopSettings(profile.workshopId);
-    } else {
-      settings = await getWorkshopSettings("demo-workshop");
-    }
-    setWorkshopSettings(settings);
-
-    // Check expiration if not a SUPER_ADMIN
-    const isSuperAdmin = profile?.roles.includes('SUPER_ADMIN');
-    if (settings && settings.expiresAt && !isSuperAdmin) {
-      const expirationDate = new Date(settings.expiresAt);
-      if (new Date() > expirationDate) {
-        setTrialExpired(true);
-        return;
-      }
-    }
-    setTrialExpired(false);
-  };
-
   useEffect(() => {
     let unsubscribeProfile: (() => void) | null = null;
 
@@ -87,16 +63,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUserProfile(profile);
 
           const isSuperAdmin = profile?.roles?.includes('SUPER_ADMIN');
+          const workshopId = typeof profile?.workshopId === "string"
+            ? profile.workshopId.trim()
+            : "";
 
-          let settings: WorkshopSettings | null = null;
-          if (profile?.workshopId) {
-            settings = await getWorkshopSettings(profile.workshopId);
-          } else {
-            settings = await getWorkshopSettings("demo-workshop");
+          if (!workshopId) {
+            console.log("User profile has no workshop. Evicting session immediately...");
+            await firebaseSignOut(auth);
+            setUser(null);
+            setUserProfile(null);
+            setWorkshopSettings(null);
+            setTrialExpired(false);
+            setLoading(false);
+            return;
           }
 
+          const settings = await getWorkshopSettings(workshopId);
+
           // If the workshop was deleted in SuperAdmin (and user is not SuperAdmin), evict session
-          if (!settings && !isSuperAdmin && profile?.workshopId !== "demo-workshop") {
+          if (!settings && !isSuperAdmin) {
             console.log("Workshop deleted. Evicting user session...");
             await firebaseSignOut(auth);
             setUser(null);
@@ -181,7 +166,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshSettings = async () => {
-    const wId = userProfile?.workshopId || "demo-workshop";
+    const wId = userProfile?.workshopId;
+    if (!wId) {
+      setWorkshopSettings(null);
+      setTrialExpired(false);
+      return;
+    }
     const settings = await getWorkshopSettings(wId);
     setWorkshopSettings(settings);
     

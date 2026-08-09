@@ -1,60 +1,76 @@
 # Checklist de Despliegue — SGA
 
-## Pre-Deploy
+## Confirmar alcance
 
-### Variables de Entorno
-- [ ] `NEXT_PUBLIC_SUPER_ADMIN_EMAIL` configurada con tu email real
-- [ ] `GEMINI_API_KEY` — puede estar vacía en producción (motor local se usa como fallback)
-- [ ] Firebase config keys correctas en `.env.local`
+- [ ] Rama actual y `HEAD` verificados.
+- [ ] `origin/main` actualizado y revisado; `main` es producción.
+- [ ] Árbol de trabajo revisado para no incluir cambios ajenos o secretos.
+- [ ] `web/.firebaserc` apunta a `mechanic-app-7d459`.
+- [ ] Deployment objetivo confirmado en Vercel.
 
-### Seguridad
-- [ ] Registro público cerrado (solo login)
-- [ ] Cuentas demo solo visibles en desarrollo (`NODE_ENV !== 'production'`)
-- [ ] Firestore rules actualizadas y desplegadas
-- [ ] Storage rules desplegadas (deny all)
-- [ ] Firebase Auth: solo email/password habilitado
-- [ ] Dominios autorizados configurados en Firebase Auth
+## Variables
 
-### Build
-- [ ] `npm run build` exitoso (genera `out/`)
-- [ ] Sin errores de TypeScript
-- [ ] Sin warnings críticos de lint
+- [ ] Variables `NEXT_PUBLIC_FIREBASE_*` configuradas.
+- [ ] Variables EmailJS configuradas si se probarán notificaciones.
+- [ ] Identificadores WIF/GCP server-side configurados en Vercel Preview y Production.
+- [ ] No existe una clave JSON de cuenta de servicio en el repositorio o Vercel.
+- [ ] `web/.env.example` refleja los nombres requeridos sin valores reales.
 
-## Deploy
+## Gates desde `web/`
 
-### Vercel (Frontend)
-El despliegue de la aplicación web se realiza de forma automática al hacer push a la rama `main` en GitHub. Vercel detecta los cambios, compila y despliega de manera nativa.
-
-```bash
-git add -A
-git commit -m "feat: nuevos cambios"
-git push origin main
+```powershell
+npm.cmd ci
+npm.cmd audit --omit=dev
+npx.cmd tsc --noEmit --incremental false
+npm.cmd run lint
+$env:JAVA_HOME='C:\Program Files\Microsoft\jdk-21.0.12.8-hotspot'
+$env:Path="$env:JAVA_HOME\bin;$env:Path"
+npm.cmd run test:all
+npm.cmd run build
 ```
 
-### Firebase (Reglas de Seguridad e Índices)
-Solo cuando se modifiquen reglas de Firestore, almacenamiento o índices, ejecuta:
+- [ ] Runtime audit sin vulnerabilidades.
+- [ ] TypeScript sin errores.
+- [ ] Lint sin errores; warnings revisados/aceptados.
+- [ ] Unit tests y Firestore Emulator Rules tests pasan.
+- [ ] Build Next.js completo pasa. Next.js genera `.next`, no `out/`.
 
-```bash
-# Deploy de reglas de base de datos e índices
-firebase deploy --only firestore --project mechanic-app-7d459
+## Preview Vercel
 
-# Deploy de reglas de almacenamiento
-firebase deploy --only storage --project mechanic-app-7d459
+- [x] Crear preview desde la raíz del repositorio, porque el Root Directory del proyecto es `web`.
+- [ ] Verificar rutas server-side en el resumen de build.
+- [ ] Probar acceso no autenticado: admin/pagos deben responder 401.
+- [ ] Probar cotización pública con documento descartable y confirmar que el DTO no filtra nombre/contacto del cliente ni datos internos.
+- [ ] Probar firma/aprobación parcial y limpiar el documento temporal.
+- [ ] Probar pago autenticado descartable antes de producción.
+- [x] Probar QC autenticado: pago previo no debe omitir checklist; pass debe ir a Ready/Delivered según saldo y fail debe volver a Repair.
+- [ ] Probar creación/borrado de taller descartable con SUPER_ADMIN antes de producción.
+
+## Firebase
+
+Solo si cambiaron reglas/índices, desde `web/` y después de confirmar proyecto:
+
+> Compatibilidad de esta estabilización: `main` anterior todavía ejecuta QC directamente desde el cliente. Primero debe estar listo en Vercel el código con `/api/jobs/[id]/qc`; inmediatamente después se despliegan las reglas que niegan esa escritura directa.
+
+```powershell
+firebase use
+firebase deploy --only firestore:rules,firestore:indexes --project mechanic-app-7d459
 ```
 
-## Post-Deploy
+- [ ] Reglas validadas localmente antes de desplegar.
+- [ ] No ejecutar `firebase deploy --only hosting`; la web vive en Vercel.
+- [ ] Storage solo se despliega si sus reglas cambiaron intencionalmente.
 
-### Verificación Manual
-- [ ] Login con SuperAdmin email → obtiene rol SUPER_ADMIN
-- [ ] Acceder a `/super-admin` → funciona
-- [ ] Crear taller de prueba → funciona
-- [ ] Login con email de tester → se auto-onboarda como ADMIN
-- [ ] Tester puede crear jobs, agregar inventario
-- [ ] Trial expira → tester ve página de expiración
-- [ ] URL `/quote/[id]` funciona sin login
-- [ ] Intento de acceso no autorizado → rechazado
+## Integración y producción
 
-### Verificación de Seguridad
-- [ ] Intentar registrar cuenta nueva → no hay opción (producción)
-- [ ] Acceder a `/super-admin` con cuenta regular → denegado
-- [ ] Modificar workshopId en request → reglas de Firestore lo bloquean
+- [ ] Diff/PR revisado.
+- [ ] Rama integrada a `main`.
+- [ ] Build de Vercel Production exitoso.
+- [ ] Reglas Firestore desplegadas solo después de confirmar que la nueva API QC está activa en Vercel.
+- [ ] Smoke test: login → Reception → Diagnosis → Approval → firma cliente → Approved → Repair → QC → Ready → pago → Delivered.
+- [ ] Tema claro/oscuro y viewport móvil revisados.
+- [ ] Logs de Vercel y Firebase revisados sin errores nuevos.
+- [x] Datos de prueba eliminados y eliminación verificada.
+- [x] Cuentas demo históricas con credenciales conocidas revisadas y eliminadas.
+- [ ] Scripts operativos ejecutados primero sin `--apply`; proyecto y confirmación exactos revisados.
+- [ ] Documentación y `docs/AI-Handoff.md` actualizados.

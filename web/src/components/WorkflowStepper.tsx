@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useLanguage } from "@/contexts/LanguageContext";
 import {
   ClipboardList,
   SearchCode,
@@ -79,7 +78,6 @@ const STEPS = [
 ];
 
 export function WorkflowStepper({ currentStatus }: WorkflowStepperProps) {
-  const { t } = useLanguage();
   const [expandedStep, setExpandedStep] = useState<string | null>(null);
 
   const currentStepIndex = STEPS.findIndex((step) =>

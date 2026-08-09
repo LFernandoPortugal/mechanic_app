@@ -7,13 +7,14 @@ Este vault de Obsidian contiene toda la documentación persistente del proyecto 
 - **Arquitectura/** — Decisiones técnicas, stack, estructura del proyecto
 - **Seguridad/** — Políticas de seguridad, reglas de acceso, auditorías
 - **Despliegue/** — SOPs de despliegue, checklists, configuración
-- **Roadmap/** — Features planeadas, backlog, prioridades
+- **mechanic-app/** — Flujo funcional, configuración SUPER_ADMIN e historial de correcciones
+- **AI-Handoff.md** — Estado corto y punto exacto de reanudación entre sesiones
 
 ## Cómo usar
 
 Cuando inicies una nueva sesión con un agente de IA:
-1. El agente debe leer `docs/Arquitectura/overview.md` primero
-2. Para tareas de seguridad: leer `docs/Seguridad/politica-acceso.md`
-3. Para despliegue: leer `docs/Despliegue/checklist.md`
+1. Leer `AGENTS.md` en la raíz.
+2. Seguir sin alterar el orden obligatorio que enumera, empezando por `docs/AI-Handoff.md`.
+3. Confirmar Git, Vercel y el proyecto Firebase real antes de actuar.
 
-Esto ahorra ~80% de tokens de investigación por sesión.
+Si la documentación contradice el código o un deployment observado, registrar la evidencia y no asumir cuál es correcto.

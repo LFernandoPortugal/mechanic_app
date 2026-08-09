@@ -6,58 +6,25 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { getAllWorkshops, getAllUsers, createWorkshopTester, updateWorkshopSettings, resetWorkshopData, deleteUserProfile, deleteWorkshopSettings, deleteWorkshopCompletely, updateUserRoles, createUserProfile, getActiveJobCountByWorkshop, clearTempPassword } from "@/lib/db";
+import { getAllWorkshops, getAllUsers, updateWorkshopSettings, resetWorkshopData, deleteWorkshopCompletely, updateUserRoles, getActiveJobCountByWorkshop, type WorkshopListItem } from "@/lib/db";
 import { toast } from "sonner";
 import {
   Crown, Building2, Users, Trash2, Calendar, ShieldAlert,
-  Plus, RefreshCw, Eye, EyeOff, ChevronDown, ChevronUp,
-  Copy, Check, UserPlus, KeyRound, Shield
+  RefreshCw, Eye, EyeOff, ChevronDown, ChevronUp,
+  Copy, Check, UserPlus, Shield
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserProfile, UserRole } from "@/types";
+import { extendExpiration } from "@/lib/dates";
 
-const FIREBASE_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY!;
-
-async function createFirebaseAuthAccount(email: string, password: string): Promise<string> {
-  const signUpRes = await fetch(
-    `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, returnSecureToken: false }),
-    }
-  );
-  const signUpData = await signUpRes.json();
-  if (signUpRes.ok) {
-    return signUpData.localId as string;
-  }
-
-  if (signUpData?.error?.message === "EMAIL_EXISTS") {
-    console.log("Email exists in Auth. Recovering UID...");
-    const signInRes = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, returnSecureToken: false }),
-      }
-    );
-    const signInData = await signInRes.json();
-    if (signInRes.ok) {
-      return signInData.localId as string;
-    }
-    const msg = signInData?.error?.message || "Error al autenticar cuenta existente";
-    throw new Error(msg === "INVALID_PASSWORD" ? "El email ya existe con otra contraseña en Firebase Auth." : msg);
-  }
-
-  throw new Error(signUpData?.error?.message || "Error al crear cuenta");
-}
+const getErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : "Error desconocido";
 
 const ROLE_OPTIONS: UserRole[] = ["ADMIN", "RECEPTION", "TECHNICIAN", "ADVISOR"];
 
-export default function SuperAdminPage() {
-  const { userProfile } = useAuth();
-  const [workshops, setWorkshops] = useState<any[]>([]);
+function SuperAdminContent() {
+  const { user, userProfile } = useAuth();
+  const [workshops, setWorkshops] = useState<WorkshopListItem[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loadingWorkshops, setLoadingWorkshops] = useState(true);
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -113,47 +80,49 @@ export default function SuperAdminPage() {
   const getUsersForWorkshop = (wId: string) =>
     users.filter((u) => u.workshopId === wId);
 
+  const callAdminUsersApi = async (method: "POST" | "DELETE", body: unknown) => {
+    if (!user) throw new Error("La sesión no está disponible.");
+    const idToken = await user.getIdToken();
+    const response = await fetch("/api/admin/users", {
+      method,
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    const result = await response.json() as { error?: string };
+    if (!response.ok) throw new Error(result.error || "La operación no pudo completarse.");
+  };
+
   const handleCreateWorkshop = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newId || !newName || !newEmail || !newPassword) {
       toast.error("Por favor completa todos los campos.");
       return;
     }
-    if (newPassword.length < 6) {
-      toast.error("La contraseña debe tener al menos 6 caracteres.");
+    if (newPassword.length < 12) {
+      toast.error("La contraseña debe tener al menos 12 caracteres.");
       return;
     }
     setCreating(true);
     try {
-      // 1. Create Firebase Auth account
-      const uid = await createFirebaseAuthAccount(newEmail.trim().toLowerCase(), newPassword);
-
-      // 2. Create workshop settings (auto-onboarding by adminEmail + store password)
       const expiration = new Date();
       expiration.setDate(expiration.getDate() + trialDays);
-      await createWorkshopTester(
-        newId.trim().toLowerCase(),
-        newName.trim(),
-        newEmail.trim().toLowerCase(),
-        expiration.toISOString(),
-        newPassword
-      );
-
-      // 3. Immediately create the User Profile in Firestore with explicit workshopId
-      await createUserProfile(
-        uid,
-        newEmail.trim().toLowerCase(),
-        newName.trim() + " Admin",
-        ['ADMIN'],
-        newId.trim().toLowerCase()  // explicit workshopId — no auto-lookup needed
-      );
+      await callAdminUsersApi("POST", {
+        workshopId: newId,
+        workshopName: newName,
+        email: newEmail,
+        password: newPassword,
+        expiresAt: expiration.toISOString(),
+      });
 
       toast.success(`Taller "${newName}" y cuenta de admin creados y activados. Trial: ${trialDays} días.`);
       setNewId(""); setNewName(""); setNewEmail(""); setNewPassword(""); setTrialDays(7);
       loadWorkshops();
       loadUsers();
-    } catch (err: any) {
-      toast.error("Error: " + err.message);
+    } catch (err: unknown) {
+      toast.error("Error: " + getErrorMessage(err));
     } finally {
       setCreating(false);
     }
@@ -165,21 +134,21 @@ export default function SuperAdminPage() {
       await updateWorkshopSettings(wId, { allowResetData: !currentVal });
       toast.success("Permiso actualizado.");
       loadWorkshops();
-    } catch (err: any) {
-      toast.error("Error: " + err.message);
+    } catch (err: unknown) {
+      toast.error("Error: " + getErrorMessage(err));
     } finally { setActionLoading(null); }
   };
 
   const extendTrial = async (wId: string, days: number) => {
     setActionLoading(`trial-${wId}`);
     try {
-      const newExp = new Date();
-      newExp.setDate(newExp.getDate() + days);
+      const currentExpiration = workshops.find((workshop) => workshop.id === wId)?.expiresAt;
+      const newExp = extendExpiration(currentExpiration, days);
       await updateWorkshopSettings(wId, { expiresAt: newExp.toISOString() });
       toast.success(`Trial extendido +${days} días.`);
       loadWorkshops();
-    } catch (err: any) {
-      toast.error("Error: " + err.message);
+    } catch (err: unknown) {
+      toast.error("Error: " + getErrorMessage(err));
     } finally { setActionLoading(null); }
   };
 
@@ -189,8 +158,8 @@ export default function SuperAdminPage() {
       await updateWorkshopSettings(wId, { expiresAt: new Date(0).toISOString() });
       toast.success("Acceso revocado inmediatamente.");
       loadWorkshops();
-    } catch (err: any) {
-      toast.error("Error: " + err.message);
+    } catch (err: unknown) {
+      toast.error("Error: " + getErrorMessage(err));
     } finally { setActionLoading(null); }
   };
 
@@ -200,8 +169,8 @@ export default function SuperAdminPage() {
     try {
       const res = await resetWorkshopData(wId);
       toast.success(`Datos borrados: ${res.jobsDeleted} OTs, ${res.inventoryDeleted} items.`);
-    } catch (err: any) {
-      toast.error("Error: " + err.message);
+    } catch (err: unknown) {
+      toast.error("Error: " + getErrorMessage(err));
     } finally { setActionLoading(null); }
   };
 
@@ -210,36 +179,28 @@ export default function SuperAdminPage() {
     if (!window.confirm(`¿Eliminar permanentemente el taller "${wId}" y todos sus usuarios y datos?`)) return;
     setActionLoading(`delete-workshop-${wId}`);
     try {
+      const workshopUserIds = getUsersForWorkshop(wId).map((profile) => profile.uid);
+      if (workshopUserIds.length > 0) {
+        await callAdminUsersApi("DELETE", { uids: workshopUserIds });
+      }
       const res = await deleteWorkshopCompletely(wId);
-      toast.success(`Taller eliminado por completo. Se borraron ${res.usersDeleted} usuarios y ${res.jobsDeleted} OTs.`);
+      toast.success(`Taller eliminado por completo. Se borraron ${workshopUserIds.length} cuentas y ${res.jobsDeleted} OTs.`);
       loadWorkshops(); loadUsers();
-    } catch (err: any) {
-      toast.error("Error: " + err.message);
-    } finally { setActionLoading(null); }
-  };
-
-  const handleClearTempPassword = async (wId: string) => {
-    if (!window.confirm(`¿Eliminar la contraseña temporal del taller "${wId}"? Asegúrate de haberla entregado al cliente.`)) return;
-    setActionLoading(`clear-pass-${wId}`);
-    try {
-      await clearTempPassword(wId);
-      toast.success("Contraseña temporal eliminada.");
-      loadWorkshops();
-    } catch (err: any) {
-      toast.error("Error: " + err.message);
+    } catch (err: unknown) {
+      toast.error("Error: " + getErrorMessage(err));
     } finally { setActionLoading(null); }
   };
 
   const handleDeleteUser = async (uid: string, email: string) => {
     if (uid === userProfile?.uid) { toast.error("No puedes eliminarte a ti mismo."); return; }
-    if (!window.confirm(`¿Eliminar perfil de "${email}"? Deberás también eliminarlo en Firebase Auth para revocar acceso total.`)) return;
+    if (!window.confirm(`¿Eliminar la cuenta "${email}" de Firebase Authentication y Firestore?`)) return;
     setActionLoading(`delete-user-${uid}`);
     try {
-      await deleteUserProfile(uid);
-      toast.success("Perfil eliminado de Firestore.");
+      await callAdminUsersApi("DELETE", { uids: [uid] });
+      toast.success("Cuenta eliminada de Firebase Authentication y Firestore.");
       loadUsers();
-    } catch (err: any) {
-      toast.error("Error: " + err.message);
+    } catch (err: unknown) {
+      toast.error("Error: " + getErrorMessage(err));
     } finally { setActionLoading(null); }
   };
 
@@ -260,14 +221,13 @@ export default function SuperAdminPage() {
       await updateUserRoles(uid, newRoles);
       toast.success(`Roles actualizados para ${user.email}`);
       loadUsers();
-    } catch (err: any) {
-      toast.error("Error: " + err.message);
+    } catch (err: unknown) {
+      toast.error("Error: " + getErrorMessage(err));
     } finally { setActionLoading(null); }
   };
 
   return (
-    <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
-      <div className="min-h-screen page-bg text-foreground px-4 md:px-8 py-6">
+    <div className="min-h-screen page-bg text-foreground px-4 md:px-8 py-6">
         <div className="max-w-7xl mx-auto space-y-8 animate-fade-in">
 
           {/* Header */}
@@ -341,9 +301,11 @@ export default function SuperAdminPage() {
                       <Input
                         id="w-pass"
                         type={showPassword ? "text" : "password"}
+                        autoComplete="new-password"
+                        minLength={12}
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="Mín. 6 caracteres"
+                        placeholder="Mín. 12 caracteres"
                         className="pr-10"
                         required
                       />
@@ -472,24 +434,6 @@ export default function SuperAdminPage() {
                             </div>
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
                               <span>Admin: <span className="text-foreground font-mono">{ws.adminEmail || "—"}</span></span>
-                              {ws.tempPassword && (
-                                <span className="flex items-center gap-1">
-                                  <span>Clave:</span>
-                                  <span className="text-foreground font-mono bg-secondary/50 px-1 py-0.5 rounded border border-border/30">{ws.tempPassword}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => copyToClipboard(ws.tempPassword, `temp-pass-${ws.id}`)}
-                                    className="text-muted-foreground hover:text-foreground inline-flex ml-0.5 shrink-0"
-                                    title="Copiar contraseña"
-                                  >
-                                    {copiedField === `temp-pass-${ws.id}` ? (
-                                      <Check className="w-3.5 h-3.5 text-emerald-400" />
-                                    ) : (
-                                      <Copy className="w-3.5 h-3.5" />
-                                    )}
-                                  </button>
-                                </span>
-                              )}
                               <span>·</span>
                               <button
                                 onClick={() => setExpandedWorkshop(isExpanded ? null : ws.id)}
@@ -536,15 +480,6 @@ export default function SuperAdminPage() {
                               disabled={actionLoading !== null}>
                               Borrar Datos
                             </Button>
-                            {ws.tempPassword && (
-                              <Button size="xs" variant="outline"
-                                className="text-[10px] h-7 px-2 border-amber-500/20 text-amber-500/70 hover:text-amber-400 hover:bg-amber-950/20"
-                                onClick={() => handleClearTempPassword(ws.id)}
-                                disabled={actionLoading !== null}
-                                title="Eliminar contraseña temporal (ya fue entregada al cliente)">
-                                <KeyRound className="w-3 h-3 mr-1" /> Limpiar Clave
-                              </Button>
-                            )}
                             <Button size="xs" variant="outline"
                               className="text-[10px] h-7 px-2 border-red-500/20 text-red-500/70 hover:bg-red-950/20"
                               onClick={() => handleDeleteWorkshop(ws.id)}
@@ -559,7 +494,7 @@ export default function SuperAdminPage() {
                           <div className="border-t border-border/40 bg-secondary/10 p-4">
                             {wsUsers.length === 0 ? (
                               <p className="text-xs text-muted-foreground text-center py-2">
-                                Ningún usuario ha iniciado sesión aún. El admin se creará automáticamente en el primer login.
+                                No hay perfiles de usuario asociados a este taller.
                               </p>
                             ) : (
                               <div className="space-y-3">
@@ -687,7 +622,14 @@ export default function SuperAdminPage() {
           </Card>
 
         </div>
-      </div>
+    </div>
+  );
+}
+
+export default function SuperAdminPage() {
+  return (
+    <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
+      <SuperAdminContent />
     </ProtectedRoute>
   );
 }

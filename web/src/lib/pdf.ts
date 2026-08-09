@@ -8,15 +8,27 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Job, WorkshopSettings } from '@/types';
 
+type QuotePdfJob = Pick<
+  Job,
+  'id' | 'vehicleId' | 'inspectionItems' | 'totalEstimate' | 'approvedAmount' | 'status'
+> & Partial<Pick<Job, 'clientId' | 'odometer' | 'clientPhone' | 'clientEmail' | 'startingFuel'>>;
+
 const BRAND_COLOR: [number, number, number] = [16, 185, 129];   // Emerald-500
 const DARK_COLOR:  [number, number, number] = [24, 24, 27];     // zinc-900
 const MUTED_COLOR: [number, number, number] = [113, 113, 122];  // zinc-500
+
+type JsPdfWithAutoTable = jsPDF & {
+  lastAutoTable?: { finalY: number };
+};
+
+const getLastTableY = (document: jsPDF, fallback: number) =>
+  (document as JsPdfWithAutoTable).lastAutoTable?.finalY ?? fallback;
 
 function formatMoney(amount: number, symbol = '$'): string {
   return `${symbol}${amount.toFixed(2)}`;
 }
 
-function getLaborCost(job: Job): number {
+function getLaborCost(job: QuotePdfJob): number {
   const partsTotal = job.inspectionItems?.reduce((acc, item) => acc + (item.price || 0), 0) || 0;
   return Math.max(0, job.totalEstimate - partsTotal);
 }
@@ -28,10 +40,11 @@ function getLaborCost(job: Job): number {
  * @param workshop  Optional workshop settings for dynamic branding
  */
 export function generateQuotePDF(
-  job: Job,
+  job: QuotePdfJob,
   mode: 'advisor' | 'client' = 'advisor',
-  workshop?: WorkshopSettings | null
+  workshop?: Partial<WorkshopSettings> | null
 ): void {
+  void mode;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const symbol = workshop?.currencySymbol || '$';
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -140,7 +153,6 @@ export function generateQuotePDF(
   };
 
   const tableRows = (job.inspectionItems || []).map(item => {
-    const statusColor = statusColors[item.status] || MUTED_COLOR;
     return [
       item.name,
       item.status,
@@ -185,7 +197,7 @@ export function generateQuotePDF(
   });
 
   // ── Totals ──────────────────────────────────────────────────
-  const finalY = (doc as any).lastAutoTable.finalY + 8;
+  const finalY = getLastTableY(doc, y) + 8;
   const laborCost = getLaborCost(job);
   const partsCost = (job.totalEstimate || 0) - laborCost;
   const approvedTotal = job.approvedAmount || job.totalEstimate || 0;
@@ -385,7 +397,7 @@ export function generateReceiptPDF(
     margin: { left: margin, right: margin },
   });
 
-  y = (doc as any).lastAutoTable.finalY + 8;
+  y = getLastTableY(doc, y) + 8;
 
   // ── Totals Summary ──────────────────────────────────────────
   const laborCost = getLaborCost(job);
@@ -513,4 +525,3 @@ export function generateReceiptPDF(
   const filename = `${shopName}-Recibo-${job.vehicleId}-${dateStr.replace(/\//g, '-')}.pdf`;
   doc.save(filename);
 }
-

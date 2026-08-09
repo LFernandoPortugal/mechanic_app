@@ -1,26 +1,25 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { registerPayment, PaymentInput } from "@/lib/db";
+import { getPayableTotal } from "@/lib/transactions";
 import { generateReceiptPDF } from "@/lib/pdf";
 import { useRealtimeJobs } from "@/hooks/useRealtimeJobs";
-import { Job } from "@/types";
+import { Job, WorkshopSettings } from "@/types";
 import { toast } from "sonner";
 import {
   Card, CardContent, CardHeader, CardTitle, CardDescription,
 } from "@/components/ui/card";
-import { ArrowLeft } from "lucide-react";
-import { WorkflowStepper } from "@/components/WorkflowStepper";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   DollarSign, CreditCard, Banknote, Smartphone, CheckCircle2,
-  ChevronDown, ChevronUp, Loader2, RefreshCw, FileText,
+  ChevronDown, ChevronUp, Loader2, FileText, ArrowLeft,
 } from "lucide-react";
 
 type PaymentMethod = PaymentInput["method"];
@@ -47,8 +46,15 @@ function totalPaid(job: Job): number {
   return (job.payments || []).reduce((s, p) => s + p.amount, 0);
 }
 
-function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onPaymentRegistered: () => void; workshopSettings: any }) {
-  const { user } = useAuth();
+function payableTotal(job: Job): number {
+  try {
+    return getPayableTotal(job);
+  } catch {
+    return 0;
+  }
+}
+
+function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onPaymentRegistered: () => void; workshopSettings: WorkshopSettings | null }) {
   const [expanded, setExpanded] = useState(false);
   const [amount, setAmount]     = useState("");
   const [reference, setRef]     = useState("");
@@ -56,11 +62,11 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
   const [loading, setLoading]   = useState(false);
 
   const paid         = totalPaid(job);
-  // Use the amount the client approved; fall back to totalEstimate if not set
-  const approvedTotal = (job.approvedAmount && job.approvedAmount > 0) ? job.approvedAmount : (job.totalEstimate || 0);
+  const approvedTotal = payableTotal(job);
   const balance      = approvedTotal - paid;
   const pctPaid      = approvedTotal > 0 ? Math.min((paid / approvedTotal) * 100, 100) : 0;
   const isDelivered  = job.status === "Delivered";
+  const isFullyPaid  = balance <= 0;
 
   const handlePay = async () => {
     const amt = parseFloat(amount);
@@ -81,19 +87,21 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
 
     setLoading(true);
     try {
-      await registerPayment(job.id, { amount: appliedAmount, method, reference, actorId: user!.uid });
+      const result = await registerPayment(job.id, { amount: appliedAmount, method, reference });
       if (change > 0) {
         toast.success(`✅ Pago completo. Vuelto a entregar: ${workshopSettings?.currencySymbol || "$"}${change.toFixed(2)}`);
       } else {
-        toast.success(appliedAmount >= balance
-          ? `✅ Pago completo. Vehículo marcado como Entregado.`
+        toast.success(result.remainingBalance === 0
+          ? result.status === "Delivered"
+            ? "✅ Pago completo. Vehículo marcado como Entregado."
+            : "✅ Pago completo registrado. La entrega se cerrará después de aprobar QC."
           : `💰 Abono registrado: ${workshopSettings?.currencySymbol || "$"}${appliedAmount.toFixed(2)}`
         );
       }
       setAmount(""); setRef("");
       onPaymentRegistered();
-    } catch {
-      toast.error("Error al registrar el pago.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error al registrar el pago.");
     } finally {
       setLoading(false);
     }
@@ -159,7 +167,7 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
           )}
 
           {/* Payment form */}
-          {!isDelivered && (
+          {!isDelivered && !isFullyPaid && (
             <div className="space-y-4 border-t border-border pt-4">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Registrar Pago</p>
 
@@ -241,9 +249,18 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
               {parseFloat(amount) >= balance && balance > 0 && (
                 <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-950/30 border border-emerald-600/30 rounded-lg px-3 py-2">
                   <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                  Este pago cancelará el saldo y marcará el vehículo como <strong>Entregado</strong>.
+                  {job.status === "Ready"
+                    ? <>Este pago cancelará el saldo y marcará el vehículo como <strong>Entregado</strong>.</>
+                    : <>Este pago cancelará el saldo; la entrega se cerrará después de aprobar <strong>QC</strong>.</>}
                 </div>
               )}
+            </div>
+          )}
+
+          {!isDelivered && isFullyPaid && (
+            <div className="flex items-center gap-2 text-sm text-blue-400 bg-blue-950/30 border border-blue-600/30 rounded-lg px-4 py-3">
+              <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+              <span>Pago completo registrado. La orden todavía debe completar el flujo de QC.</span>
             </div>
           )}
 
@@ -271,7 +288,7 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
 
 export default function PaymentsPage() {
   const router = useRouter();
-  const { userProfile, workshopSettings } = useAuth();
+  const { workshopSettings } = useAuth();
   const { jobs, loading } = useRealtimeJobs({ statuses: ["Ready", "Approved", "Delivered", "QC"] });
 
   // Sort: pending first, then delivered
@@ -328,7 +345,7 @@ export default function PaymentsPage() {
             </div>
             {pending.length > 0 && (
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-sm font-medium">
-                {workshopSettings?.currencySymbol || "$"}{pending.reduce((s, j) => s + (j.totalEstimate || 0) - totalPaid(j), 0).toFixed(2)} por cobrar
+                {workshopSettings?.currencySymbol || "$"}{pending.reduce((s, j) => s + Math.max(0, payableTotal(j) - totalPaid(j)), 0).toFixed(2)} por cobrar
               </div>
             )}
           </div>

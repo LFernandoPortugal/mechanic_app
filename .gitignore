@@ -22,6 +22,7 @@ yarn-error.log*
 # IDE
 .vscode/
 .idea/
+.codex/
 *.swp
 *.swo
 
@@ -43,4 +44,3 @@ Thumbs.db
 
 # External skill repos (tracked separately)
 skills/ui-ux-pro-max-skill/
-

@@ -3,7 +3,7 @@
 ## Stack Tecnológico
 - **Frontend**: Next.js 16 + React 19 + TypeScript
 - **UI**: Tailwind CSS 4 + shadcn/ui (Radix) + Lucide icons
-- **Backend**: Firebase (Auth, Firestore, Hosting)
+- **Backend**: Firebase (Auth y Firestore) + API routes de Next.js en Vercel
 - **IA**: Motor de diagnóstico local (reglas) — sin dependencia de API externa en producción
 - **PDF**: jsPDF + jspdf-autotable (generación client-side)
 - **Notificaciones**: WhatsApp links + EmailJS
@@ -22,7 +22,8 @@ mechanic-app/
 │   │   │   ├── inventory/    # Gestión de inventario
 │   │   │   ├── login/        # Autenticación (solo login, sin registro público)
 │   │   │   ├── qc/           # Control de calidad
-│   │   │   ├── quote/[id]/   # Portal público de cotización
+│   │   │   ├── quote/view/   # Portal público: /quote/view?id=JOB_ID
+│   │   │   ├── api/          # Cotizaciones públicas, pagos, QC y usuarios privilegiados
 │   │   │   ├── reception/    # Recepción de vehículos
 │   │   │   ├── super-admin/  # Panel del creador (SUPER_ADMIN only)
 │   │   │   └── technician/   # Diagnóstico y reparación
@@ -59,7 +60,7 @@ mechanic-app/
 
 ## Flujo de Estados de un Job
 ```
-Reception → Diagnosis → Approval → [Ready] → Approved → Repair → QC → Delivered
+Reception → Diagnosis → Approval → Approved → Repair → QC → Ready → Delivered
 ```
 
 ## Multi-Tenancy
@@ -72,3 +73,4 @@ Reception → Diagnosis → Approval → [Ready] → Approved → Repair → QC 
 - **Modelo**: Vercel (Next.js Nativo)
 - **Build**: Compilación nativa en Vercel disparada automáticamente mediante push a la rama `main` en GitHub.
 - **API routes**: No se requiere exportación estática.
+- **Autenticación server-side**: Vercel OIDC + Google Workload Identity Federation, sin claves JSON estáticas.

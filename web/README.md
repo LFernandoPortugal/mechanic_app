@@ -1,147 +1,87 @@
-# 🔧 SGA — Sistema de Gestión Automotriz
+# SGA — Sistema de Gestión Automotriz
 
-> A modern, full-stack Automotive Workshop Management System built with **Next.js**, **Firebase**, and **Tailwind CSS**. Designed to digitize the complete vehicle service pipeline — from reception to client approval.
+Aplicación multitenant para administrar el flujo completo de un taller: recepción, diagnóstico, cotización, aprobación del cliente, reparación, control de calidad, cobro y entrega.
 
-![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js) ![Firebase](https://img.shields.io/badge/Firebase-Auth%20%2B%20Firestore-orange?logo=firebase) ![Tailwind](https://img.shields.io/badge/Tailwind-v4-06B6D4?logo=tailwindcss) ![i18n](https://img.shields.io/badge/i18n-EN%20%7C%20ES-blue) ![Theme](https://img.shields.io/badge/Theme-Light%20%7C%20Dark-purple)
+## Stack
 
----
+- Next.js 16 (App Router) + React 19 + TypeScript.
+- Tailwind CSS 4 + shadcn/ui.
+- Firebase Authentication y Cloud Firestore.
+- Vercel para web y API routes.
+- Vitest + Firebase Emulator Suite para pruebas.
 
-## ✨ Features
+La aplicación **no usa Firebase Hosting**.
 
-| Module | Description |
+## Flujo canónico
+
+```text
+Reception → Diagnosis → Approval → Approved → Repair → QC → Ready → Delivered
+```
+
+El portal público vigente usa:
+
+```text
+/quote/view?id=JOB_ID
+```
+
+Los jobs completos no son públicos en Firestore. Vercel entrega un DTO sanitizado mediante `/api/public/quotes/[id]` y procesa la firma/aprobación en el servidor.
+
+## Módulos
+
+| Ruta | Función |
 |---|---|
-| 📋 **Reception** | Vehicle check-in with fluid audits, valuables inventory, fuel level, odometer, and digital liability signature |
-| 🔧 **Technician** | Inspection dashboard — log Pass/Fail/Critical items with notes, auto-assign technician to jobs |
-| 💰 **Advisor** | Quote builder — review diagnosis, attach per-part pricing + labor, generate shareable client link |
-| 📱 **Client Portal** | Public quote view — toggle optional repairs in real-time, approve & sign electronically |
-| 📊 **Analytics** | Owner dashboard — revenue, active jobs, approval rate, pipeline status distribution |
-| 👥 **User Management** | Admin panel for role assignment (Admin, Reception, Technician, Advisor) |
+| `/reception` | Ingreso, fluidos, valores, fotos y firma de recepción |
+| `/technician` | Diagnóstico, inspección y reparación |
+| `/advisor` | Precios y generación del enlace de cotización |
+| `/quote/view?id=...` | Selección de ítems y firma de aprobación del cliente |
+| `/qc` | Control de calidad y retorno a reparación |
+| `/advisor/payments` | Abonos, saldo, recibo y entrega |
+| `/inventory` | Stock y movimientos inmutables |
+| `/analytics` | Métricas del taller |
+| `/admin/users` | Roles operativos del taller |
+| `/admin/settings` | Marca, contacto, moneda e impuestos |
+| `/super-admin` | Aprovisionamiento global de talleres |
 
-### Cross-Cutting
+## Desarrollo local
 
-- 🌐 **Full i18n** — English & Spanish with instant switching
-- 🌗 **Light/Dark theme** — System-aware with manual toggle
-- 🔐 **RBAC** — Role-based access control on every route
-- 📝 **Audit Log** — Every status change is tracked with actor, timestamp, and action
-- 🔗 **Shareable Quotes** — Public `/quote/[id]` links work without authentication
+Requisitos: Node.js 20.9 o superior y Java 21 para las pruebas de reglas.
 
----
-
-## 🏗️ Tech Stack
-
-- **Framework**: Next.js 16 (App Router + Turbopack)
-- **Auth & DB**: Firebase Auth (Email/Password) + Cloud Firestore
-- **UI**: Tailwind CSS v4 + shadcn/ui components
-- **Language**: TypeScript
-- **Hosting**: Vercel (recommended) or Firebase Hosting
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js ≥ 18
-- A Firebase project with **Authentication** and **Firestore** enabled
-
-### Setup
-
-```bash
-# 1. Clone the repo
-git clone https://github.com/YOUR_USERNAME/mechanic-app.git
-cd mechanic-app/web
-
-# 2. Install dependencies
-npm install
-
-# 3. Configure environment
-cp .env.example .env.local
-# Edit .env.local with your Firebase credentials
-
-# 4. Run development server
-npm run dev
+```powershell
+cd web
+npm.cmd ci
+Copy-Item .env.example .env.local
+npm.cmd run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Completa `.env.local` con los valores de tu proyecto Firebase y, si aplica, EmailJS. Nunca commitees ese archivo.
 
-### Firebase Setup
+## Verificación
 
-1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Create a new project (or use an existing one)
-3. Enable **Authentication** → Email/Password provider
-4. Enable **Cloud Firestore** → Start in test mode
-5. Go to Project Settings → Your Apps → Add Web App
-6. Copy the config values into `.env.local`
-
----
-
-## 👤 Demo Flow
-
-Follow this pipeline to test the complete system:
-
-1. **Login** → Use `admin@test.com` / `123456` (or create a new account)
-2. **Reception** (`/reception`) → Register a vehicle with client info, fluid audit, and digital signature
-3. **Technician** (`/technician`) → Select the job, log inspection items (Pass/Fail/Critical)
-4. **Advisor** (`/advisor`) → Review the diagnosis, assign prices, generate a quote
-5. **Client** (`/quote/[id]`) → Toggle optional repairs, review total, approve electronically
-6. **Analytics** (`/analytics`) → See the job flow through the pipeline
-
-> 💡 Each module has a **Demo Auto-fill** button (magic wand icon) to quickly populate sample data.
-
----
-
-## 📁 Project Structure
-
-```
-web/
-├── src/
-│   ├── app/              # Next.js App Router pages
-│   │   ├── reception/    # Vehicle check-in
-│   │   ├── technician/   # Inspection dashboard
-│   │   ├── advisor/      # Quote builder
-│   │   ├── quote/[id]/   # Public client view
-│   │   ├── analytics/    # Owner dashboard
-│   │   ├── admin/users/  # User management
-│   │   └── login/        # Auth page
-│   ├── components/       # Reusable UI (shadcn + custom)
-│   ├── contexts/         # Auth, Language, Theme providers
-│   ├── lib/              # Firebase config + DB functions
-│   ├── locales/          # i18n JSON (en.json, es.json)
-│   └── types/            # TypeScript interfaces + RBAC config
-├── firestore.rules       # Production security rules
-├── firebase.json         # Firebase service config
-└── .env.example          # Environment variable template
+```powershell
+npx.cmd tsc --noEmit --incremental false
+npm.cmd run lint
+$env:JAVA_HOME='C:\Program Files\Microsoft\jdk-21.0.12.8-hotspot'
+$env:Path="$env:JAVA_HOME\bin;$env:Path"
+npm.cmd run test:all
+npm.cmd run build
+npm.cmd audit --omit=dev
 ```
 
----
+Un build correcto no reemplaza las pruebas. `test:all` ejecuta unit tests y Firestore Rules tests contra el emulador.
 
-## 🔐 Security
+## Seguridad server-side
 
-Firestore Security Rules enforce:
-- **Users** can only read their own profile; Admins can manage all
-- **Jobs** are gated by role + status (Reception creates, Technician diagnoses, Advisor quotes)
-- **Client quotes** are publicly readable (Ready/Approved status only)
+- `/api/public/quotes/[id]`: GET sanitizado y POST transaccional con firma.
+- `/api/jobs/[id]/payments`: requiere ADMIN/ADVISOR autenticado.
+- `/api/jobs/[id]/qc`: requiere ADMIN/ADVISOR/TECHNICIAN y evita que un pago omita el checklist.
+- `/api/admin/users`: requiere SUPER_ADMIN y coordina Firebase Auth + Firestore.
+- Vercel obtiene credenciales Google mediante OIDC + Workload Identity Federation; no se requieren claves JSON estáticas.
 
----
+## Despliegue
 
-## 🌐 Deployment
+- La rama oficial es `main`.
+- Un push a `main` activa el deployment de producción en Vercel.
+- Las ramas de trabajo generan previews protegidas.
+- Desde Firebase solo se despliegan recursos explícitos como reglas o índices, siempre después de confirmar `mechanic-app-7d459`.
 
-### Vercel (Recommended)
-
-1. Push to GitHub
-2. Import project in [Vercel](https://vercel.com)
-3. Set environment variables in Vercel dashboard
-4. Deploy automatically on push
-
-### Firebase Hosting
-
-```bash
-npm run build
-firebase deploy --only hosting
-```
-
----
-
-## 📄 License
-
-MIT — Free to use, modify, and distribute.
+Antes de integrar, sigue [el checklist](../docs/Despliegue/checklist.md) y lee [el handoff](../docs/AI-Handoff.md).

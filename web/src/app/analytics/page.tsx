@@ -8,13 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { toDate } from "@/lib/dates";
 import { Activity, CircleDollarSign, Wrench, Users, TrendingUp, Calendar, ArrowLeft } from "lucide-react";
 
 export default function OwnerAnalytics() {
   const router = useRouter();
-  const { t } = useLanguage();
   const { userProfile, loading: authLoading, workshopSettings } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,7 +21,7 @@ export default function OwnerAnalytics() {
   useEffect(() => {
     if (authLoading) return;
 
-    const wId = userProfile?.workshopId || (userProfile ? "demo-workshop" : null);
+    const wId = userProfile?.workshopId || null;
     if (wId) {
       fetchJobs(wId);
     } else {
@@ -345,11 +344,7 @@ export default function OwnerAnalytics() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-[10px] text-muted-foreground font-mono">
-                      {job.createdAt
-                        ? (job.createdAt as any).toDate
-                          ? (job.createdAt as any).toDate().toLocaleDateString()
-                          : new Date(job.createdAt).toLocaleDateString()
-                        : "N/A"}
+                      {toDate(job.createdAt)?.toLocaleDateString() || "N/A"}
                     </span>
                     <Badge className={`
                       text-[10px] font-bold px-2.5 py-0.5 rounded-full border

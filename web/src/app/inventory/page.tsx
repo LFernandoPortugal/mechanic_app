@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import {
   getInventoryItems,
@@ -18,11 +17,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { toDate } from "@/lib/dates";
 import {
   Package, Plus, Pencil, Trash2, ArrowDownCircle, ArrowUpCircle,
-  AlertTriangle, Search, X, ChevronDown, ChevronUp, History, ArrowLeft
+  AlertTriangle, Search, X, History, ArrowLeft
 } from "lucide-react";
 
 const CATEGORIES: InventoryCategory[] = [
@@ -53,9 +52,9 @@ const emptyForm = (): Partial<InventoryItem> => ({
 
 export default function InventoryPage() {
   const router = useRouter();
-  const { user, userProfile, hasRole, loading: authLoading } = useAuth();
-  const { t } = useLanguage();
+  const { user, userProfile, workshopSettings, hasRole, loading: authLoading } = useAuth();
   const isAdmin = hasRole('ADMIN');
+  const canDeleteInventory = isAdmin && workshopSettings?.allowResetData === true;
 
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,7 +78,7 @@ export default function InventoryPage() {
   const [historyLoading, setHistoryLoading] = useState(false);
 
   const fetchItems = useCallback(async () => {
-    const wId = userProfile?.workshopId || (userProfile ? "demo-workshop" : null);
+    const wId = userProfile?.workshopId || null;
     if (!wId) {
       setLoading(false);
       return;
@@ -119,18 +118,32 @@ export default function InventoryPage() {
 
   const handleSave = async () => {
     if (!form.name || !form.sku) { toast.warning('Nombre y SKU son requeridos.'); return; }
+    const wId = userProfile?.workshopId;
+    if (!wId || !user?.uid) {
+      toast.error('La sesión no tiene un taller operativo asociado.');
+      return;
+    }
     setSaving(true);
     try {
-      const wId = userProfile?.workshopId || "demo-workshop";
       if (editingItem) {
-        await updateInventoryItem(editingItem.id, { ...form, workshopId: wId }, user?.uid || 'unknown');
+        await updateInventoryItem(editingItem.id, {
+          sku: String(form.sku || "").trim(),
+          name: String(form.name || "").trim(),
+          category: form.category || "Otro",
+          unitPrice: Number(form.unitPrice) || 0,
+          costPrice: Number(form.costPrice) || 0,
+          minStock: Number(form.minStock) || 0,
+          unit: String(form.unit || "unidad"),
+          description: String(form.description || ""),
+          supplier: String(form.supplier || ""),
+        });
         toast.success('Repuesto actualizado.');
       } else {
         const itemWithWorkshop = {
           ...form,
           workshopId: wId,
         } as Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>;
-        await addInventoryItem(itemWithWorkshop, user?.uid || 'unknown');
+        await addInventoryItem(itemWithWorkshop, user.uid);
         toast.success('Repuesto agregado al inventario.');
       }
       setShowForm(false);
@@ -143,6 +156,10 @@ export default function InventoryPage() {
   };
 
   const handleDelete = async (item: InventoryItem) => {
+    if (!canDeleteInventory) {
+      toast.error("La eliminación requiere que SUPER_ADMIN habilite temporalmente Danger Mode.");
+      return;
+    }
     if (!confirm(`¿Eliminar "${item.name}" del inventario?`)) return;
     try {
       await deleteInventoryItem(item.id);
@@ -155,10 +172,19 @@ export default function InventoryPage() {
 
   // ── Stock movement ───────────────────────────────────────
   const handleMovement = async () => {
-    if (!movementItem || movQty <= 0) { toast.warning('Cantidad inválida.'); return; }
+    const wId = userProfile?.workshopId;
+    if (!wId || !user?.uid) {
+      toast.error('La sesión no tiene un taller operativo asociado.');
+      return;
+    }
+    const invalidQuantity = !Number.isInteger(movQty)
+      || (movType === 'ADJUSTMENT' ? movQty < -1 : movQty <= 0);
+    if (!isAdmin || !movementItem || invalidQuantity) {
+      toast.warning('Cantidad inválida.');
+      return;
+    }
     setMovSaving(true);
     try {
-      const wId = userProfile?.workshopId || "demo-workshop";
       await recordStockMovement({
         itemId: movementItem.id,
         itemName: movementItem.name,
@@ -166,7 +192,7 @@ export default function InventoryPage() {
         quantity: movQty,
         unitPrice: movType === 'IN' ? (movementItem.costPrice ?? movementItem.unitPrice) : movementItem.unitPrice,
         notes: movNotes || undefined,
-        actorId: user?.uid || 'unknown',
+        actorId: user.uid,
         workshopId: wId,
       });
       toast.success(`Movimiento ${movType === 'IN' ? 'de entrada' : movType === 'OUT' ? 'de salida' : 'de ajuste'} registrado.`);
@@ -174,8 +200,8 @@ export default function InventoryPage() {
       setMovQty(1);
       setMovNotes('');
       fetchItems();
-    } catch {
-      toast.error('Error registrando movimiento.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error registrando movimiento.');
     } finally {
       setMovSaving(false);
     }
@@ -330,30 +356,31 @@ export default function InventoryPage() {
                         <td className="px-4 py-3 text-center text-xs text-muted-foreground">{item.supplier || '—'}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-center gap-1">
-                            <button
-                              title="Entrada de stock"
-                              onClick={() => { setMovementItem(item); setMovType('IN'); }}
-                              className="p-1.5 rounded hover:bg-emerald-500/10 text-emerald-400 transition-colors"
-                            >
-                              <ArrowDownCircle className="w-4 h-4" />
-                            </button>
-                            <button
-                              title="Salida de stock"
-                              onClick={() => { setMovementItem(item); setMovType('OUT'); }}
-                              className="p-1.5 rounded hover:bg-red-500/10 text-red-400 transition-colors"
-                              disabled={item.stock === 0}
-                            >
-                              <ArrowUpCircle className="w-4 h-4" />
-                            </button>
-                            <button
-                              title="Historial"
-                              onClick={() => openHistory(item)}
-                              className="p-1.5 rounded hover:bg-blue-500/10 text-blue-400 transition-colors"
-                            >
-                              <History className="w-4 h-4" />
-                            </button>
                             {isAdmin && (
                               <>
+                                <button
+                                  title="Entrada de stock"
+                                  onClick={() => { setMovementItem(item); setMovType('IN'); }}
+                                  className="p-1.5 rounded hover:bg-emerald-500/10 text-emerald-400 transition-colors"
+                                  disabled={item.stock === -1}
+                                >
+                                  <ArrowDownCircle className="w-4 h-4" />
+                                </button>
+                                <button
+                                  title="Salida de stock"
+                                  onClick={() => { setMovementItem(item); setMovType('OUT'); }}
+                                  className="p-1.5 rounded hover:bg-red-500/10 text-red-400 transition-colors"
+                                  disabled={item.stock <= 0}
+                                >
+                                  <ArrowUpCircle className="w-4 h-4" />
+                                </button>
+                                <button
+                                  title="Historial"
+                                  onClick={() => openHistory(item)}
+                                  className="p-1.5 rounded hover:bg-blue-500/10 text-blue-400 transition-colors"
+                                >
+                                  <History className="w-4 h-4" />
+                                </button>
                                 <button
                                   title="Editar"
                                   onClick={() => openEdit(item)}
@@ -364,7 +391,8 @@ export default function InventoryPage() {
                                 <button
                                   title="Eliminar"
                                   onClick={() => handleDelete(item)}
-                                  className="p-1.5 rounded hover:bg-red-500/10 text-red-400 transition-colors"
+                                  disabled={!canDeleteInventory}
+                                  className="p-1.5 rounded hover:bg-red-500/10 text-red-400 transition-colors disabled:cursor-not-allowed disabled:opacity-30"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
@@ -498,7 +526,14 @@ export default function InventoryPage() {
 
               <div>
                 <Label className="text-muted-foreground text-xs">Cantidad</Label>
-                <Input type="number" min="1" value={movQty} onChange={e => setMovQty(parseInt(e.target.value) || 1)} className="mt-1 bg-secondary border-border" />
+                <Input
+                  type="number"
+                  min={movType === 'ADJUSTMENT' ? -1 : 1}
+                  step="1"
+                  value={movQty}
+                  onChange={e => setMovQty(Number.parseInt(e.target.value, 10) || 0)}
+                  className="mt-1 bg-secondary border-border"
+                />
                 {movType !== 'ADJUSTMENT' && movementItem.stock >= 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
                     Resultado: {movType === 'IN' ? movementItem.stock + movQty : Math.max(0, movementItem.stock - movQty)} {movementItem.unit}
@@ -557,7 +592,7 @@ export default function InventoryPage() {
                             {tx.type === 'IN' ? 'Entrada' : tx.type === 'OUT' ? 'Salida' : 'Ajuste'}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {tx.createdAt ? new Date((tx.createdAt as any).seconds * 1000).toLocaleString('es-PA') : '—'}
+                            {toDate(tx.createdAt)?.toLocaleString('es-PA') || '—'}
                           </span>
                         </div>
                         {tx.notes && <p className="text-xs text-muted-foreground mt-0.5 truncate">{tx.notes}</p>}

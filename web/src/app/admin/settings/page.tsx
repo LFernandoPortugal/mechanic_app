@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -42,7 +43,7 @@ export default function SettingsPage() {
     if (authLoading) return;
     
     async function loadSettings() {
-      const wId = userProfile?.workshopId || (userProfile ? "demo-workshop" : null);
+      const wId = userProfile?.workshopId || null;
       if (!wId) {
         setLoading(false);
         return;
@@ -92,7 +93,6 @@ export default function SettingsPage() {
         currencySymbol: settings.currencySymbol,
         taxRate: Number(settings.taxRate),
         taxName: settings.taxName,
-        allowResetData: settings.allowResetData
       };
       
       await updateWorkshopSettings(userProfile.workshopId, newSettings);
@@ -265,12 +265,12 @@ export default function SettingsPage() {
                   <div className="flex items-center gap-4">
                     {settings.logoUrl && !logoFile && (
                       <div className="w-20 h-20 rounded-lg overflow-hidden bg-white border border-border flex items-center justify-center p-2">
-                        <img src={settings.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain" />
+                        <Image src={settings.logoUrl} alt="Logo" width={80} height={80} unoptimized className="max-w-full max-h-full object-contain" />
                       </div>
                     )}
                     {logoFile && (
                       <div className="w-20 h-20 rounded-lg overflow-hidden bg-white border border-border flex items-center justify-center p-2">
-                        <img src={URL.createObjectURL(logoFile)} alt="Logo Preview" className="max-w-full max-h-full object-contain" />
+                        <Image src={URL.createObjectURL(logoFile)} alt="Logo Preview" width={80} height={80} unoptimized className="max-w-full max-h-full object-contain" />
                       </div>
                     )}
                     
@@ -332,7 +332,7 @@ export default function SettingsPage() {
               <CardContent className="p-6 space-y-4">
                 <div className="flex flex-col gap-2 text-foreground">
                   <p className="text-sm font-semibold">
-                    Limpiar todos los datos del Taller: <span className="font-mono text-xs bg-red-500/10 px-1.5 py-0.5 rounded text-red-400 border border-red-500/20">{userProfile?.workshopId || "demo-workshop"}</span>
+                    Limpiar todos los datos del Taller: <span className="font-mono text-xs bg-red-500/10 px-1.5 py-0.5 rounded text-red-400 border border-red-500/20">{userProfile?.workshopId || "sin taller asociado"}</span>
                   </p>
                   <p className="text-muted-foreground text-xs leading-relaxed">
                     Esta acción eliminará de forma permanente e irreversible de la base de datos:

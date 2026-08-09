@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getUsersByWorkshop, updateUserRoles } from "@/lib/db";
 import { toast } from "sonner";
-import { UserProfile, UserRole, ROLE_META } from "@/types";
+import { UserProfile, UserRole, ROLE_BADGE_CLASSES, ROLE_META } from "@/types";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,13 +22,7 @@ export default function AdminUsersPage() {
   const [saving, setSaving] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!authLoading && userProfile) {
-      fetchUsers();
-    }
-  }, [authLoading, userProfile]);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     if (!userProfile?.workshopId) {
       setLoading(false);
       return;
@@ -42,7 +36,13 @@ export default function AdminUsersPage() {
     });
     setEditingRoles(initialRoles);
     setLoading(false);
-  };
+  }, [userProfile]);
+
+  useEffect(() => {
+    if (!authLoading && userProfile) {
+      void fetchUsers();
+    }
+  }, [authLoading, fetchUsers, userProfile]);
 
   const toggleRole = (uid: string, role: UserRole) => {
     setEditingRoles((prev) => {
@@ -152,7 +152,7 @@ export default function AdminUsersPage() {
                               onClick={() => toggleRole(user.uid, role)}
                               className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
                                 isActive
-                                  ? meta.color
+                                  ? ROLE_BADGE_CLASSES[role]
                                   : 'text-muted-foreground border-border bg-secondary/30 hover:border-accent'
                               }`}
                             >

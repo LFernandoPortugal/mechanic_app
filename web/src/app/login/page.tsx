@@ -1,19 +1,17 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { sendPasswordResetEmail, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { createUserProfile } from "@/lib/db";
+import { getUserProfile } from "@/lib/db";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { AlertCircle, Lock, Shield, Wrench, ClipboardList, DollarSign, LogIn } from "lucide-react";
-import { UserRole } from "@/types";
-
-const IS_DEV = process.env.NODE_ENV !== "production";
+import { AlertCircle, Lock } from "lucide-react";
+import { toast } from "sonner";
 
 function LoginForm() {
   const { t } = useLanguage();
@@ -25,13 +23,7 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const DEMO_ROLE_MAP: Record<string, UserRole[]> = {
-    'demo-admin@demo.com': ['ADMIN', 'RECEPTION', 'TECHNICIAN', 'ADVISOR'],
-    'tech@demo.com': ['TECHNICIAN'],
-    'reception@demo.com': ['RECEPTION'],
-    'advisor@demo.com': ['ADVISOR', 'RECEPTION'],
-  };
+  const [sendingReset, setSendingReset] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,61 +32,49 @@ function LoginForm() {
 
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
-      // Ensure profile is synced/exists
-      const roles = DEMO_ROLE_MAP[email] || ['RECEPTION'];
-      await createUserProfile(cred.user.uid, cred.user.email || email, undefined, roles);
+      const profile = await getUserProfile(cred.user.uid);
+      if (!profile) {
+        throw new Error("Tu cuenta no tiene un perfil activo. Contacta al administrador.");
+      }
       router.push(redirectTo);
-    } catch (err: any) {
-      console.error("Authentication failed:", err.code || err.message);
+    } catch (err: unknown) {
+      const code = typeof err === "object" && err !== null && "code" in err
+        ? String(err.code)
+        : "";
+      const message = err instanceof Error ? err.message : t('authError');
+      console.error("Authentication failed:", code || message);
       // Clean up Firebase Auth state if profile validation fails
       await signOut(auth).catch(() => {});
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+      if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
         setError(t('wrongPassword'));
-      } else if (err.code === 'auth/user-not-found') {
+      } else if (code === 'auth/user-not-found') {
         setError("Usuario no registrado. Contacta al administrador para obtener acceso.");
       } else {
-        setError(err.message || t('authError'));
+        setError(message);
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const fillDemo = (demoEmail: string) => {
-    setEmail(demoEmail);
-    setPassword("password123");
-  };
+  const handlePasswordReset = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      setError("Ingresa primero el correo de la cuenta.");
+      return;
+    }
 
-  const demoAccounts: { email: string; labelKey: string; rolesKey: string; icon: React.ReactNode; color: string }[] = [
-    {
-      email: "demo-admin@demo.com",
-      labelKey: "demoAdmin",
-      rolesKey: "demoFullAccess",
-      icon: <Shield className="w-4 h-4" />,
-      color: "text-purple-400 hover:border-purple-500/50 hover:bg-purple-950/20 dark:hover:bg-purple-950/20 hover:bg-purple-50",
-    },
-    {
-      email: "tech@demo.com",
-      labelKey: "demoTech",
-      rolesKey: "demoDiagnosisOnly",
-      icon: <Wrench className="w-4 h-4" />,
-      color: "text-orange-400 hover:border-orange-500/50 hover:bg-orange-950/20 dark:hover:bg-orange-950/20 hover:bg-orange-50",
-    },
-    {
-      email: "reception@demo.com",
-      labelKey: "demoReception",
-      rolesKey: "demoCheckinOnly",
-      icon: <ClipboardList className="w-4 h-4" />,
-      color: "text-emerald-400 hover:border-emerald-500/50 hover:bg-emerald-950/20 dark:hover:bg-emerald-950/20 hover:bg-emerald-50",
-    },
-    {
-      email: "advisor@demo.com",
-      labelKey: "demoAdvisor",
-      rolesKey: "demoQuoteReception",
-      icon: <DollarSign className="w-4 h-4" />,
-      color: "text-blue-400 hover:border-blue-500/50 hover:bg-blue-950/20 dark:hover:bg-blue-950/20 hover:bg-blue-50",
-    },
-  ];
+    setSendingReset(true);
+    setError("");
+    try {
+      await sendPasswordResetEmail(auth, normalizedEmail);
+    } catch {
+      // Keep the same user-facing result to avoid disclosing registered emails.
+    } finally {
+      toast.success("Si la cuenta existe, recibirás un correo para cambiar la contraseña.");
+      setSendingReset(false);
+    }
+  };
 
   return (
     <div className="min-h-screen page-bg flex flex-col items-center justify-center p-4">
@@ -128,6 +108,7 @@ function LoginForm() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={t('emailPlaceholder')}
+                  autoComplete="username"
                   required
                   className="bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-emerald-500/50"
                   disabled={loading}
@@ -138,6 +119,7 @@ function LoginForm() {
                 <Input
                   id="password"
                   type="password"
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -153,6 +135,16 @@ function LoginForm() {
               >
                 {loading ? t('processing') : t('loginButton')}
               </Button>
+
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full text-xs text-muted-foreground hover:text-foreground"
+                onClick={handlePasswordReset}
+                disabled={sendingReset}
+              >
+                {sendingReset ? "Enviando…" : "Olvidé mi contraseña"}
+              </Button>
             </form>
 
             <div className="mt-4 text-center">
@@ -162,31 +154,6 @@ function LoginForm() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Demo accounts — only visible in development, never in production */}
-        {IS_DEV && (
-          <div className="space-y-3">
-            <p className="text-center text-muted-foreground text-sm">
-              <span className="bg-amber-500/10 text-amber-500 text-[10px] px-2 py-0.5 rounded-full border border-amber-500/30 mr-1">DEV</span>
-              {t('demoAccountsLabel')}
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {demoAccounts.map((acc) => (
-                <button
-                  key={acc.email}
-                  onClick={() => fillDemo(acc.email)}
-                  className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border bg-card/50 transition-all text-left ${acc.color}`}
-                >
-                  {acc.icon}
-                  <div>
-                    <p className="text-sm font-medium">{t(acc.labelKey)}</p>
-                    <p className="text-[11px] text-muted-foreground">{t(acc.rolesKey)}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

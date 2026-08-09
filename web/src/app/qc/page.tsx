@@ -2,12 +2,9 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useRealtimeJobs } from "@/hooks/useRealtimeJobs";
-import { updateJob } from "@/lib/db";
-import { Job } from "@/types";
+import { submitQualityControl } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,13 +16,7 @@ import { toast } from "sonner";
 import {
   ShieldCheck,
   ClipboardCheck,
-  Clock,
-  Car,
-  User,
-  Activity,
-  AlertTriangle,
   CheckCircle2,
-  XCircle,
   Wrench,
   Search,
   MessageSquare,
@@ -40,8 +31,6 @@ import { WorkflowStepper } from "@/components/WorkflowStepper";
 import { VehicleIcon } from "@/components/ui/vehicle-icons";
 
 export default function QualityControlPage() {
-  const { t } = useLanguage();
-  const { user, userProfile } = useAuth();
   const router = useRouter();
 
   // Load all jobs currently in QC status, and also recently Ready/Repair jobs for history
@@ -117,30 +106,19 @@ export default function QualityControlPage() {
 
     setSubmitting(true);
     try {
-      const comment = inspectorNotes
-        ? `QC Aprobado por ${userProfile?.displayName || "Inspector"}: ${inspectorNotes}`
-        : `QC Aprobado por ${userProfile?.displayName || "Inspector"}`;
+      const result = await submitQualityControl(selectedJob.id, {
+        outcome: "pass",
+        notes: inspectorNotes,
+      });
 
-      const totalPaid = (selectedJob.payments || []).reduce((sum, p) => sum + p.amount, 0);
-      const isFullyPaid = totalPaid >= (selectedJob.approvedAmount || selectedJob.totalEstimate || 0);
-
-      await updateJob(
-        selectedJob.id,
-        {
-          status: isFullyPaid ? "Delivered" : "Ready",
-        },
-        user?.uid || "unknown",
-        comment
-      );
-
-      toast.success(isFullyPaid
+      toast.success(result.status === "Delivered"
         ? `✅ Vehículo ${selectedJob.vehicleId} aprobado y entregado (pago completo)!`
         : `✅ Vehículo ${selectedJob.vehicleId} aprobado y listo para entrega!`
       );
       setSelectedJobId(null);
-    } catch (e) {
-      console.error("Error approving QC:", e);
-      toast.error("Error al aprobar el control de calidad.");
+    } catch (error) {
+      console.error("Error approving QC:", error);
+      toast.error(error instanceof Error ? error.message : "Error al aprobar el control de calidad.");
     } finally {
       setSubmitting(false);
     }
@@ -155,24 +133,17 @@ export default function QualityControlPage() {
 
     setSubmitting(true);
     try {
-      const comment = `QC RECHAZADO por ${userProfile?.displayName || "Inspector"}. Motivo: ${rejectionReason}`;
-
-      // Send back to repair
-      await updateJob(
-        selectedJob.id,
-        {
-          status: "Repair",
-        },
-        user?.uid || "unknown",
-        comment
-      );
+      await submitQualityControl(selectedJob.id, {
+        outcome: "fail",
+        notes: rejectionReason,
+      });
 
       toast.success(`❌ Vehículo ${selectedJob.vehicleId} rechazado. Retornado a reparación.`);
       setSelectedJobId(null);
       setIsRejecting(false);
-    } catch (e) {
-      console.error("Error rejecting QC:", e);
-      toast.error("Error al registrar el rechazo.");
+    } catch (error) {
+      console.error("Error rejecting QC:", error);
+      toast.error(error instanceof Error ? error.message : "Error al registrar el rechazo.");
     } finally {
       setSubmitting(false);
     }

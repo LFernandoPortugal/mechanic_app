@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { updateJob, assignTechnician } from "@/lib/db";
 import { uploadJobImage } from "@/lib/storage";
 import { toast } from "sonner";
@@ -21,6 +22,7 @@ import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { useRealtimeJobs } from "@/hooks/useRealtimeJobs";
 import { WorkflowStepper } from "@/components/WorkflowStepper";
 import { VehicleIcon } from "@/components/ui/vehicle-icons";
+import { toDate } from "@/lib/dates";
 
 const STATUS_MAP: Record<string, string> = {
   Pass: 'statusPass',
@@ -87,7 +89,7 @@ export default function TechnicianDashboard() {
       setNewItemNotes("");
       setNewItemStatus("Pass");
       setNewItemPhotos([]);
-    } catch (e) {
+    } catch {
       toast.error("Error al subir la evidencia");
     } finally {
       setIsLogging(false);
@@ -124,9 +126,10 @@ export default function TechnicianDashboard() {
           setNewItemStatus("Recommended");
         }
       }
-    } catch (err: any) {
-      setAiError(err.message || "Error al ejecutar el diagnóstico.");
-      toast.error("Error de IA: " + (err.message || "Desconocido"));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Error al ejecutar el diagnóstico.";
+      setAiError(message);
+      toast.error("Error de IA: " + message);
     } finally {
       setAiLoading(false);
     }
@@ -148,6 +151,10 @@ export default function TechnicianDashboard() {
 
   const handleSubmitDiagnosis = async () => {
     if (!selectedJob) return;
+    if (!user?.uid) {
+      toast.error("La sesión no está disponible.");
+      return;
+    }
     
     // Safety check: block empty diagnosis submissions
     if (!selectedJob.inspectionItems || selectedJob.inspectionItems.length === 0) {
@@ -162,7 +169,7 @@ export default function TechnicianDashboard() {
       await updateJob(selectedJob.id, {
         inspectionItems: selectedJob.inspectionItems || [],
         status: "Approval"
-      }, user?.uid || "unknown", "Diagnóstico Enviado");
+      }, user.uid, "Diagnóstico Enviado");
       setSubmittedJob(selectedJob);  // save for WhatsApp
       setSubmittedJobId(selectedJob.vehicleId);
       setSelectedJob(null);
@@ -174,8 +181,12 @@ export default function TechnicianDashboard() {
 
   const handleStartRepair = async () => {
     if (!selectedJob) return;
+    if (!user?.uid) {
+      toast.error("La sesión no está disponible.");
+      return;
+    }
     try {
-      await updateJob(selectedJob.id, { status: "Repair" }, user?.uid || "unknown", "Reparación Iniciada");
+      await updateJob(selectedJob.id, { status: "Repair" }, user.uid, "Reparación Iniciada");
       toast.success("Reparación iniciada");
       setSelectedJob({ ...selectedJob, status: "Repair" } as Job);
       // Real-time listener handles refresh automatically
@@ -186,8 +197,12 @@ export default function TechnicianDashboard() {
 
   const handleSendToQC = async () => {
     if (!selectedJob) return;
+    if (!user?.uid) {
+      toast.error("La sesión no está disponible.");
+      return;
+    }
     try {
-      await updateJob(selectedJob.id, { status: "QC" }, user?.uid || "unknown", "Enviado a QC");
+      await updateJob(selectedJob.id, { status: "QC" }, user.uid, "Enviado a QC");
       toast.success("Vehículo enviado a control de calidad");
       setSelectedJob(null);
       // Real-time listener handles refresh automatically
@@ -241,9 +256,9 @@ export default function TechnicianDashboard() {
   }
 
   // Helper: human-readable relative date
-  const formatJobTime = (date: any): string => {
-    if (!date) return '';
-    const d = date instanceof Date ? date : (date?.toDate ? date.toDate() : new Date(date));
+  const formatJobTime = (date: unknown): string => {
+    const d = toDate(date);
+    if (!d) return '';
     const now = new Date();
     const diffMs = now.getTime() - d.getTime();
     const diffMin = Math.floor(diffMs / 60000);
@@ -320,7 +335,7 @@ export default function TechnicianDashboard() {
                       variant="outline"
                       className={`shrink-0 text-[10px] px-1.5 py-0 font-medium ${statusColor}`}
                     >
-                      {t(`status${job.status}` as any) || job.status}
+                      {t(`status${job.status}`) || job.status}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-2 mt-1.5">
@@ -361,7 +376,7 @@ export default function TechnicianDashboard() {
                       <strong className="text-xs text-orange-400 not-italic block uppercase tracking-wider mb-1">
                         {t('symptomsLabel') || "Síntomas Reportados por el Cliente / Motivo:"}
                       </strong>
-                      "{selectedJob.symptoms}"
+                      &ldquo;{selectedJob.symptoms}&rdquo;
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground italic mt-1">Sin síntomas reportados en la recepción.</p>
@@ -437,7 +452,7 @@ export default function TechnicianDashboard() {
                             {item.mediaUrls && item.mediaUrls.length > 0 && (
                               <div className="flex gap-2 mt-2">
                                 {item.mediaUrls.map((url, idx) => (
-                                  <img key={idx} src={url} alt="Evidencia" className="w-12 h-12 object-cover rounded border border-border" />
+                                  <Image key={idx} src={url} alt="Evidencia" width={48} height={48} unoptimized className="w-12 h-12 object-cover rounded border border-border" />
                                 ))}
                               </div>
                             )}
@@ -547,7 +562,7 @@ export default function TechnicianDashboard() {
                         <div className="mt-2 flex flex-wrap gap-2">
                           {newItemPhotos.map((p, i) => (
                             <div key={i} className="relative w-12 h-12 rounded overflow-hidden border border-border">
-                              <img src={URL.createObjectURL(p)} alt="preview" className="object-cover w-full h-full" />
+                              <Image src={URL.createObjectURL(p)} alt="Vista previa" fill sizes="48px" unoptimized className="object-cover" />
                               <button 
                                 type="button" 
                                 onClick={() => setNewItemPhotos(newItemPhotos.filter((_, index) => index !== i))}

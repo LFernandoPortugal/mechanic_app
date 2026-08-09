@@ -5,7 +5,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Sun, Moon, Globe, LogOut, Users, Crown } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-import { ROLE_META } from "@/types";
+import { ROLE_BADGE_CLASSES, ROLE_META } from "@/types";
 import Link from "next/link";
 
 export function Header() {
@@ -86,7 +86,7 @@ export function Header() {
           {user && (
             <div className="flex items-center gap-2 pl-3 border-l border-border ml-1">
               {roleMeta && (
-                <span className={`hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${roleMeta.color}`}>
+                <span className={`hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${ROLE_BADGE_CLASSES[primaryRole!]}`}>
                   <span>{roleMeta.emoji}</span>
                   {t(roleMeta.labelKey)}
                 </span>

@@ -1,60 +1,55 @@
-# Configuración de SuperAdmin — SGA
+# Configuración de SUPER_ADMIN — SGA
 
-> Actualizado: 2026-07-20
+> Actualizado: 2026-08-08
 
-## ¿Qué es el SuperAdmin?
+## Alcance
 
-El SuperAdmin es la cuenta con acceso total a través de todos los talleres (multi-tenant). Tiene el rol `SUPER_ADMIN` y su `workshopId` es `master-control`.
+SUPER_ADMIN es la cuenta administrativa única con acceso cross-tenant. Su perfil `users/{uid}` debe tener `roles: ["SUPER_ADMIN"]` y `workshopId: "master-control"`.
 
-## Cómo activar la cuenta SuperAdmin
+La aplicación no promueve usuarios por email ni crea este rol desde el navegador. La cuenta inicial debe provisionarse mediante un procedimiento administrativo auditado, después de comprobar el proyecto Firebase objetivo. No se usa para pruebas rutinarias.
 
-1. Definir la variable de entorno `NEXT_PUBLIC_SUPER_ADMIN_EMAIL` en Vercel con tu email real.
-2. Iniciar sesión con ese email en la app.
-3. El sistema detecta el email al crear el perfil en Firestore y asigna `SUPER_ADMIN` automáticamente.
-4. Si la cuenta ya existía con otro rol, `getUserProfile` la promueve en el primer login.
+## Crear un taller y su ADMIN
 
-## Flujo para onboardear un nuevo taller
+1. Iniciar sesión con la cuenta SUPER_ADMIN y abrir `/super-admin`.
+2. Completar ID/nombre del taller, email del ADMIN, contraseña inicial y duración del acceso.
+3. Pulsar **Crear Taller y Cuenta**.
+4. `/api/admin/users` vuelve a verificar token y rol en el servidor, crea la identidad en Firebase Authentication y crea `settings/{workshopId}` + `users/{uid}` de forma coordinada.
+5. Entregar la contraseña inicial (mínimo 12 caracteres) por un canal seguro y pedir al ADMIN que use **Olvidé mi contraseña** en `/login` para establecer una propia. La contraseña no se guarda en Firestore.
 
-1. Ir a la URL de producción → iniciar sesión como SuperAdmin.
-2. Panel del Creador (`/super-admin`) → formulario "Nuevo Taller + Admin":
-   - **ID del Taller**: identificador único sin espacios (ej: `taller-garcia-2025`)
-   - **Nombre**: nombre visible para el cliente
-   - **Email del Admin**: correo que usará el administrador del taller
-   - **Contraseña Temporal**: mínimo 6 caracteres (se almacena en `settings.tempPassword`)
-   - **Días de Trial**: cuántos días tendrá acceso el taller (7 / 14 / 30 / personalizado)
-3. Pulsar "Crear Taller y Cuenta". El sistema:
-   - Crea la cuenta en Firebase Auth vía Identity Toolkit API
-   - Crea el documento en `settings/{workshopId}` con `adminEmail`, `expiresAt`, `tempPassword`
-   - Crea el documento de usuario en `users/{uid}` con `roles: ['ADMIN']` y `workshopId` correcto
-4. El admin del taller recibe sus credenciales y puede iniciar sesión inmediatamente.
-5. Opcional: limpiar `tempPassword` con el botón "Limpiar Clave" una vez entregadas las credenciales.
+Si el email ya existe en Firebase Authentication, la operación responde con conflicto: no combina ni sobrescribe identidades.
 
-## Acciones disponibles por taller
+## Acciones del panel
 
-| Acción | Función |
-|--------|---------|
-| `Danger On/Off` | Activa/desactiva el permiso de "Borrar Datos" para ese taller |
-| `+7d / +30d` | Extiende el trial desde la fecha actual |
-| `Revocar` | Setea `expiresAt` a epoch 0 (acceso inmediatamente bloqueado) |
-| `Borrar Datos` | Elimina todos los jobs, inventario y transacciones del taller |
-| `Limpiar Clave` | Borra `tempPassword` del documento de settings (no revoca la cuenta) |
-| `Eliminar` | Elimina el documento de `settings`. **No elimina usuarios ni Auth** |
+| Acción | Resultado |
+|---|---|
+| `Danger On/Off` | Autoriza o revoca el borrado de datos operativos por el ADMIN del taller. |
+| `+7d / +30d` | Extiende la expiración vigente; si ya venció, cuenta desde el momento actual. Nunca acorta un trial activo. |
+| `Revocar` | Expira el acceso inmediatamente. |
+| `Borrar Datos` | Elimina jobs, inventario y movimientos del taller; requiere confirmación. |
+| Eliminar usuario | Borra la cuenta objetivo en Firebase Authentication y su perfil Firestore. |
+| Eliminar taller | Borra primero sus cuentas Auth y después datos/perfiles/settings del taller. |
 
-> [!CAUTION]
-> Eliminar el taller no elimina las cuentas de Firebase Auth. Para revocar acceso total,
-> también debes eliminar el perfil en Firestore (botón 🗑 en la tabla de usuarios).
+La API protege la propia cuenta que ejecuta la operación y cualquier perfil SUPER_ADMIN frente al borrado.
 
-## Variables de entorno requeridas
+## Provisionamiento excepcional de la cuenta única
 
-| Variable | Descripción |
-|----------|-------------|
-| `NEXT_PUBLIC_SUPER_ADMIN_EMAIL` | Email del superadmin. Define quién obtiene el rol `SUPER_ADMIN` en el primer login |
-| `NEXT_PUBLIC_FIREBASE_API_KEY` | API key de Firebase (necesaria para crear cuentas via Identity Toolkit desde el panel) |
-| Las demás `NEXT_PUBLIC_FIREBASE_*` | Config estándar del proyecto Firebase |
+`execution/seed_super_admin.py` reemplaza los scripts REST históricos. Es seguro por defecto: solo muestra una vista previa hasta usar `--apply`, exige el proyecto exacto, comprueba UID/email en Firebase Authentication y rechaza crear una segunda cuenta SUPER_ADMIN.
 
-## Métricas que muestra el panel
+```powershell
+py -m pip install -r execution/requirements.txt
+py execution/seed_super_admin.py --project mechanic-app-7d459 --email correo-del-propietario
+```
 
-- **OTs activas**: número de órdenes de trabajo activas (no Delivered) por taller
-- **Días restantes de trial**: calculados en tiempo real desde `expiresAt`
-- **Contraseña temporal**: visible si no ha sido limpiada
-- **Usuarios del taller**: listado de perfiles en Firestore con sus roles y UID
+No guardar el correo/UID real, API keys ni contraseñas dentro de scripts. La ejecución efectiva requiere además `--apply` y una confirmación interactiva con el proyecto.
+
+## Credenciales server-side
+
+Las operaciones privilegiadas se ejecutan en Vercel mediante OIDC y Google Workload Identity Federation. Los identificadores requeridos están enumerados en `docs/AI-Handoff.md`; no se debe crear, compartir o desplegar una clave JSON de cuenta de servicio.
+
+## Verificación antes de producción
+
+1. Usar una cuenta/taller descartable, nunca la identidad real como sujeto de la prueba.
+2. Crear el taller y comprobar que existe exactamente una identidad Auth, un perfil ADMIN y un `settings` con el mismo `workshopId`.
+3. Confirmar que un ADMIN no puede llamar `/api/admin/users`.
+4. Eliminar el taller desde el panel.
+5. Comprobar que Auth, `users`, `settings` y datos operativos quedaron limpios.

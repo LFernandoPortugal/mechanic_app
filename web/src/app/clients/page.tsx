@@ -3,15 +3,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { getAllClients, ClientSummary } from "@/lib/clients";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Users,
   Search,
   Phone,
   Mail,
@@ -27,7 +25,6 @@ import {
 } from "lucide-react";
 
 export default function ClientsPage() {
-  const { t } = useLanguage();
   const router = useRouter();
   const { userProfile, loading: authLoading, workshopSettings } = useAuth();
   const [clients, setClients] = useState<ClientSummary[]>([]);
@@ -39,7 +36,7 @@ export default function ClientsPage() {
 
     const fetchClients = async () => {
       try {
-        const wId = userProfile?.workshopId || (userProfile ? "demo-workshop" : null);
+        const wId = userProfile?.workshopId || null;
         if (!wId) {
           setLoading(false);
           return;
