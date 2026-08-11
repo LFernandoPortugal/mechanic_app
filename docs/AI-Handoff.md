@@ -9,12 +9,12 @@
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
 - **Producción:** `origin/main` incluye el commit funcional `4a21b96`; la estabilización, las rondas visuales, EmailJS y los enlaces revocables están desplegados en `https://mechanic-app-zeta.vercel.app/`. El HEAD puede avanzar por commits exclusivamente documentales.
-- **Rama de trabajo:** ninguna funcional pendiente; PR #8 integrada por squash en `main`.
+- **Rama de trabajo:** ninguna funcional de runtime pendiente; el contrato de enlaces revocables también cuenta con integración automatizada de sus API routes.
 - **Árbol local al cerrar:** limpio y sincronizado con `origin/main` después de integrar el checkpoint documental.
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas de la estabilización están desplegadas y fueron releídas desde el proyecto activo.
-- **Último hito:** PR #10 integrada y desplegada: enlaces de cotización con token de 256 bits, hash server-only, caducidad, regeneración y revocación. Firestore Rules también está desplegado y verificado remotamente.
-- **Calidad verificada:** TypeScript, lint, 32 pruebas unitarias, 23 pruebas de reglas, audit sin vulnerabilidades, build de 19 páginas/5 APIs, flujo real completo, EmailJS confirmado y QA de enlaces en Vercel Preview.
-- **Siguiente paso recomendado:** priorizar el próximo bloque funcional de beta; no repetir el QA destructivo de enlaces salvo que cambie ese contrato.
+- **Último hito:** el contrato de enlaces revocables quedó protegido en CI con 5 pruebas de integración de API sobre Firestore Emulator, sin credenciales ni datos reales.
+- **Calidad verificada:** TypeScript, lint, 32 pruebas unitarias, 5 de integración de API, 23 pruebas de reglas, audit sin vulnerabilidades, build de 19 páginas/5 APIs, flujo real completo, EmailJS confirmado y QA de enlaces en Vercel Preview.
+- **Siguiente paso recomendado:** continuar con la siguiente ronda visual/responsive usando `p1`; no repetir el QA destructivo de enlaces salvo que cambie ese contrato.
 - **No repetir ni asumir:** EmailJS confirmó aceptación y una persona confirmó recepción/presentación correcta en un inbox controlado. No hace falta recrear las órdenes QA ya eliminadas; verificar siempre el deployment vigente antes de un nuevo cambio.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
@@ -142,13 +142,14 @@ npm.cmd run build
 npm.cmd audit --omit=dev
 ```
 
-Resultado más reciente del 2026-08-09:
+Resultado más reciente del 2026-08-11:
 
 - TypeScript: 0 errores.
 - Lint: 0 errores, 0 warnings.
-- Unit tests: 27/27.
-- Firestore Rules tests: 22/22.
-- Build: correcto; 19/19 páginas estáticas y 4 API routes dinámicas.
+- Unit tests: 32/32.
+- Integración de API routes con Firestore Emulator: 5/5.
+- Firestore Rules tests: 23/23.
+- Build: correcto; 19/19 páginas estáticas y 5 API routes dinámicas.
 - Auditoría runtime: 0 vulnerabilidades.
 - Auditoría completa: 5 moderadas, todas transitivas de `firebase-tools`; el aviso alto y los moderados parcheables fueron eliminados sin `--force`.
 - E2E público local y Vercel preview: GET sanitizado, firma/aprobación parcial, monto 210, un `declinedItem`, tracker correcto y limpieza confirmada.
@@ -158,7 +159,7 @@ Resultado más reciente del 2026-08-09:
 - E2E SUPER_ADMIN en Vercel preview: se creó un taller descartable con exactamente una cuenta Auth, un perfil ADMIN y un `settings` sin `tempPassword`; el borrado posterior eliminó Auth/perfil/settings, dejó 0 jobs/inventario/movimientos y restauró los conteos originales.
 - El contenido del panel SUPER_ADMIN se monta únicamente después de que `ProtectedRoute` confirma sesión y rol, evitando consultas Firestore transitorias antes de inicializar Auth.
 
-CI vive en `.github/workflows/ci.yml`, se activa en PRs, `main`, ramas `codex/**` y manualmente, y ejecuta instalación, auditoría runtime, TypeScript, lint, pruebas y build. El build usa identificadores Firebase ficticios y públicos para prerenderizar; no necesita ni recibe credenciales de producción.
+CI vive en `.github/workflows/ci.yml`, se activa en PRs, `main`, ramas `codex/**` y manualmente, y ejecuta instalación, auditoría runtime, TypeScript, lint, pruebas unitarias, integración de API routes, Rules y build. Las pruebas de integración levantan Firestore Emulator y simulan únicamente la identidad del caller; ejercen transacciones reales sin credenciales o datos de producción. El build usa identificadores Firebase ficticios y públicos para prerenderizar.
 
 ## Variables requeridas
 
@@ -234,13 +235,20 @@ La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos 
 4. `firestore.rules` se desplegó exclusivamente a `mechanic-app-7d459`; una lectura posterior confirmó el deny explícito de `public_quote_links`. No se desplegó Firebase Hosting.
 5. La orden QA y su enlace se eliminaron; Firebase MCP confirmó `jobs` y `public_quote_links` vacíos. `p1` y SUPER_ADMIN no se modificaron.
 
+## Cobertura automatizada de enlaces revocables del 2026-08-11
+
+1. `tests/integration/quote-link-routes.test.ts` ejecuta las API routes reales contra Firestore Emulator y simula solo el resultado de autenticación.
+2. La suite verifica 401 y aislamiento de tenant, persistencia exclusiva del hash, cabeceras no-cache/no-referrer, regeneración, token ausente/malformado/anterior, caducidad y DTO sanitizado.
+3. También verifica aprobación transaccional e idempotente, permanencia del tracker después de aprobar y revocación idempotente con auditoría única.
+4. `npm run test:all` bloquea CI si falla cualquiera de las 32 unitarias, 5 integraciones de API o 23 pruebas de Rules.
+5. No se utilizaron credenciales, talleres ni documentos reales; el bloque no requiere despliegue de Firebase ni QA destructivo en Production.
+
 ## Siguiente bloque recomendado
 
-1. Seleccionar el siguiente bloque funcional de beta basándose en impacto/riesgo; los enlaces revocables ya no son un pendiente.
+1. Continuar la revisión visual/responsive con datos controlados de `p1`, priorizando pantallas todavía no cubiertas por el último pase.
 2. Mantener `p1` como fixture de testers hasta finalizar el flujo crítico y limpiar cada orden descartable creada.
 3. No repetir despliegues de Rules ni pruebas con SUPER_ADMIN si el siguiente cambio no toca seguridad, roles o datos privilegiados.
-3. Resolver o aceptar explícitamente los avisos moderados dev-only de `npm audit` sin aplicar un downgrade automático de `firebase-tools`.
-4. Mantener `p1` como fixture de testers hasta cerrar las funciones y flujos importantes; decidir su eliminación solo al finalizar la beta.
+4. Resolver o aceptar explícitamente los avisos moderados dev-only de `npm audit` sin aplicar un downgrade automático de `firebase-tools`.
 
 ## Reglas para la próxima IA
 

@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest run tests/unit",
     "test:rules": "firebase emulators:exec --only firestore --project demo-mechanic-app \"vitest run tests/firestore.rules.test.ts\"",
-    "test:all": "npm run test && npm run test:rules"
+    "test:integration": "firebase emulators:exec --only firestore --project demo-mechanic-app \"vitest run tests/integration\"",
+    "test:all": "npm run test && npm run test:rules && npm run test:integration"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",

@@ -58,7 +58,7 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Unit and Firestore Rules tests
+      - name: Unit, API integration, and Firestore Rules tests
         run: npm run test:all
 
       - name: Production build
