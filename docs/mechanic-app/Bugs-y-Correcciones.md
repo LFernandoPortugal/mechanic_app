@@ -229,3 +229,18 @@ Al seleccionar de nuevo una orden en `Approval`, la UI recuperaba los precios de
 Si una misma pestaña pasaba de un enlace inválido al regenerado, el navegador no recargaba el documento porque solo cambiaba `#token`. El portal ahora escucha `hashchange` y vuelve a consultar con el token vigente.
 
 La ronda final pasó en Preview y Producción. El enlace oficial se emitió, abrió la cotización sanitizada, fue revocado a 404 y los datos QA quedaron eliminados. Firestore Rules se desplegó sin incluir Hosting.
+
+---
+
+## v1.9 — Flujo visual de acceso (2026-08-11)
+
+### BUG-017: La pantalla de login sugería registro y seguía visible con sesión activa
+
+**Síntoma**: un ADMIN autenticado podía abrir `/login` y ver simultáneamente su identidad en el header y el formulario “Iniciar Sesión / Registrarse”, aunque el registro público está cerrado.
+
+**Corrección**:
+
+- `/login` espera la resolución de Auth y redirige una sesión vigente al destino interno solicitado o al dashboard.
+- El parámetro `redirect` rechaza orígenes externos, URLs protocol-relative, barras invertidas y saltos de línea antes de entregarlo al router.
+- El CTA y el subtítulo en español/inglés ya no ofrecen auto-registro; indican que las credenciales son asignadas por el administrador.
+- Pruebas unitarias cubren destinos internos y entradas inseguras. El navegador local confirmó redirección a `/`, redirección válida a `/inventory`, login tester y ausencia de errores de consola.
