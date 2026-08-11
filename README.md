@@ -15,7 +15,7 @@ El flujo canónico es:
 Reception → Diagnosis → Approval → Approved → Repair → QC → Ready → Delivered
 ```
 
-El portal público vigente usa `/quote/view?id=JOB_ID`; los documentos completos de Firestore no son públicos.
+El portal público vigente usa `/quote/view?id=JOB_ID#token=TOKEN`; el token es revocable, caduca y los documentos completos de Firestore no son públicos.
 
 ## Desarrollo
 

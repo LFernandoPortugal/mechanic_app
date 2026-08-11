@@ -309,6 +309,21 @@ describe("public quote boundary", () => {
       .firestore();
     await assertSucceeds(getDoc(doc(db, "jobs", "job-a")));
   });
+
+  it("keeps public quote token hashes inaccessible to every browser role", async () => {
+    const adminDb = testEnv
+      .authenticatedContext("admin-a", { email: "admin-a@example.test" })
+      .firestore();
+    const superDb = testEnv
+      .authenticatedContext("super", { email: "owner@example.test" })
+      .firestore();
+
+    await assertFails(getDoc(doc(adminDb, "public_quote_links", "job-a")));
+    await assertFails(getDoc(doc(superDb, "public_quote_links", "job-a")));
+    await assertFails(setDoc(doc(adminDb, "public_quote_links", "job-a"), {
+      tokenHash: "forged",
+    }));
+  });
 });
 
 describe("job workflow boundaries", () => {

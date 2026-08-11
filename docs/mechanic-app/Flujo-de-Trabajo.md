@@ -1,6 +1,6 @@
 # Flujo de Trabajo — SGA Mechanic App
 
-> Actualizado: 2026-08-08 (auditoría de seguridad e integridad)
+> Actualizado: 2026-08-11 (enlaces públicos revocables)
 
 ## Flujo Completo de una Orden de Trabajo
 
@@ -15,7 +15,7 @@ Reception → Diagnosis → Approval → Approved → Repair → QC → Ready �
 | `Reception` | RECEPTION / ADMIN | Se registra el vehículo, fluidos, valuables, firma del cliente y fotos de daños previos |
 | `Diagnosis` | TECHNICIAN / ADMIN | El técnico inspecciona el vehículo y registra items (Pass/Fail/Critical/Recommended) |
 | `Approval` | ADVISOR / ADMIN | El asesor construye la cotización: precios por item + mano de obra. Genera link y lo envía al cliente |
-| `Approved` | **Cliente** (`/quote/view?id=JOB_ID`) | Selecciona ítems, firma y acepta. El servidor calcula `approvedAmount`, `declinedItems` y `approvedAt` |
+| `Approved` | **Cliente** (`/quote/view?id=JOB_ID#token=TOKEN`) | Selecciona ítems, firma y acepta. El servidor calcula `approvedAmount`, `declinedItems` y `approvedAt` |
 | `Repair` | TECHNICIAN / ADMIN | El técnico inicia la reparación. Al terminar pulsa "Enviar a QC" |
 | `QC` | TECHNICIAN / ADVISOR / ADMIN | Inspector verifica 5 puntos del checklist mediante `/api/jobs/[id]/qc`. Puede aprobar (→ Ready) o rechazar (→ Repair). Si el pago ya estaba completo, la aprobación de QC cierra en Delivered |
 | `Ready` | Sistema automático | Trabajo aprobado por QC, pendiente de completar el cobro. El Advisor gestiona el pago |
@@ -39,3 +39,5 @@ Reception → Diagnosis → Approval → Approved → Repair → QC → Ready �
 6. La firma de recepción (`signatureBase64`) y la firma de aprobación (`approvalSignatureBase64`) son evidencias distintas y no se sobrescriben.
 7. El portal público no accede directamente a Firestore; usa un DTO sanitizado servido por Vercel.
 8. Un `approvedAmount` de cero es válido cuando la aprobación nueva tiene `approvedAt`; los registros históricos sin esa marca conservan el fallback a `totalEstimate`.
+9. El token de 256 bits permanece en el fragmento de la URL, se transmite a la API mediante `X-Quote-Token` y solo su hash SHA-256 se guarda en `public_quote_links`.
+10. El enlace caduca a los 30 días. Regenerarlo reemplaza el hash e invalida el enlace anterior; revocarlo elimina el registro. No es de un solo uso porque sigue mostrando el tracker hasta `Delivered`.

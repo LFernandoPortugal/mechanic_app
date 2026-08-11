@@ -13,11 +13,13 @@ import { generateQuotePDF } from "@/lib/pdf";
 import { VehicleIcon } from "@/components/ui/vehicle-icons";
 import { SignatureCanvas } from "@/components/SignatureCanvas";
 import type { PublicQuote, PublicQuoteJob } from "@/lib/public-quote";
+import { getQuoteTokenFromHash } from "@/lib/public-quote-link";
 
 export default function ClientQuoteView() {
   const { t } = useLanguage();
   const searchParams = useSearchParams();
   const jobId = searchParams.get("id") as string;
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   
   const [quote, setQuote] = useState<PublicQuote | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,10 +36,20 @@ export default function ClientQuoteView() {
   const formatMoney = (amount: number) => `${currencySymbol}${amount.toFixed(2)}`;
 
   useEffect(() => {
+    const syncTokenFromFragment = () => {
+      setAccessToken(getQuoteTokenFromHash(window.location.hash));
+    };
+    syncTokenFromFragment();
+    window.addEventListener("hashchange", syncTokenFromFragment);
+    return () => window.removeEventListener("hashchange", syncTokenFromFragment);
+  }, []);
+
+  useEffect(() => {
+    if (accessToken === null) return;
     let active = true;
 
     async function fetchQuote() {
-      if (!jobId) {
+      if (!jobId || !accessToken) {
         setLoadError("not-found");
         setLoading(false);
         return;
@@ -49,6 +61,7 @@ export default function ClientQuoteView() {
       try {
         const response = await fetch(`/api/public/quotes/${encodeURIComponent(jobId)}`, {
           cache: "no-store",
+          headers: { "X-Quote-Token": accessToken },
         });
         if (response.status === 404) throw new Error("QUOTE_NOT_FOUND");
         if (!response.ok) throw new Error("QUOTE_LOAD_FAILED");
@@ -78,7 +91,7 @@ export default function ClientQuoteView() {
     return () => {
       active = false;
     };
-  }, [jobId, retryToken]);
+  }, [accessToken, jobId, retryToken]);
 
   const getLaborCost = (j: PublicQuoteJob) => {
     const partsTotal = j.inspectionItems?.reduce((acc, item) => acc + (item.price || 0), 0) || 0;
@@ -116,7 +129,10 @@ export default function ClientQuoteView() {
     try {
       const response = await fetch(`/api/public/quotes/${encodeURIComponent(job.id)}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Quote-Token": accessToken || "",
+        },
         body: JSON.stringify({
           decisions: approvals,
           signatureBase64: approvalSignature,

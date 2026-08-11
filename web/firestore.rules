@@ -361,6 +361,12 @@ service cloud.firestore {
       );
     }
 
+    // Token hashes and issuance metadata are server-only. The Admin SDK used by
+    // the Vercel API bypasses Rules; no browser role can read this collection.
+    match /public_quote_links/{jobId} {
+      allow read, write: if false;
+    }
+
     match /settings/{workshopId} {
       allow get: if request.auth != null && (
         isSuperAdmin()

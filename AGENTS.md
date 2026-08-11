@@ -35,7 +35,7 @@ La orden de trabajo sigue:
 - Asesor prepara la cotización y la envía al portal público.
 - El cliente aprueba o rechaza ítems.
 - Taller repara, QC valida y caja registra pagos/entrega.
-- El enlace público vigente usa `/quote/view?id=JOB_ID`; valida cualquier otra ruta contra el código antes de documentarla.
+- El enlace público vigente usa `/quote/view?id=JOB_ID#token=TOKEN`; el token permanece en el fragmento y el portal lo envía a la API mediante `X-Quote-Token`.
 
 ## Seguridad y datos
 

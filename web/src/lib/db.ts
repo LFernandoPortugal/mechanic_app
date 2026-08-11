@@ -2,6 +2,7 @@ import { auth, db } from "./firebase";
 import { arrayUnion, collection, addDoc, Timestamp, doc, getDoc, getDocs, query, where, updateDoc, deleteDoc, setDoc, orderBy, runTransaction } from "firebase/firestore";
 import { Job, UserProfile, UserRole, InventoryItem, InventoryTransaction, StockMovementType, WorkshopSettings } from "@/types";
 import { calculateStockAfterMovement } from "@/lib/transactions";
+import { revokeQuoteLink } from "@/lib/quote-link-client";
 
 // ─── User Profile Functions (RBAC) ──────────────────────
 
@@ -557,6 +558,10 @@ export async function resetWorkshopData(workshopId: string): Promise<{ jobsDelet
     const jobsRef = collection(db, "jobs");
     const jobsSnap = await getDocs(query(jobsRef, where("workshopId", "==", workshopId)));
     for (const document of jobsSnap.docs) {
+      // Revoke the server-only public access record before deleting its job.
+      if (/^[A-Za-z0-9]{20}$/.test(document.id)) {
+        await revokeQuoteLink(document.id);
+      }
       await deleteDoc(doc(db, "jobs", document.id));
       jobsDeleted++;
     }
