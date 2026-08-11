@@ -2,19 +2,19 @@
 
 > Última actualización: 2026-08-11
 > Producción oficial: rama `main` en Vercel
-> Código funcional de producción verificado: `586deda` en `https://mechanic-app-zeta.vercel.app/`
+> Código funcional de producción verificado: `4a21b96` en `https://mechanic-app-zeta.vercel.app/`
 
 ## Punto de reanudación rápido
 
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
-- **Producción:** `origin/main` incluye el commit funcional `586deda`; la estabilización, las rondas visuales y la mejora EmailJS están desplegadas en `https://mechanic-app-zeta.vercel.app/`. El HEAD puede avanzar por commits exclusivamente documentales.
+- **Producción:** `origin/main` incluye el commit funcional `4a21b96`; la estabilización, las rondas visuales, EmailJS y los enlaces revocables están desplegados en `https://mechanic-app-zeta.vercel.app/`. El HEAD puede avanzar por commits exclusivamente documentales.
 - **Rama de trabajo:** ninguna funcional pendiente; PR #8 integrada por squash en `main`.
 - **Árbol local al cerrar:** limpio y sincronizado con `origin/main` después de integrar el checkpoint documental.
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas de la estabilización están desplegadas y fueron releídas desde el proyecto activo.
-- **Último hito:** PR #10 validada en Preview: enlaces de cotización con token de 256 bits, hash server-only, caducidad, regeneración y revocación. Aún no está integrada en `main` al redactar este punto.
+- **Último hito:** PR #10 integrada y desplegada: enlaces de cotización con token de 256 bits, hash server-only, caducidad, regeneración y revocación. Firestore Rules también está desplegado y verificado remotamente.
 - **Calidad verificada:** TypeScript, lint, 32 pruebas unitarias, 23 pruebas de reglas, audit sin vulnerabilidades, build de 19 páginas/5 APIs, flujo real completo, EmailJS confirmado y QA de enlaces en Vercel Preview.
-- **Siguiente paso recomendado:** integrar PR #10, verificar Vercel Production y después desplegar exclusivamente Firestore Rules.
+- **Siguiente paso recomendado:** priorizar el próximo bloque funcional de beta; no repetir el QA destructivo de enlaces salvo que cambie ese contrato.
 - **No repetir ni asumir:** EmailJS confirmó aceptación y una persona confirmó recepción/presentación correcta en un inbox controlado. No hace falta recrear las órdenes QA ya eliminadas; verificar siempre el deployment vigente antes de un nuevo cambio.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
@@ -23,7 +23,7 @@ Para retomar, leer este documento completo y luego seguir el orden obligatorio d
 
 La aplicación es un SGA multitenant en Next.js 16, Firebase Auth/Firestore y Vercel. La estabilización está integrada en `main`, desplegada en Vercel Production y acompañada por sus reglas Firestore en `mechanic-app-7d459`.
 
-- Producción sirve el código funcional de `586deda` en `https://mechanic-app-zeta.vercel.app/` desde `main`; commits posteriores pueden limitarse a documentación. La estabilización continúa en el historial como `c903185`.
+- Producción sirve el código funcional de `4a21b96` en `https://mechanic-app-zeta.vercel.app/` desde `main`; commits posteriores pueden limitarse a documentación. La estabilización continúa en el historial como `c903185`.
 - Preview protegida de la rama (alias estable): `https://mechanic-app-git-codex-secur-abea4c-lfernandoportugals-projects.vercel.app`.
 - Las reglas nuevas se compilaron y publicaron únicamente como `firestore:rules`; no se desplegaron Hosting, Storage ni índices.
 - El taller tester `p1` fue reparado: conserva su cuenta Auth y ahora tiene un único perfil ADMIN y un `settings/p1` vacío/activo. No se combinaron usuarios antiguos.
@@ -226,11 +226,19 @@ La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos 
 7. La orden y su registro en `public_quote_links` se eliminaron; Firebase MCP confirmó ambas colecciones vacías.
 8. El servidor local no pudo ejercer las APIs Admin por falta de Application Default Credentials; el error se aisló al entorno local y el mismo flujo pasó en Preview mediante OIDC/WIF.
 
+## Cierre de Producción de enlaces revocables del 2026-08-11
+
+1. PR #10 se integró por squash en `main` como `4a21b96`; CI de `main` y Vercel Production completaron correctamente.
+2. El ADMIN tester de `p1` recorrió Recepción → Diagnóstico → Approval en el dominio oficial y emitió un enlace seguro para una orden descartable por `S/. 12.34`.
+3. El token oficial tuvo el formato esperado y abrió el DTO sanitizado. Tras revocarlo desde la UI, recargar el mismo enlace devolvió no encontrado.
+4. `firestore.rules` se desplegó exclusivamente a `mechanic-app-7d459`; una lectura posterior confirmó el deny explícito de `public_quote_links`. No se desplegó Firebase Hosting.
+5. La orden QA y su enlace se eliminaron; Firebase MCP confirmó `jobs` y `public_quote_links` vacíos. `p1` y SUPER_ADMIN no se modificaron.
+
 ## Siguiente bloque recomendado
 
-1. Integrar PR #10 y verificar en Producción que los enlaces públicos requieren token y que la emisión autenticada funciona.
-2. Desplegar después solo `firestore:rules` a `mechanic-app-7d459`; no desplegar Hosting.
-3. Continuar el siguiente bloque funcional de beta tras cerrar Producción y documentar el commit final de `main`.
+1. Seleccionar el siguiente bloque funcional de beta basándose en impacto/riesgo; los enlaces revocables ya no son un pendiente.
+2. Mantener `p1` como fixture de testers hasta finalizar el flujo crítico y limpiar cada orden descartable creada.
+3. No repetir despliegues de Rules ni pruebas con SUPER_ADMIN si el siguiente cambio no toca seguridad, roles o datos privilegiados.
 3. Resolver o aceptar explícitamente los avisos moderados dev-only de `npm audit` sin aplicar un downgrade automático de `firebase-tools`.
 4. Mantener `p1` como fixture de testers hasta cerrar las funciones y flujos importantes; decidir su eliminación solo al finalizar la beta.
 

@@ -227,3 +227,5 @@ Al seleccionar de nuevo una orden en `Approval`, la UI recuperaba los precios de
 ### BUG-016: Cambiar solo el fragmento no recargaba el token
 
 Si una misma pestaña pasaba de un enlace inválido al regenerado, el navegador no recargaba el documento porque solo cambiaba `#token`. El portal ahora escucha `hashchange` y vuelve a consultar con el token vigente.
+
+La ronda final pasó en Preview y Producción. El enlace oficial se emitió, abrió la cotización sanitizada, fue revocado a 404 y los datos QA quedaron eliminados. Firestore Rules se desplegó sin incluir Hosting.
