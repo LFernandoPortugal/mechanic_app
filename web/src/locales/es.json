@@ -256,6 +256,7 @@
   "downloadPDF": "⬇ Descargar PDF de Cotización",
   "sendEmail": "📧 Enviar Email al Cliente",
   "sendEmailNoConfig": "📧 Email (sin configurar)",
+  "sendEmailNoRecipient": "📧 Email (cliente sin correo)",
   "sendingEmail": "Enviando email...",
   "emailSent": "Email enviado al cliente.",
   "emailError": "Error enviando email. Verifique la configuración.",

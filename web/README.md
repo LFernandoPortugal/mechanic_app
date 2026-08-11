@@ -55,6 +55,19 @@ npm.cmd run dev
 
 Completa `.env.local` con los valores de tu proyecto Firebase y, si aplica, EmailJS. Nunca commitees ese archivo.
 
+### Notificaciones EmailJS
+
+La plantilla de cotización debe enviar el mensaje a `{{to_email}}` y puede usar estas variables dinámicas:
+
+```text
+{{client_name}}
+{{vehicle_id}}
+{{quote_url}}
+{{total_estimate}}
+```
+
+Configura `NEXT_PUBLIC_EMAILJS_SERVICE_ID`, `NEXT_PUBLIC_EMAILJS_TEMPLATE_ID` y `NEXT_PUBLIC_EMAILJS_PUBLIC_KEY` tanto en Preview como en Production cuando se vaya a probar este flujo. Son identificadores públicos del SDK de navegador; limita el contenido y el destinatario desde la plantilla de EmailJS, conserva el escape predeterminado de `{{variable}}` y no uses variables HTML sin escapar. La aplicación valida destinatario, campos requeridos, total y aplica un límite local entre envíos.
+
 ## Verificación
 
 ```powershell

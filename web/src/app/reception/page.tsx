@@ -330,8 +330,8 @@ export default function Reception() {
                     <Input placeholder="555-0102" value={client.phone} onChange={(e) => setClient({...client, phone: e.target.value})} className="bg-background border-border" />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t('clientEmail')}</Label>
-                    <Input placeholder="email@ejemplo.com" value={client.email} onChange={(e) => setClient({...client, email: e.target.value})} className="bg-background border-border" />
+                    <Label htmlFor="client-email">{t('clientEmail')}</Label>
+                    <Input id="client-email" type="email" autoComplete="email" placeholder="email@ejemplo.com" value={client.email} onChange={(e) => setClient({...client, email: e.target.value})} className="bg-background border-border" />
                   </div>
                 </div>
               </CardContent>
