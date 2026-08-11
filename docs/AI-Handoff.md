@@ -1,21 +1,21 @@
 # AI Handoff — SGA Mechanic App
 
-> Última actualización: 2026-08-09
+> Última actualización: 2026-08-11
 > Producción oficial: rama `main` en Vercel
-> Código funcional de producción verificado: `68b2f49` en `https://mechanic-app-zeta.vercel.app/`
+> Código funcional de producción verificado: `586deda` en `https://mechanic-app-zeta.vercel.app/`
 
 ## Punto de reanudación rápido
 
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
-- **Producción:** `origin/main` incluye el commit funcional `68b2f49`; la estabilización y las dos rondas visuales están desplegadas en `https://mechanic-app-zeta.vercel.app/`. El HEAD puede avanzar por commits exclusivamente documentales.
-- **Rama de trabajo:** ninguna funcional pendiente; PR #6 integrada por squash en `main`.
+- **Producción:** `origin/main` incluye el commit funcional `586deda`; la estabilización, las rondas visuales y la mejora EmailJS están desplegadas en `https://mechanic-app-zeta.vercel.app/`. El HEAD puede avanzar por commits exclusivamente documentales.
+- **Rama de trabajo:** ninguna funcional pendiente; PR #8 integrada por squash en `main`.
 - **Árbol local al cerrar:** limpio y sincronizado con `origin/main` después de integrar el checkpoint documental.
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas de la estabilización están desplegadas y fueron releídas desde el proyecto activo.
-- **Último hito:** PR #6 integrada y desplegada: QA integral con datos reales descartables, historial de inventario compatible con reglas, tarjetas móviles, estados públicos de carga/error y correcciones responsive en Recepción, Técnico, Asesor, QC y detalle de cliente.
-- **Calidad verificada:** TypeScript, lint, 23 pruebas unitarias, 22 pruebas de reglas, build, flujo real completo, revisión móvil/desktop, CI de `main` y Vercel Production.
-- **Siguiente paso recomendado:** validar EmailJS con un destinatario controlado si forma parte del release; después decidir si `p1` se conserva como fixture de QA.
-- **No repetir ni asumir:** no hace falta recrear la orden ni el inventario ya eliminados; verificar siempre el deployment vigente antes de un nuevo cambio.
+- **Último hito:** PR #8 integrada y desplegada: EmailJS usa moneda del taller, valida destinatario/datos, limita reintentos y diferencia configuración faltante de cliente sin correo. Producción aceptó el envío controlado al tester.
+- **Calidad verificada:** TypeScript, lint, 27 pruebas unitarias, 22 pruebas de reglas, build, flujo real completo, EmailJS aceptado, revisión móvil/desktop, CI de `main` y Vercel Production.
+- **Siguiente paso recomendado:** confirmar visualmente la llegada del correo corregido al inbox de `p1`; después continuar los pendientes de beta priorizados.
+- **No repetir ni asumir:** EmailJS confirmó aceptación, no entrega al inbox. No hace falta recrear las dos órdenes QA ya eliminadas; verificar siempre el deployment vigente antes de un nuevo cambio.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
 
@@ -23,7 +23,7 @@ Para retomar, leer este documento completo y luego seguir el orden obligatorio d
 
 La aplicación es un SGA multitenant en Next.js 16, Firebase Auth/Firestore y Vercel. La estabilización está integrada en `main`, desplegada en Vercel Production y acompañada por sus reglas Firestore en `mechanic-app-7d459`.
 
-- Producción sirve el código funcional de `68b2f49` en `https://mechanic-app-zeta.vercel.app/` desde `main`; commits posteriores pueden limitarse a documentación. La estabilización continúa en el historial como `c903185`.
+- Producción sirve el código funcional de `586deda` en `https://mechanic-app-zeta.vercel.app/` desde `main`; commits posteriores pueden limitarse a documentación. La estabilización continúa en el historial como `c903185`.
 - Preview protegida de la rama (alias estable): `https://mechanic-app-git-codex-secur-abea4c-lfernandoportugals-projects.vercel.app`.
 - Las reglas nuevas se compilaron y publicaron únicamente como `firestore:rules`; no se desplegaron Hosting, Storage ni índices.
 - El taller tester `p1` fue reparado: conserva su cuenta Auth y ahora tiene un único perfil ADMIN y un `settings/p1` vacío/activo. No se combinaron usuarios antiguos.
@@ -117,6 +117,17 @@ El cliente selecciona ítems, confirma una firma de aprobación separada de la f
 - Preview y Production se comprobaron a 390x844 sin desbordamiento horizontal ni errores de consola. `/`, `/login` y la vista pública respondieron HTTP 200; el API de la orden ya limpiada respondió el 404 esperado.
 - La orden, el artículo y sus dos movimientos descartables se eliminaron por sus IDs exactos. La verificación posterior dejó `jobs`, `inventory` e `inventory_transactions` vacías. No se tocaron Auth, `users`, `settings`, SUPER_ADMIN, reglas ni índices y no hubo despliegue Firebase.
 
+### Validación de notificaciones EmailJS
+
+- PR #8: `https://github.com/LFernandoPortugal/mechanic_app/pull/8`, integrada por squash en `main` como `586deda`.
+- El total del correo usa `currencySymbol` del taller (`S/. 12.34` en `p1`) en lugar de `$` fijo.
+- El helper recorta y valida destinatario, cliente, vehículo, URL y monto; la UI distingue configuración ausente de cliente sin correo y el formulario de Recepción valida el formato email.
+- EmailJS aplica un límite local de 10 segundos entre envíos y el README documenta las variables exactas de la plantilla y el escape seguro.
+- Preview, CI y Vercel Production pasaron. Producción mostró “Email enviado al cliente” sin errores de consola para el mensaje corregido a `p1@gmail.com`.
+- El enlace incluido se comprobó antes del envío: API HTTP 200, portal visible, vehículo correcto y total `S/. 12.34`.
+- EmailJS confirmó aceptación del mensaje; la entrega final al inbox debe verificarse en la cuenta destinataria.
+- Las dos órdenes QA se eliminaron por ID exacto. La primera usó por error un ID manual incompatible con la validación pública de 20 caracteres; la segunda usó un ID válido. Firestore volvió a `0 jobs` y ambos enlaces expiraron con 404.
+
 ## Verificación reproducible
 
 Desde `web/` en Windows:
@@ -135,7 +146,7 @@ Resultado más reciente del 2026-08-09:
 
 - TypeScript: 0 errores.
 - Lint: 0 errores, 0 warnings.
-- Unit tests: 23/23.
+- Unit tests: 27/27.
 - Firestore Rules tests: 22/22.
 - Build: correcto; 19/19 páginas estáticas y 4 API routes dinámicas.
 - Auditoría runtime: 0 vulnerabilidades.
@@ -151,7 +162,7 @@ CI vive en `.github/workflows/ci.yml`, se activa en PRs, `main`, ramas `codex/**
 
 ## Variables requeridas
 
-Las variables públicas Firebase y EmailJS están documentadas en `web/.env.example`. Para las API routes server-side se requieren:
+Las variables públicas Firebase y EmailJS están documentadas en `web/.env.example`. EmailJS está configurado y fue ejercitado en Preview y Production. Para las API routes server-side se requieren:
 
 ```text
 FIREBASE_ADMIN_PROJECT_ID
@@ -167,7 +178,7 @@ Vercel ya tiene esos identificadores en Preview y Production. No crear ni subir 
 
 La limpieza autorizada eliminó 12 cuentas Auth de prueba: cuatro cuentas demo históricas y ocho cuentas huérfanas `p2/p3/p4/prueba*`. También se eliminaron tres perfiles demo sin taller, ocho órdenes de prueba huérfanas y el documento legado `settings/workshop`.
 
-La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos perfiles `users`: la cuenta única SUPER_ADMIN y el ADMIN tester de `p1`. Firestore conserva únicamente `settings/p1`; `jobs`, `inventory`, `inventory_transactions` y `feedback` quedaron vacíos. SUPER_ADMIN y `master-control` no fueron modificados. `p1` se conserva temporalmente para la siguiente ronda de QA visual/exploratoria.
+La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos perfiles `users`: la cuenta única SUPER_ADMIN y el ADMIN tester de `p1`. Firestore conserva únicamente `settings/p1`; `jobs`, `inventory`, `inventory_transactions` y `feedback` quedaron vacíos. SUPER_ADMIN y `master-control` no fueron modificados. `p1` se conserva como fixture de testers hasta cerrar las funciones y flujos importantes de la beta; no eliminarlo sin una decisión explícita posterior.
 
 ## Cierre de producción del 2026-08-09
 
@@ -194,12 +205,22 @@ La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos 
 5. Se eliminaron exclusivamente la orden, el artículo y los dos movimientos creados para esta ronda. `jobs`, `inventory` e `inventory_transactions` quedaron en cero; no se modificaron cuentas ni configuración.
 6. No cambiaron ni se desplegaron reglas, índices, Storage o Firebase Hosting, y no se usó la cuenta SUPER_ADMIN.
 
+## Cierre de EmailJS del 2026-08-11
+
+1. PR #8 integrada por squash en `main` como `586deda`; CI de `main` y Vercel Production completaron correctamente.
+2. TypeScript y lint pasaron; la suite quedó en 27 pruebas unitarias y 22 pruebas de reglas. El build generó 19 páginas estáticas y 4 API routes, y `npm audit --omit=dev` reportó 0 vulnerabilidades.
+3. Se verificó la configuración EmailJS activa en Preview y Production con el ADMIN tester de `p1`.
+4. El mensaje corregido usó destinatario `p1@gmail.com`, vehículo `QA-EMAIL-811B`, enlace público oficial y total `S/. 12.34`. EmailJS respondió con éxito y la UI no registró warnings ni errores.
+5. El endpoint público y el portal respondieron correctamente antes del envío. Tras la limpieza, el job dejó de existir y el endpoint respondió 404.
+6. Las dos órdenes descartables se eliminaron y Firestore volvió a 0 jobs. No se modificaron Auth, `users`, `settings`, SUPER_ADMIN, reglas ni índices; no hubo despliegue Firebase.
+7. Queda pendiente únicamente que una persona con acceso al inbox confirme recepción y presentación visual del correo; aceptación de EmailJS no equivale por sí sola a entrega.
+
 ## Siguiente bloque recomendado
 
-1. Validar notificaciones EmailJS con un destinatario controlado si forman parte del release.
-2. Resolver o aceptar explícitamente los avisos moderados dev-only de `npm audit` sin aplicar un downgrade automático de `firebase-tools`.
-3. Decidir si `p1` se conserva como fixture de pruebas o se elimina coordinadamente de Auth, `users` y `settings`.
-4. Para futuras mejoras visuales, repetir QA con datos descartables solo en los componentes que cambien y limpiar por IDs exactos.
+1. Confirmar en el inbox de `p1` que el segundo correo llegó y que la plantilla muestra correctamente cliente, vehículo, enlace y `S/. 12.34`.
+2. Priorizar el siguiente bloque funcional de beta; una mejora de seguridad pendiente es añadir un token revocable/de un solo uso a cada enlace público de cotización.
+3. Resolver o aceptar explícitamente los avisos moderados dev-only de `npm audit` sin aplicar un downgrade automático de `firebase-tools`.
+4. Mantener `p1` como fixture de testers hasta cerrar las funciones y flujos importantes; decidir su eliminación solo al finalizar la beta.
 
 ## Reglas para la próxima IA
 
