@@ -223,3 +223,7 @@ La validación en Producción confirmó configuración activa, enlace público H
 ### BUG-015: Reabrir una cotización ocultaba la mano de obra guardada
 
 Al seleccionar de nuevo una orden en `Approval`, la UI recuperaba los precios de repuestos pero inicializaba mano de obra en cero. Ahora la reconstruye como `totalEstimate - suma de repuestos`, evitando reducir el total al regenerar el enlace.
+
+### BUG-016: Cambiar solo el fragmento no recargaba el token
+
+Si una misma pestaña pasaba de un enlace inválido al regenerado, el navegador no recargaba el documento porque solo cambiaba `#token`. El portal ahora escucha `hashchange` y vuelve a consultar con el token vigente.

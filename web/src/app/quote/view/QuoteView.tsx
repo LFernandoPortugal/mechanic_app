@@ -36,7 +36,12 @@ export default function ClientQuoteView() {
   const formatMoney = (amount: number) => `${currencySymbol}${amount.toFixed(2)}`;
 
   useEffect(() => {
-    setAccessToken(getQuoteTokenFromHash(window.location.hash));
+    const syncTokenFromFragment = () => {
+      setAccessToken(getQuoteTokenFromHash(window.location.hash));
+    };
+    syncTokenFromFragment();
+    window.addEventListener("hashchange", syncTokenFromFragment);
+    return () => window.removeEventListener("hashchange", syncTokenFromFragment);
   }, []);
 
   useEffect(() => {
