@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { sendPasswordResetEmail, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getUserProfile } from "@/lib/db";
@@ -10,20 +10,35 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { getSafeAuthRedirect } from "@/lib/auth-redirect";
 import { AlertCircle, Lock } from "lucide-react";
 import { toast } from "sonner";
 
+function LoginLoading() {
+  return (
+    <div className="min-h-screen page-bg flex items-center justify-center" role="status" aria-label="Cargando sesión">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500" />
+    </div>
+  );
+}
+
 function LoginForm() {
   const { t } = useLanguage();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirect') || '/';
+  const redirectTo = getSafeAuthRedirect(searchParams.get('redirect'));
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [sendingReset, setSendingReset] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && user) router.replace(redirectTo);
+  }, [authLoading, redirectTo, router, user]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,6 +91,8 @@ function LoginForm() {
     }
   };
 
+  if (authLoading || user) return <LoginLoading />;
+
   return (
     <div className="min-h-screen page-bg flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8 animate-fade-in">
@@ -87,7 +104,7 @@ function LoginForm() {
             {t('loginTitle')}
           </h2>
           <p className="mt-2 text-muted-foreground text-sm">
-            Ingresa tus credenciales para acceder a las herramientas.
+            {t('loginSubtitle')}
           </p>
         </div>
 
@@ -161,11 +178,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
-      </div>
-    }>
+    <Suspense fallback={<LoginLoading />}>
       <LoginForm />
     </Suspense>
   );
