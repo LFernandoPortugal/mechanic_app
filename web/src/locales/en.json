@@ -256,6 +256,7 @@
   "downloadPDF": "⬇ Download Quote PDF",
   "sendEmail": "📧 Send Email to Client",
   "sendEmailNoConfig": "📧 Email (not configured)",
+  "sendEmailNoRecipient": "📧 Email (client has no address)",
   "sendingEmail": "Sending email...",
   "emailSent": "Email sent to client.",
   "emailError": "Error sending email. Check your configuration.",

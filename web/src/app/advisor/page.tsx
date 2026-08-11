@@ -166,7 +166,9 @@ export default function AdvisorQuoteBuilder() {
   if (submittedJobId && submittedJob) {
     const quoteUrl = typeof window !== 'undefined' ? `${window.location.origin}/quote/view?id=${submittedJobId}` : `/quote/view?id=${submittedJobId}`;
     const hasPhone = Boolean(submittedJob.clientPhone);
-    const hasEmail = Boolean(submittedJob.clientEmail) && isEmailConfigured();
+    const hasRecipientEmail = Boolean(submittedJob.clientEmail?.trim());
+    const emailConfigured = isEmailConfigured();
+    const canSendEmail = hasRecipientEmail && emailConfigured;
 
     const handleSendEmail = async () => {
       if (!submittedJob.clientEmail) return;
@@ -178,6 +180,7 @@ export default function AdvisorQuoteBuilder() {
           vehicleId: submittedJob.vehicleId,
           quoteUrl,
           totalEstimate: submittedJob.totalEstimate,
+          currencySymbol: workshopSettings?.currencySymbol || "$",
         });
         toast.success(t('emailSent'));
       } catch {
@@ -234,11 +237,17 @@ export default function AdvisorQuoteBuilder() {
             {/* Email */}
             <Button
               className="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold h-12"
-              disabled={!hasEmail || sendingEmail}
+              disabled={!canSendEmail || sendingEmail}
               onClick={handleSendEmail}
             >
               <Mail className="w-4 h-4 mr-2" />
-              {sendingEmail ? t('sendingEmail') : hasEmail ? t('sendEmail') : t('sendEmailNoConfig')}
+              {sendingEmail
+                ? t('sendingEmail')
+                : !hasRecipientEmail
+                  ? t('sendEmailNoRecipient')
+                  : emailConfigured
+                    ? t('sendEmail')
+                    : t('sendEmailNoConfig')}
             </Button>
 
             {/* PDF */}
