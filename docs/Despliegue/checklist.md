@@ -32,7 +32,7 @@ npm.cmd run build
 - [x] Runtime audit sin vulnerabilidades.
 - [x] TypeScript sin errores.
 - [x] Lint sin errores; warnings revisados/aceptados.
-- [x] Unit tests y Firestore Emulator Rules tests pasan.
+- [x] Unit tests, integración de API routes y Firestore Emulator Rules tests pasan.
 - [x] Build Next.js completo pasa. Next.js genera `.next`, no `out/`.
 
 ## Preview Vercel
