@@ -1,6 +1,6 @@
 # Historial de Bugs y Correcciones — SGA
 
-> Actualizado: 2026-08-08
+> Actualizado: 2026-08-11
 
 ## v1.1 — Fase 1: Bugs Críticos (2026-07-02)
 
@@ -183,3 +183,21 @@
 - Estados de inspección, estado de orden y fechas de pago se presentan localizados.
 
 La ronda se verificó en 320x568, 390x844 y escritorio con una orden descartable completa, dos hallazgos, aprobación parcial, QC, dos pagos e inventario con movimientos. Gates locales: TypeScript y lint sin errores; 23 pruebas unitarias, 22 pruebas de reglas y build de 19 páginas/4 APIs.
+
+---
+
+## v1.7 — Notificaciones EmailJS (2026-08-11)
+
+### NOTIF-001: El correo de cotización fijaba la moneda en dólares
+
+**Síntoma**: la aplicación mostraba importes en la moneda configurada por el taller, pero `total_estimate` se enviaba siempre como `$` en la plantilla EmailJS.
+
+**Corrección**:
+
+- `sendQuoteEmail` recibe `currencySymbol`, valida los campos antes de transmitirlos y genera el total con la moneda del taller.
+- La UI distingue EmailJS no configurado de un cliente sin correo y Recepción usa validación nativa de email.
+- Se aplica un límite local de 10 segundos para reducir duplicados accidentales.
+- El README documenta `to_email`, `client_name`, `vehicle_id`, `quote_url` y `total_estimate`, manteniendo el escape seguro de variables.
+- Cuatro pruebas unitarias cubren moneda, normalización, validación, configuración y llamada al SDK.
+
+La validación en Producción confirmó configuración activa, enlace público HTTP 200 antes del envío, total `S/. 12.34` y aceptación de EmailJS sin errores de consola. La llegada al inbox queda como comprobación humana independiente. Las órdenes QA se eliminaron y Firestore volvió a 0 jobs.

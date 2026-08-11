@@ -11,7 +11,7 @@
 ## Variables
 
 - [ ] Variables `NEXT_PUBLIC_FIREBASE_*` configuradas.
-- [ ] Variables EmailJS configuradas si se probarán notificaciones.
+- [x] Variables EmailJS configuradas en Preview y Production; envío controlado aceptado el 2026-08-11.
 - [ ] Identificadores WIF/GCP server-side configurados en Vercel Preview y Production.
 - [ ] No existe una clave JSON de cuenta de servicio en el repositorio o Vercel.
 - [ ] `web/.env.example` refleja los nombres requeridos sin valores reales.
@@ -69,6 +69,7 @@ firebase deploy --only firestore:rules,firestore:indexes --project mechanic-app-
 - [x] Reglas Firestore desplegadas solo después de confirmar que la nueva API QC está activa en Vercel.
 - [x] Smoke test: login → Reception → Diagnosis → Approval → firma cliente → Approved → Repair → QC → pago → Delivered (el pago completo previo al pass de QC entrega sin omitir el checklist).
 - [x] Tema claro/oscuro y viewport móvil revisados en 320x568 y 390x844; sin desbordamientos ni errores de consola en las rutas principales.
+- [x] EmailJS probado con destinatario controlado, moneda del taller y enlace público válido; recepción final del inbox se confirma por separado.
 - [ ] Logs de Vercel y Firebase revisados sin errores nuevos. Vercel quedó verificado; queda pendiente una revisión específica de logs Firebase cuando exista acceso a esa vista.
 - [x] Datos de prueba eliminados y eliminación verificada.
 - [x] Cuentas demo históricas con credenciales conocidas revisadas y eliminadas.
