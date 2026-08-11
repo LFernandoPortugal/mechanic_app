@@ -22,7 +22,7 @@ mechanic-app/
 │   │   │   ├── inventory/    # Gestión de inventario
 │   │   │   ├── login/        # Autenticación (solo login, sin registro público)
 │   │   │   ├── qc/           # Control de calidad
-│   │   │   ├── quote/view/   # Portal público: /quote/view?id=JOB_ID
+│   │   │   ├── quote/view/   # Portal: /quote/view?id=JOB_ID#token=TOKEN
 │   │   │   ├── api/          # Cotizaciones públicas, pagos, QC y usuarios privilegiados
 │   │   │   ├── reception/    # Recepción de vehículos
 │   │   │   ├── super-admin/  # Panel del creador (SUPER_ADMIN only)
@@ -48,6 +48,7 @@ mechanic-app/
 - **inventory**: Productos/repuestos por taller
 - **inventory_transactions**: Movimientos de stock (IN/OUT/ADJUSTMENT)
 - **settings**: Configuración por taller (multi-tenant)
+- **public_quote_links**: hash SHA-256, tenant y vigencia del enlace; acceso exclusivo de API server-side
 
 ## Roles (RBAC)
 | Rol | Acceso |

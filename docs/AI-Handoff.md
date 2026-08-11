@@ -14,8 +14,8 @@
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas de la estabilización están desplegadas y fueron releídas desde el proyecto activo.
 - **Último hito:** PR #8 integrada y desplegada: EmailJS usa moneda del taller, valida destinatario/datos, limita reintentos y diferencia configuración faltante de cliente sin correo. Producción aceptó el envío controlado al tester.
 - **Calidad verificada:** TypeScript, lint, 27 pruebas unitarias, 22 pruebas de reglas, build, flujo real completo, EmailJS aceptado, revisión móvil/desktop, CI de `main` y Vercel Production.
-- **Siguiente paso recomendado:** confirmar visualmente la llegada del correo corregido al inbox de `p1`; después continuar los pendientes de beta priorizados.
-- **No repetir ni asumir:** EmailJS confirmó aceptación, no entrega al inbox. No hace falta recrear las dos órdenes QA ya eliminadas; verificar siempre el deployment vigente antes de un nuevo cambio.
+- **Siguiente paso recomendado:** cerrar y verificar el bloque de enlaces públicos revocables; después continuar los pendientes de beta priorizados.
+- **No repetir ni asumir:** EmailJS confirmó aceptación y una persona confirmó recepción/presentación correcta en un inbox controlado. No hace falta recrear las órdenes QA ya eliminadas; verificar siempre el deployment vigente antes de un nuevo cambio.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
 
@@ -55,7 +55,7 @@ Reception → Diagnosis → Approval → Approved → Repair → QC → Ready �
 El enlace público vigente es:
 
 ```text
-/quote/view?id=JOB_ID
+/quote/view?id=JOB_ID#token=TOKEN
 ```
 
 El cliente selecciona ítems, confirma una firma de aprobación separada de la firma de recepción y el servidor recalcula `approvedAmount`, llena `declinedItems`, registra `approvedAt` y cambia el estado a `Approved`.
@@ -123,9 +123,9 @@ El cliente selecciona ítems, confirma una firma de aprobación separada de la f
 - El total del correo usa `currencySymbol` del taller (`S/. 12.34` en `p1`) en lugar de `$` fijo.
 - El helper recorta y valida destinatario, cliente, vehículo, URL y monto; la UI distingue configuración ausente de cliente sin correo y el formulario de Recepción valida el formato email.
 - EmailJS aplica un límite local de 10 segundos entre envíos y el README documenta las variables exactas de la plantilla y el escape seguro.
-- Preview, CI y Vercel Production pasaron. Producción mostró “Email enviado al cliente” sin errores de consola para el mensaje corregido a `p1@gmail.com`.
+- Preview, CI y Vercel Production pasaron. Producción mostró “Email enviado al cliente” sin errores de consola para el mensaje corregido a un destinatario controlado.
 - El enlace incluido se comprobó antes del envío: API HTTP 200, portal visible, vehículo correcto y total `S/. 12.34`.
-- EmailJS confirmó aceptación del mensaje; la entrega final al inbox debe verificarse en la cuenta destinataria.
+- EmailJS confirmó aceptación del mensaje y la recepción/presentación final fue confirmada en un inbox controlado.
 - Las dos órdenes QA se eliminaron por ID exacto. La primera usó por error un ID manual incompatible con la validación pública de 20 caracteres; la segunda usó un ID válido. Firestore volvió a `0 jobs` y ambos enlaces expiraron con 404.
 
 ## Verificación reproducible
@@ -210,15 +210,15 @@ La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos 
 1. PR #8 integrada por squash en `main` como `586deda`; CI de `main` y Vercel Production completaron correctamente.
 2. TypeScript y lint pasaron; la suite quedó en 27 pruebas unitarias y 22 pruebas de reglas. El build generó 19 páginas estáticas y 4 API routes, y `npm audit --omit=dev` reportó 0 vulnerabilidades.
 3. Se verificó la configuración EmailJS activa en Preview y Production con el ADMIN tester de `p1`.
-4. El mensaje corregido usó destinatario `p1@gmail.com`, vehículo `QA-EMAIL-811B`, enlace público oficial y total `S/. 12.34`. EmailJS respondió con éxito y la UI no registró warnings ni errores.
+4. El mensaje corregido usó un destinatario controlado, vehículo QA descartable, enlace público oficial y total `S/. 12.34`. EmailJS respondió con éxito y la UI no registró warnings ni errores.
 5. El endpoint público y el portal respondieron correctamente antes del envío. Tras la limpieza, el job dejó de existir y el endpoint respondió 404.
 6. Las dos órdenes descartables se eliminaron y Firestore volvió a 0 jobs. No se modificaron Auth, `users`, `settings`, SUPER_ADMIN, reglas ni índices; no hubo despliegue Firebase.
-7. Queda pendiente únicamente que una persona con acceso al inbox confirme recepción y presentación visual del correo; aceptación de EmailJS no equivale por sí sola a entrega.
+7. Una persona con acceso al inbox confirmó la recepción y presentación visual correcta del correo.
 
 ## Siguiente bloque recomendado
 
-1. Confirmar en el inbox de `p1` que el segundo correo llegó y que la plantilla muestra correctamente cliente, vehículo, enlace y `S/. 12.34`.
-2. Priorizar el siguiente bloque funcional de beta; una mejora de seguridad pendiente es añadir un token revocable/de un solo uso a cada enlace público de cotización.
+1. Verificar en Preview y Producción que los enlaces públicos requieren token, que regenerar invalida el anterior y que revocar elimina el acceso.
+2. Continuar el siguiente bloque funcional de beta después de integrar esta protección.
 3. Resolver o aceptar explícitamente los avisos moderados dev-only de `npm audit` sin aplicar un downgrade automático de `firebase-tools`.
 4. Mantener `p1` como fixture de testers hasta cerrar las funciones y flujos importantes; decidir su eliminación solo al finalizar la beta.
 

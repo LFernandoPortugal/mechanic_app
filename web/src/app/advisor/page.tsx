@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ArrowLeft, ArrowRight, DollarSign, Wand2, Copy, ExternalLink, CheckCircle, MessageCircle, Download, Mail, FileSearch } from "lucide-react";
+import { ArrowLeft, ArrowRight, DollarSign, Wand2, Copy, ExternalLink, CheckCircle, MessageCircle, Download, Mail, FileSearch, Link2, Link2Off } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { openWhatsAppQuote } from "@/lib/whatsapp";
 import { generateQuotePDF } from "@/lib/pdf";
@@ -24,6 +24,8 @@ import { VehicleIcon } from "@/components/ui/vehicle-icons";
 import { toDate } from "@/lib/dates";
 import { getPayableTotal } from "@/lib/transactions";
 import { WorkflowQueueEmptyState } from "@/components/WorkflowQueueEmptyState";
+import { buildPublicQuoteUrl } from "@/lib/public-quote-link";
+import { issueQuoteLink, revokeQuoteLink, type IssuedQuoteLink } from "@/lib/quote-link-client";
 
 const payableTotal = (job: Job) => {
   try {
@@ -42,8 +44,10 @@ export default function AdvisorQuoteBuilder() {
   const [baseLaborCost, setBaseLaborCost] = useState(0);
   const [submittedJobId, setSubmittedJobId] = useState<string | null>(null);
   const [submittedJob, setSubmittedJob] = useState<Job | null>(null);
+  const [submittedQuoteLink, setSubmittedQuoteLink] = useState<IssuedQuoteLink | null>(null);
   const [copied, setCopied] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [managingQuoteLink, setManagingQuoteLink] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentType, setPaymentType] = useState<PaymentInput["method"]>("Efectivo");
   
@@ -78,12 +82,14 @@ export default function AdvisorQuoteBuilder() {
       price: prices[item.id] || 0
     }));
 
+    setManagingQuoteLink(true);
     try {
       await updateJob(selectedJob.id, {
         inspectionItems: updatedInspectionItems,
         totalEstimate: calculateTotal(),
         status: "Approval"  // Awaiting client approval — NOT Ready
       }, user.uid, "Quote Generated");
+      const issuedLink = await issueQuoteLink(selectedJob.id);
       // Keep the full job object for PDF/WhatsApp/Email
       const savedJob: Job = {
         ...selectedJob,
@@ -93,12 +99,36 @@ export default function AdvisorQuoteBuilder() {
       };
       setSubmittedJob(savedJob);
       setSubmittedJobId(selectedJob.id);
+      setSubmittedQuoteLink(issuedLink);
       setSelectedJob(null);
       setPrices({});
       setBaseLaborCost(0);
       // Real-time listener handles refresh automatically
-    } catch (e) {
-      toast.error("Error saving quote: " + e);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo generar la cotización.");
+    } finally {
+      setManagingQuoteLink(false);
+    }
+  };
+
+  const handleRegenerateQuoteLink = async (job: Job) => {
+    const confirmed = window.confirm(
+      "Se invalidará cualquier enlace anterior de esta cotización. ¿Deseas continuar?",
+    );
+    if (!confirmed) return;
+
+    setManagingQuoteLink(true);
+    try {
+      const issuedLink = await issueQuoteLink(job.id);
+      setSubmittedJob(job);
+      setSubmittedJobId(job.id);
+      setSubmittedQuoteLink(issuedLink);
+      setSelectedJob(null);
+      toast.success("Se generó un nuevo enlace seguro.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo regenerar el enlace.");
+    } finally {
+      setManagingQuoteLink(false);
     }
   };
 
@@ -163,8 +193,15 @@ export default function AdvisorQuoteBuilder() {
     return <div className="min-h-screen bg-background text-foreground p-6 flex items-center justify-center">{t('loadingQuotes')}</div>;
   }
 
-  if (submittedJobId && submittedJob) {
-    const quoteUrl = typeof window !== 'undefined' ? `${window.location.origin}/quote/view?id=${submittedJobId}` : `/quote/view?id=${submittedJobId}`;
+  if (submittedJobId && submittedJob && submittedQuoteLink) {
+    const quoteUrl = typeof window !== "undefined"
+      ? buildPublicQuoteUrl(window.location.origin, submittedJobId, submittedQuoteLink.token)
+      : "";
+    const expiresAtLabel = new Intl.DateTimeFormat("es", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(new Date(submittedQuoteLink.expiresAt));
     const hasPhone = Boolean(submittedJob.clientPhone);
     const hasRecipientEmail = Boolean(submittedJob.clientEmail?.trim());
     const emailConfigured = isEmailConfigured();
@@ -189,6 +226,26 @@ export default function AdvisorQuoteBuilder() {
         setSendingEmail(false);
       }
     };
+
+    const handleRevokeLink = async () => {
+      const confirmed = window.confirm(
+        "El cliente perderá acceso a este enlace hasta que generes uno nuevo. ¿Deseas revocarlo?",
+      );
+      if (!confirmed) return;
+
+      setManagingQuoteLink(true);
+      try {
+        await revokeQuoteLink(submittedJobId);
+        toast.success("El enlace público fue revocado.");
+        setSubmittedJobId(null);
+        setSubmittedJob(null);
+        setSubmittedQuoteLink(null);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "No se pudo revocar el enlace.");
+      } finally {
+        setManagingQuoteLink(false);
+      }
+    };
     
     return (
       <div className="min-h-screen page-bg flex items-center justify-center p-4">
@@ -197,11 +254,16 @@ export default function AdvisorQuoteBuilder() {
             <CheckCircle className="w-8 h-8 text-blue-500 dark:text-blue-400" />
           </div>
           <h2 className="text-2xl font-bold text-blue-500 dark:text-blue-400 mb-1">{t('quoteGenerated')}</h2>
-          <p className="text-muted-foreground text-sm mb-6">{t('quoteGeneratedDesc')}</p>
+          <p className="text-muted-foreground text-sm mb-2">{t('quoteGeneratedDesc')}</p>
+          <p className="mb-6 text-xs text-muted-foreground">
+            Enlace seguro y revocable · vence el {expiresAtLabel}
+          </p>
           
           {/* Quote URL Copy bar */}
           <div className="bg-secondary dark:bg-black border border-border p-3 flex rounded items-center justify-between mb-6 overflow-hidden">
-             <span className="text-muted-foreground text-sm truncate mr-2">{quoteUrl}</span>
+             <span className="text-muted-foreground text-sm truncate mr-2">
+               /quote/view?id={submittedJobId}#token=••••••••
+             </span>
              <Button 
                size="sm" 
                variant="outline" 
@@ -227,7 +289,8 @@ export default function AdvisorQuoteBuilder() {
                 submittedJob.clientId,
                 submittedJob.vehicleId,
                 quoteUrl,
-                submittedJob.totalEstimate
+                submittedJob.totalEstimate,
+                workshopSettings?.currencySymbol || "$",
               )}
             >
               <MessageCircle className="w-4 h-4 mr-2" />
@@ -261,13 +324,25 @@ export default function AdvisorQuoteBuilder() {
             </Button>
 
             <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-              <Button onClick={() => router.push(`/quote/view?id=${submittedJobId}`)} className="w-full bg-blue-600 hover:bg-blue-700 text-white sm:flex-1">
+              <Button
+                onClick={() => window.open(quoteUrl, "_blank", "noopener,noreferrer")}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white sm:flex-1"
+              >
                 <ExternalLink className="w-4 h-4 mr-2" /> {t('openClientView')}
               </Button>
-              <Button onClick={() => { setSubmittedJobId(null); setSubmittedJob(null); }} variant="ghost" className="w-full text-muted-foreground hover:text-foreground sm:flex-1">
+              <Button onClick={() => { setSubmittedJobId(null); setSubmittedJob(null); setSubmittedQuoteLink(null); }} variant="ghost" className="w-full text-muted-foreground hover:text-foreground sm:flex-1">
                 {t('backToDashboard')}
               </Button>
             </div>
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full text-red-500 hover:bg-red-500/10 hover:text-red-500"
+              disabled={managingQuoteLink}
+              onClick={handleRevokeLink}
+            >
+              <Link2Off className="mr-2 h-4 w-4" /> Revocar enlace público
+            </Button>
           </div>
         </Card>
       </div>
@@ -362,7 +437,11 @@ export default function AdvisorQuoteBuilder() {
                           if (item.price) existingPrices[item.id] = item.price;
                         });
                         setPrices(existingPrices);
-                        setBaseLaborCost(0);
+                        const partsTotal = Object.values(existingPrices).reduce(
+                          (sum, price) => sum + price,
+                          0,
+                        );
+                        setBaseLaborCost(Math.max(0, (Number(job.totalEstimate) || 0) - partsTotal));
                       }}
                       className={`w-full text-left rounded-lg border p-3 transition-all ${
                         isActive
@@ -509,8 +588,9 @@ export default function AdvisorQuoteBuilder() {
               size="lg" 
               className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold h-14 shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all"
               onClick={handleSaveQuote}
+              disabled={managingQuoteLink}
             >
-              {t('generateQuoteBtn')}
+              {managingQuoteLink ? "Generando enlace seguro…" : t('generateQuoteBtn')}
             </Button>
           </div>
         ) : selectedJob ? (
@@ -639,8 +719,13 @@ export default function AdvisorQuoteBuilder() {
                 </button>
 
                 <div className="pt-4 flex flex-col gap-3 sm:flex-row sm:gap-4">
-                  <Button onClick={() => router.push(`/quote/view?id=${selectedJob.id}`)} variant="outline" className="flex-1 border-blue-500/50 text-blue-500">
-                    <ExternalLink className="w-4 h-4 mr-2" /> Ver Vista del Cliente
+                  <Button
+                    onClick={() => void handleRegenerateQuoteLink(selectedJob)}
+                    variant="outline"
+                    className="flex-1 border-blue-500/50 text-blue-500"
+                    disabled={managingQuoteLink}
+                  >
+                    <Link2 className="w-4 h-4 mr-2" /> Regenerar enlace seguro
                   </Button>
                 </div>
 

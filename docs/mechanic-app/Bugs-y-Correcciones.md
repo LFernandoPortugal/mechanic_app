@@ -200,4 +200,26 @@ La ronda se verificó en 320x568, 390x844 y escritorio con una orden descartable
 - El README documenta `to_email`, `client_name`, `vehicle_id`, `quote_url` y `total_estimate`, manteniendo el escape seguro de variables.
 - Cuatro pruebas unitarias cubren moneda, normalización, validación, configuración y llamada al SDK.
 
-La validación en Producción confirmó configuración activa, enlace público HTTP 200 antes del envío, total `S/. 12.34` y aceptación de EmailJS sin errores de consola. La llegada al inbox queda como comprobación humana independiente. Las órdenes QA se eliminaron y Firestore volvió a 0 jobs.
+La validación en Producción confirmó configuración activa, enlace público HTTP 200 antes del envío, total `S/. 12.34`, aceptación de EmailJS y recepción correcta en un inbox controlado. Las órdenes QA se eliminaron y Firestore volvió a 0 jobs.
+
+---
+
+## v1.8 — Enlaces públicos revocables (2026-08-11)
+
+### SEC-004: El ID de la orden funcionaba como único secreto del portal
+
+**Riesgo**: cualquier persona con un ID válido podía abrir la cotización sanitizada y enviar una aprobación mientras el enlace siguiera activo.
+
+**Corrección**:
+
+- Cada emisión genera 256 bits aleatorios y entrega `/quote/view?id=JOB_ID#token=TOKEN`.
+- Solo SHA-256, tenant y caducidad de 30 días se guardan en `public_quote_links`; Rules niega esa colección a todos los navegadores.
+- `GET/POST /api/public/quotes/[id]` exigen `X-Quote-Token` y comparan el hash en tiempo constante.
+- `/api/jobs/[id]/quote-link` limita emitir/regenerar/revocar a ADMIN/ADVISOR autenticados y al tenant correcto.
+- Regenerar invalida el enlace previo atómicamente y revocar elimina el registro. El reset del taller revoca antes de borrar cada orden.
+- El token no es de un solo uso: permanece válido para el tracker post-aprobación hasta revocación, regeneración o vencimiento.
+- WhatsApp conserva el enlace tokenizado y usa la moneda configurada por el taller en vez de fijar `$`.
+
+### BUG-015: Reabrir una cotización ocultaba la mano de obra guardada
+
+Al seleccionar de nuevo una orden en `Approval`, la UI recuperaba los precios de repuestos pero inicializaba mano de obra en cero. Ahora la reconstruye como `totalEstimate - suma de repuestos`, evitando reducir el total al regenerar el enlace.

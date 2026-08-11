@@ -41,6 +41,8 @@ npm.cmd run build
 - [x] Verificar rutas server-side en el resumen de build.
 - [x] Probar acceso no autenticado: admin/pagos deben responder 401.
 - [x] Probar cotización pública con documento descartable y confirmar que el DTO no filtra nombre/contacto del cliente ni datos internos.
+- [ ] Confirmar que el portal responde 404 sin token y con token incorrecto; el token correcto debe abrir la cotización.
+- [ ] Regenerar el enlace y comprobar que el anterior queda en 404; revocar el nuevo y comprobar otro 404.
 - [x] Probar firma/aprobación parcial y limpiar el documento temporal.
 - [x] Probar pago autenticado descartable antes de producción.
 - [x] Probar QC autenticado: pago previo no debe omitir checklist; pass debe ir a Ready/Delivered según saldo y fail debe volver a Repair.
@@ -69,7 +71,7 @@ firebase deploy --only firestore:rules,firestore:indexes --project mechanic-app-
 - [x] Reglas Firestore desplegadas solo después de confirmar que la nueva API QC está activa en Vercel.
 - [x] Smoke test: login → Reception → Diagnosis → Approval → firma cliente → Approved → Repair → QC → pago → Delivered (el pago completo previo al pass de QC entrega sin omitir el checklist).
 - [x] Tema claro/oscuro y viewport móvil revisados en 320x568 y 390x844; sin desbordamientos ni errores de consola en las rutas principales.
-- [x] EmailJS probado con destinatario controlado, moneda del taller y enlace público válido; recepción final del inbox se confirma por separado.
+- [x] EmailJS probado con destinatario controlado, moneda del taller y enlace público válido; recepción final del inbox confirmada.
 - [ ] Logs de Vercel y Firebase revisados sin errores nuevos. Vercel quedó verificado; queda pendiente una revisión específica de logs Firebase cuando exista acceso a esa vista.
 - [x] Datos de prueba eliminados y eliminación verificada.
 - [x] Cuentas demo históricas con credenciales conocidas revisadas y eliminadas.

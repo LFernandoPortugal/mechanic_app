@@ -21,7 +21,7 @@ Reception → Diagnosis → Approval → Approved → Repair → QC → Ready �
 El portal público vigente usa:
 
 ```text
-/quote/view?id=JOB_ID
+/quote/view?id=JOB_ID#token=TOKEN
 ```
 
 Los jobs completos no son públicos en Firestore. Vercel entrega un DTO sanitizado mediante `/api/public/quotes/[id]` y procesa la firma/aprobación en el servidor.
@@ -33,7 +33,7 @@ Los jobs completos no son públicos en Firestore. Vercel entrega un DTO sanitiza
 | `/reception` | Ingreso, fluidos, valores, fotos y firma de recepción |
 | `/technician` | Diagnóstico, inspección y reparación |
 | `/advisor` | Precios y generación del enlace de cotización |
-| `/quote/view?id=...` | Selección de ítems y firma de aprobación del cliente |
+| `/quote/view?id=...#token=...` | Selección de ítems, firma y tracker mediante enlace revocable |
 | `/qc` | Control de calidad y retorno a reparación |
 | `/advisor/payments` | Abonos, saldo, recibo y entrega |
 | `/inventory` | Stock y movimientos inmutables |

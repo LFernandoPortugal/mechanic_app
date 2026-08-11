@@ -1,6 +1,6 @@
 # Política de Acceso y Seguridad — SGA
 
-> Última actualización: 2026-08-08
+> Última actualización: 2026-08-11
 
 ## Principios
 
@@ -35,7 +35,11 @@
 
 ## Portal público
 
-- Ruta visible: `/quote/view?id=JOB_ID`.
+- Ruta visible: `/quote/view?id=JOB_ID#token=TOKEN`.
+- El token aleatorio tiene 256 bits, caduca a los 30 días y permanece en el fragmento para no entrar en la URL HTTP ni en referrers.
+- El portal lo envía en `X-Quote-Token`; Firestore guarda únicamente SHA-256, tenant y vigencia en `public_quote_links`.
+- Ningún navegador, incluido SUPER_ADMIN, puede leer o escribir `public_quote_links`; emisión, regeneración y revocación pasan por `/api/jobs/[id]/quote-link`.
+- Regenerar reemplaza el registro e invalida inmediatamente el enlace anterior. Revocar lo elimina. Se conserva después de aprobar para que el mismo enlace muestre el tracker hasta `Delivered`.
 - Firestore no permite lectura/escritura pública directa de `jobs` o `settings`.
 - `GET /api/public/quotes/[id]` devuelve un DTO sanitizado y limitado a datos necesarios.
 - No expone nombre/email/teléfono del cliente, firma de recepción/aprobación, fotos privadas de recepción, pagos, auditoría ni IDs internos del personal.
@@ -43,7 +47,7 @@
 - El servidor recalcula el monto, llena `declinedItems`, registra firma/fecha/auditoría y actualiza en una transacción.
 - Tanto lectura como aprobación ocultan las cotizaciones de talleres inexistentes, deshabilitados o vencidos.
 
-Los IDs aleatorios reducen enumeración, pero no sustituyen un token de acceso. Para una fase posterior se recomienda un token revocable/de un solo uso por cotización.
+El ID de la orden no concede acceso por sí solo: un token ausente, incorrecto, vencido, regenerado o revocado recibe la misma respuesta 404 que una cotización inexistente.
 
 ## Pagos
 

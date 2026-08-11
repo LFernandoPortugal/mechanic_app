@@ -1,13 +1,13 @@
 """
 clean_firestore.py — Limpieza de colecciones Firestore para inicio nuevo.
 
-Borra todos los documentos de: jobs, inventory, inventory_transactions
+Borra todos los documentos de: public_quote_links, jobs, inventory, inventory_transactions
 Preserva: users, settings
 
 Uso seguro:
   python execution/clean_firestore.py --project mechanic-app-7d459
   python execution/clean_firestore.py --project mechanic-app-7d459 --apply
-      [--collections jobs inventory inventory_transactions]
+      [--collections public_quote_links jobs inventory inventory_transactions]
 
 Requiere:
   pip install firebase-admin python-dotenv
@@ -37,7 +37,12 @@ except ImportError:
     sys.exit(1)
 
 
-SAFE_TO_DELETE = {"jobs", "inventory", "inventory_transactions"}
+SAFE_TO_DELETE = {
+    "public_quote_links",
+    "jobs",
+    "inventory",
+    "inventory_transactions",
+}
 PROTECTED = {"users", "settings"}
 EXPECTED_PROJECT_ID = "mechanic-app-7d459"
 
