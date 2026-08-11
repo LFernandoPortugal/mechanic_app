@@ -41,8 +41,8 @@ npm.cmd run build
 - [x] Verificar rutas server-side en el resumen de build.
 - [x] Probar acceso no autenticado: admin/pagos deben responder 401.
 - [x] Probar cotización pública con documento descartable y confirmar que el DTO no filtra nombre/contacto del cliente ni datos internos.
-- [ ] Confirmar que el portal responde 404 sin token y con token incorrecto; el token correcto debe abrir la cotización.
-- [ ] Regenerar el enlace y comprobar que el anterior queda en 404; revocar el nuevo y comprobar otro 404.
+- [x] Confirmar que el portal responde 404 sin token y con token incorrecto; el token correcto debe abrir la cotización.
+- [x] Regenerar el enlace y comprobar que el anterior queda en 404; revocar el nuevo y comprobar otro 404.
 - [x] Probar firma/aprobación parcial y limpiar el documento temporal.
 - [x] Probar pago autenticado descartable antes de producción.
 - [x] Probar QC autenticado: pago previo no debe omitir checklist; pass debe ir a Ready/Delivered según saldo y fail debe volver a Repair.

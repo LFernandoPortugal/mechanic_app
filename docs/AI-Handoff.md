@@ -12,9 +12,9 @@
 - **Rama de trabajo:** ninguna funcional pendiente; PR #8 integrada por squash en `main`.
 - **Árbol local al cerrar:** limpio y sincronizado con `origin/main` después de integrar el checkpoint documental.
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas de la estabilización están desplegadas y fueron releídas desde el proyecto activo.
-- **Último hito:** PR #8 integrada y desplegada: EmailJS usa moneda del taller, valida destinatario/datos, limita reintentos y diferencia configuración faltante de cliente sin correo. Producción aceptó el envío controlado al tester.
-- **Calidad verificada:** TypeScript, lint, 27 pruebas unitarias, 22 pruebas de reglas, build, flujo real completo, EmailJS aceptado, revisión móvil/desktop, CI de `main` y Vercel Production.
-- **Siguiente paso recomendado:** cerrar y verificar el bloque de enlaces públicos revocables; después continuar los pendientes de beta priorizados.
+- **Último hito:** PR #10 validada en Preview: enlaces de cotización con token de 256 bits, hash server-only, caducidad, regeneración y revocación. Aún no está integrada en `main` al redactar este punto.
+- **Calidad verificada:** TypeScript, lint, 32 pruebas unitarias, 23 pruebas de reglas, audit sin vulnerabilidades, build de 19 páginas/5 APIs, flujo real completo, EmailJS confirmado y QA de enlaces en Vercel Preview.
+- **Siguiente paso recomendado:** integrar PR #10, verificar Vercel Production y después desplegar exclusivamente Firestore Rules.
 - **No repetir ni asumir:** EmailJS confirmó aceptación y una persona confirmó recepción/presentación correcta en un inbox controlado. No hace falta recrear las órdenes QA ya eliminadas; verificar siempre el deployment vigente antes de un nuevo cambio.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
@@ -215,10 +215,22 @@ La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos 
 6. Las dos órdenes descartables se eliminaron y Firestore volvió a 0 jobs. No se modificaron Auth, `users`, `settings`, SUPER_ADMIN, reglas ni índices; no hubo despliegue Firebase.
 7. Una persona con acceso al inbox confirmó la recepción y presentación visual correcta del correo.
 
+## Validación Preview de enlaces revocables del 2026-08-11
+
+1. PR #10 se probó con el ADMIN tester de `p1` y una orden descartable `QA-TOKEN-811`; SUPER_ADMIN no se usó.
+2. El enlace emitido llevó el secreto únicamente en `#token`, con 43 caracteres URL-safe; el query string no lo contenía.
+3. El portal devolvió la misma vista de no encontrado sin token y con token incorrecto. El token correcto mostró la cotización por `S/. 17.34`.
+4. Regenerar conservó `S/. 5.00` de mano de obra, cambió el token e invalidó el anterior. El nuevo funcionó también al cambiar solo el fragmento en la misma pestaña.
+5. Revocar eliminó el acceso; recargar el enlace vigente devolvió no encontrado.
+6. TypeScript, lint, 32 pruebas unitarias, 23 de Rules, `npm audit --omit=dev` y build pasaron. CI y Vercel Preview quedaron en verde.
+7. La orden y su registro en `public_quote_links` se eliminaron; Firebase MCP confirmó ambas colecciones vacías.
+8. El servidor local no pudo ejercer las APIs Admin por falta de Application Default Credentials; el error se aisló al entorno local y el mismo flujo pasó en Preview mediante OIDC/WIF.
+
 ## Siguiente bloque recomendado
 
-1. Verificar en Preview y Producción que los enlaces públicos requieren token, que regenerar invalida el anterior y que revocar elimina el acceso.
-2. Continuar el siguiente bloque funcional de beta después de integrar esta protección.
+1. Integrar PR #10 y verificar en Producción que los enlaces públicos requieren token y que la emisión autenticada funciona.
+2. Desplegar después solo `firestore:rules` a `mechanic-app-7d459`; no desplegar Hosting.
+3. Continuar el siguiente bloque funcional de beta tras cerrar Producción y documentar el commit final de `main`.
 3. Resolver o aceptar explícitamente los avisos moderados dev-only de `npm audit` sin aplicar un downgrade automático de `firebase-tools`.
 4. Mantener `p1` como fixture de testers hasta cerrar las funciones y flujos importantes; decidir su eliminación solo al finalizar la beta.
 
