@@ -22,6 +22,8 @@ import {
   MessageSquare,
   ArrowLeft,
   Loader2,
+  AlertTriangle,
+  RefreshCw,
   Undo2,
   Check,
   ChevronRight,
@@ -38,7 +40,7 @@ export default function QualityControlPage() {
   const formatMoney = (amount: number) => `${currencySymbol}${amount.toFixed(2)}`;
 
   // Load all jobs currently in QC status, and also recently Ready/Repair jobs for history
-  const { jobs, loading } = useRealtimeJobs({ all: true });
+  const { jobs, loading, error: jobsError, retry: retryJobs } = useRealtimeJobs({ all: true });
 
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -57,6 +59,7 @@ export default function QualityControlPage() {
   });
   const [inspectorNotes, setInspectorNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [operationError, setOperationError] = useState<string | null>(null);
 
   // Filter jobs based on status and search query
   const qcPendingJobs = useMemo(() => {
@@ -90,6 +93,7 @@ export default function QualityControlPage() {
     setInspectorNotes("");
     setIsRejecting(false);
     setRejectionReason("");
+    setOperationError(null);
   }, [selectedJobId]);
 
   // Set first job as selected by default if available
@@ -109,6 +113,7 @@ export default function QualityControlPage() {
     }
 
     setSubmitting(true);
+    setOperationError(null);
     try {
       const result = await submitQualityControl(selectedJob.id, {
         outcome: "pass",
@@ -122,7 +127,9 @@ export default function QualityControlPage() {
       setSelectedJobId(null);
     } catch (error) {
       console.error("Error approving QC:", error);
-      toast.error(error instanceof Error ? error.message : "Error al aprobar el control de calidad.");
+      const message = error instanceof Error ? error.message : "Error al aprobar el control de calidad.";
+      setOperationError(message);
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
@@ -136,6 +143,7 @@ export default function QualityControlPage() {
     }
 
     setSubmitting(true);
+    setOperationError(null);
     try {
       await submitQualityControl(selectedJob.id, {
         outcome: "fail",
@@ -147,7 +155,9 @@ export default function QualityControlPage() {
       setIsRejecting(false);
     } catch (error) {
       console.error("Error rejecting QC:", error);
-      toast.error(error instanceof Error ? error.message : "Error al registrar el rechazo.");
+      const message = error instanceof Error ? error.message : "Error al registrar el rechazo.";
+      setOperationError(message);
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
@@ -227,6 +237,17 @@ export default function QualityControlPage() {
                     <div className="flex flex-col items-center justify-center py-10 gap-2">
                       <Loader2 className="w-6 h-6 animate-spin text-pink-400" />
                       <p className="text-xs text-muted-foreground">Cargando órdenes...</p>
+                    </div>
+                  ) : jobsError ? (
+                    <div role="alert" className="flex flex-col items-center justify-center gap-3 px-4 py-10 text-center">
+                      <AlertTriangle className="h-8 w-8 text-rose-400" />
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">No se pudieron cargar las órdenes.</p>
+                        <p className="mt-1 text-xs text-muted-foreground">Comprueba la conexión y vuelve a intentarlo.</p>
+                      </div>
+                      <Button type="button" variant="outline" size="sm" onClick={retryJobs}>
+                        <RefreshCw className="mr-2 h-4 w-4" /> Reconectar
+                      </Button>
                     </div>
                   ) : qcPendingJobs.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground text-sm px-4">
@@ -339,6 +360,16 @@ export default function QualityControlPage() {
                           />
                         </div>
 
+                        {operationError && (
+                          <div role="alert" className="flex items-start gap-3 rounded-lg border border-rose-500/30 bg-rose-950/20 px-4 py-3 text-sm text-rose-300">
+                            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                            <div>
+                              <p className="font-semibold">No se guardó el rechazo de QC.</p>
+                              <p className="mt-0.5 text-xs text-rose-200/80">{operationError} El motivo se conservó; puedes reintentar.</p>
+                            </div>
+                          </div>
+                        )}
+
                         <div className="flex flex-col-reverse gap-3 justify-end pt-4 sm:flex-row">
                           <Button
                             variant="ghost"
@@ -356,7 +387,7 @@ export default function QualityControlPage() {
                             {submitting ? (
                               <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Procesando...</>
                             ) : (
-                              "Confirmar Rechazo y Enviar a Técnico"
+                              operationError ? "Reintentar Rechazo" : "Confirmar Rechazo y Enviar a Técnico"
                             )}
                           </Button>
                         </div>
@@ -560,11 +591,24 @@ export default function QualityControlPage() {
                           />
                         </div>
 
+                        {operationError && (
+                          <div role="alert" className="flex items-start gap-3 rounded-lg border border-rose-500/30 bg-rose-950/20 px-4 py-3 text-sm text-rose-300">
+                            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                            <div>
+                              <p className="font-semibold">No se guardó el control de calidad.</p>
+                              <p className="mt-0.5 text-xs text-rose-200/80">{operationError} Tus selecciones siguen intactas; puedes reintentar.</p>
+                            </div>
+                          </div>
+                        )}
+
                         {/* Actions */}
                         <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-border/40">
                           <Button
                             variant="outline"
-                            onClick={() => setIsRejecting(true)}
+                            onClick={() => {
+                              setOperationError(null);
+                              setIsRejecting(true);
+                            }}
                             className="border-rose-600/50 text-rose-400 hover:bg-rose-950/20 font-bold h-12 w-full sm:w-auto"
                             disabled={submitting}
                           >
@@ -583,7 +627,7 @@ export default function QualityControlPage() {
                             {submitting ? (
                               <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Procesando...</>
                             ) : (
-                              <><ShieldCheck className="w-4 h-4 mr-2" /> Aprobar y Marcar Listo para Entrega</>
+                              <><ShieldCheck className="w-4 h-4 mr-2" /> {operationError ? "Reintentar Aprobación" : "Aprobar y Marcar Listo para Entrega"}</>
                             )}
                           </Button>
                         </div>

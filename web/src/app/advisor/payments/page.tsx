@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   DollarSign, CreditCard, Banknote, Smartphone, CheckCircle2,
-  ChevronDown, ChevronUp, Loader2, FileText, ArrowLeft,
+  ChevronDown, ChevronUp, Loader2, FileText, ArrowLeft, AlertTriangle, RefreshCw,
 } from "lucide-react";
 
 type PaymentMethod = PaymentInput["method"];
@@ -60,6 +60,7 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
   const [reference, setRef]     = useState("");
   const [method, setMethod]     = useState<PaymentMethod>("Efectivo");
   const [loading, setLoading]   = useState(false);
+  const [operationError, setOperationError] = useState<string | null>(null);
 
   const paid         = totalPaid(job);
   const approvedTotal = payableTotal(job);
@@ -86,6 +87,7 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
     }
 
     setLoading(true);
+    setOperationError(null);
     try {
       const result = await registerPayment(job.id, { amount: appliedAmount, method, reference });
       if (change > 0) {
@@ -101,7 +103,9 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
       setAmount(""); setRef("");
       onPaymentRegistered();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Error al registrar el pago.");
+      const message = error instanceof Error ? error.message : "Error al registrar el pago.";
+      setOperationError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -231,6 +235,16 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
                 </div>
               </div>
 
+              {operationError && (
+                <div role="alert" className="flex items-start gap-3 rounded-lg border border-rose-500/30 bg-rose-950/20 px-4 py-3 text-sm text-rose-300">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div>
+                    <p className="font-semibold">El pago no fue registrado.</p>
+                    <p className="mt-0.5 text-xs text-rose-200/80">{operationError} El monto y la referencia se conservaron para reintentar.</p>
+                  </div>
+                </div>
+              )}
+
               <div className="flex gap-2">
                 <Button
                   className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
@@ -239,7 +253,7 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
                 >
                   {loading
                     ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Procesando…</>
-                    : <>Registrar Pago</>
+                    : <>{operationError ? "Reintentar Pago" : "Registrar Pago"}</>
                   }
                 </Button>
                 {balance > 0 && (
@@ -303,7 +317,7 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
 export default function PaymentsPage() {
   const router = useRouter();
   const { workshopSettings } = useAuth();
-  const { jobs, loading } = useRealtimeJobs({ statuses: ["Ready", "Approved", "Delivered", "QC"] });
+  const { jobs, loading, error: jobsError, retry: retryJobs } = useRealtimeJobs({ statuses: ["Ready", "Approved", "Delivered", "QC"] });
 
   // Sort: pending first, then delivered
   const sorted = [...jobs].sort((a, b) => {
@@ -371,8 +385,23 @@ export default function PaymentsPage() {
             </div>
           )}
 
+          {jobsError && !loading && (
+            <Card role="alert" className="border-rose-500/30 bg-rose-950/15">
+              <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
+                <AlertTriangle className="h-9 w-9 text-rose-400" />
+                <div>
+                  <p className="font-semibold text-foreground">No se pudieron cargar las órdenes de pago.</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Comprueba la conexión y vuelve a intentarlo.</p>
+                </div>
+                <Button type="button" variant="outline" onClick={retryJobs}>
+                  <RefreshCw className="mr-2 h-4 w-4" /> Reconectar
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Pending jobs */}
-          {!loading && pending.length === 0 && (
+          {!loading && !jobsError && pending.length === 0 && (
             <Card className="glass-panel">
               <CardContent className="flex flex-col items-center justify-center py-16 text-center">
                 <CheckCircle2 className="w-12 h-12 text-emerald-500 mb-4 opacity-60" />
@@ -381,12 +410,12 @@ export default function PaymentsPage() {
             </Card>
           )}
 
-          {!loading && pending.map(job => (
+          {!loading && !jobsError && pending.map(job => (
             <JobCard key={job.id} job={job} onPaymentRegistered={() => {}} workshopSettings={workshopSettings} />
           ))}
 
           {/* Delivered section */}
-          {!loading && delivered.length > 0 && (
+          {!loading && !jobsError && delivered.length > 0 && (
             <div className="space-y-3">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pt-2">
                 Entregados Recientes

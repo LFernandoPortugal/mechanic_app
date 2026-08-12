@@ -452,3 +452,21 @@ Los 3 E2E pasan juntos en Chromium y el recorrido principal cubre ahora el flujo
 - La prueba administrativa confirma que los cuatro perfiles sembrados aparecen en Gestión de Usuarios, mientras la prueba negativa independiente conserva el bloqueo de RECEPTION en Técnico.
 
 Los 3 E2E pasan juntos en Chromium con los handoffs reales. No se reutiliza ADMIN en el recorrido funcional ni se escriben datos fuera de `demo-mechanic-app`; `p1`, SUPER_ADMIN y Firebase real permanecen fuera de alcance.
+
+---
+
+## v1.20 — Recuperación visible en operaciones críticas (2026-08-12)
+
+### UX-012: Los fallos transitorios dejaban al usuario sin una recuperación persistente
+
+**Riesgo**: cotización pública, QC y pagos liberaban correctamente sus botones después de un error, pero dependían de un toast efímero. QC y Caja tampoco mostraban el error que ya reportaba el listener de Firestore, por lo que una lista vacía podía confundirse con “sin órdenes”.
+
+**Corrección y cobertura**:
+
+- El portal público muestra un aviso persistente si falla el POST de aprobación, conserva firma y decisiones y cambia la acción a `Reintentar aprobación`.
+- QC conserva los cinco checks, notas o motivo de rechazo y ofrece reintentar aprobación/rechazo sin reconstruir el formulario.
+- Caja conserva monto, método y referencia y ofrece `Reintentar Pago`; ningún fallo limpia datos antes de una respuesta exitosa.
+- `useRealtimeJobs` expone una reconexión explícita. QC y Caja distinguen el fallo del listener de un estado vacío y presentan `Reconectar`.
+- Seis pruebas unitarias nuevas simulan fallos seguidos de éxito y verifican preservación de datos, reintento y reconexión.
+
+La validación queda en 94 unitarias, 23 Rules, 5 integraciones API y 3 E2E Chromium; TypeScript, lint y build de 19 páginas/5 APIs pasan. Todas las pruebas usan fixtures o `demo-mechanic-app`; no se tocaron `p1`, SUPER_ADMIN, Firebase real ni datos de Vercel.

@@ -9,6 +9,8 @@ import { makeJob, workshopFixture } from "../fixtures/jobs";
 const state = vi.hoisted(() => ({
   jobs: [] as ReturnType<typeof makeJob>[],
   registerPayment: vi.fn(),
+  jobsError: null as string | null,
+  retryJobs: vi.fn(),
   toastError: vi.fn(),
   toastSuccess: vi.fn(),
 }));
@@ -26,7 +28,7 @@ vi.mock("@/contexts/AuthContext", () => ({
 }));
 
 vi.mock("@/hooks/useRealtimeJobs", () => ({
-  useRealtimeJobs: () => ({ jobs: state.jobs, loading: false }),
+  useRealtimeJobs: () => ({ jobs: state.jobs, loading: false, error: state.jobsError, retry: state.retryJobs }),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -59,6 +61,8 @@ beforeEach(() => {
     }],
   })];
   state.registerPayment.mockReset();
+  state.jobsError = null;
+  state.retryJobs.mockReset();
   state.toastError.mockReset();
   state.toastSuccess.mockReset();
 });
@@ -126,5 +130,40 @@ describe("PaymentsPage", () => {
     await user.click(screen.getByRole("button", { name: "Detalles de pago para QA-PAID-QC" }));
     expect(screen.getByText("Pago completo registrado. La orden todavía debe completar el flujo de QC.")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Registrar Pago" })).toBeNull();
+  });
+
+  it("preserves payment data after an API failure and retries the same payment", async () => {
+    const user = userEvent.setup();
+    state.registerPayment
+      .mockRejectedValueOnce(new Error("La conexión se interrumpió."))
+      .mockResolvedValueOnce({ remainingBalance: 0, status: "Delivered" });
+    render(<PaymentsPage />);
+
+    await user.click(screen.getByRole("button", { name: "Detalles de pago para QA-PAY-01" }));
+    await user.click(screen.getByRole("button", { name: "Saldo completo" }));
+    await user.type(screen.getByLabelText("Referencia / N° de Operación"), "OP-RETRY-01");
+    await user.click(screen.getByRole("button", { name: "Registrar Pago" }));
+
+    expect((await screen.findByRole("alert")).textContent).toContain("El monto y la referencia se conservaron");
+    expect((screen.getByLabelText("Monto (S/.)") as HTMLInputElement).value).toBe("60.00");
+    expect((screen.getByLabelText("Referencia / N° de Operación") as HTMLInputElement).value).toBe("OP-RETRY-01");
+
+    await user.click(screen.getByRole("button", { name: "Reintentar Pago" }));
+    await waitFor(() => expect(state.registerPayment).toHaveBeenCalledTimes(2));
+    expect(state.registerPayment).toHaveBeenLastCalledWith("job-payment-fixture", {
+      amount: 60,
+      method: "Efectivo",
+      reference: "OP-RETRY-01",
+    });
+  });
+
+  it("shows a reconnect action when payment jobs cannot be loaded", async () => {
+    const user = userEvent.setup();
+    state.jobsError = "network unavailable";
+    render(<PaymentsPage />);
+
+    expect((await screen.findByRole("alert")).textContent).toContain("No se pudieron cargar las órdenes de pago");
+    await user.click(screen.getByRole("button", { name: "Reconectar" }));
+    expect(state.retryJobs).toHaveBeenCalledOnce();
   });
 });

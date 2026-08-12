@@ -17,7 +17,9 @@ vi.mock("next/image", () => ({
 }));
 
 vi.mock("@/components/SignatureCanvas", () => ({
-  SignatureCanvas: () => <div data-testid="signature-fixture" />,
+  SignatureCanvas: ({ onConfirm }: { onConfirm: (value: string) => void }) => (
+    <button type="button" onClick={() => onConfirm("data:image/png;base64,fixture-signature")}>Confirmar firma de prueba</button>
+  ),
 }));
 
 vi.mock("@/lib/pdf", () => ({ generateQuotePDF: vi.fn() }));
@@ -161,6 +163,30 @@ describe("public quote view", () => {
     expect(vi.mocked(fetch).mock.calls[1][1]).toMatchObject({
       headers: { "X-Quote-Token": "new-token" },
     });
+  });
+
+  it("preserves the approval after a failed submission and retries it", async () => {
+    const user = userEvent.setup();
+    window.location.hash = "#token=fixture-secret";
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(response(200))
+      .mockResolvedValueOnce(response(500))
+      .mockResolvedValueOnce(response(200, {
+        ...fixture,
+        job: { ...fixture.job, status: "Approved", approvedAmount: 250 },
+      }));
+
+    render(<ClientQuoteView />);
+    expect(await screen.findByRole("heading", { name: "Taller Fixture - Portal del cliente" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Confirmar firma de prueba" }));
+    await user.click(screen.getByRole("button", { name: "Aceptar cotización" }));
+
+    expect((await screen.findByRole("alert")).textContent).toContain("La firma y tus selecciones se conservaron");
+    await user.click(screen.getByRole("button", { name: "Reintentar aprobación" }));
+
+    expect(await screen.findByRole("heading", { name: "¡Cotización Aprobada!" })).toBeTruthy();
+    expect(fetch).toHaveBeenCalledTimes(3);
+    expect(vi.mocked(fetch).mock.calls[1][1]).toMatchObject(vi.mocked(fetch).mock.calls[2][1] as RequestInit);
   });
 
   it.each([

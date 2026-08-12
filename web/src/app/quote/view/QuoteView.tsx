@@ -26,6 +26,7 @@ export default function ClientQuoteView() {
   const [approvals, setApprovals] = useState<Record<string, boolean>>({});
   const [approvalSignature, setApprovalSignature] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<"not-found" | "server" | null>(null);
   const [retryToken, setRetryToken] = useState(0);
 
@@ -126,6 +127,7 @@ export default function ClientQuoteView() {
     }
 
     setSubmitting(true);
+    setSubmitError(null);
     try {
       const response = await fetch(`/api/public/quotes/${encodeURIComponent(job.id)}`, {
         method: "POST",
@@ -144,7 +146,9 @@ export default function ClientQuoteView() {
       setQuote(updated);
       toast.success(t('thankYouApproval'));
     } catch (e) {
-      toast.error("Error saving: " + e);
+      const message = e instanceof Error ? e.message : "No se pudo guardar la aprobación.";
+      setSubmitError(message);
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
@@ -410,13 +414,23 @@ export default function ClientQuoteView() {
           </CardContent>
         </Card>
 
+        {submitError && (
+          <div role="alert" className="flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-950/20 px-4 py-3 text-sm text-red-300">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <p className="font-semibold">Tu aprobación todavía no fue registrada.</p>
+              <p className="mt-0.5 text-xs text-red-200/80">{submitError} La firma y tus selecciones se conservaron para reintentar.</p>
+            </div>
+          </div>
+        )}
+
         <Button 
           size="lg" 
           className="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold h-14 shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all mt-6 disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none"
           onClick={handleAcceptQuote}
           disabled={!approvalSignature || submitting}
         >
-          {submitting ? "Registrando aprobaci\u00f3n\u2026" : t('acceptQuoteBtn')}
+          {submitting ? "Registrando aprobaci\u00f3n\u2026" : submitError ? "Reintentar aprobación" : t('acceptQuoteBtn')}
         </Button>
 
         <Button
