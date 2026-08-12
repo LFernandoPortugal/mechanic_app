@@ -492,11 +492,18 @@ export default function AdvisorQuoteBuilder() {
                   </CardTitle>
                   <CardDescription>{t('quoteBuilderDesc')} ({selectedJob.vehicleId})</CardDescription>
                 </div>
-                <Button onClick={handleAutoQuote} variant="outline" className="text-blue-500 dark:text-blue-400 border-blue-500/50 hover:bg-blue-50 dark:hover:bg-blue-950/30 flex-shrink-0">
-                  <Wand2 className="w-4 h-4 mr-2" />
-                  <span className="hidden sm:inline">{t('autoQuote')}</span>
-                  <span className="sm:hidden text-xs">Auto</span>
-                </Button>
+                {workshopSettings?.demoMode && (
+                  <Button
+                    onClick={handleAutoQuote}
+                    variant="outline"
+                    aria-label={t('autoQuote')}
+                    className="text-blue-500 dark:text-blue-400 border-blue-500/50 hover:bg-blue-50 dark:hover:bg-blue-950/30 flex-shrink-0"
+                  >
+                    <Wand2 className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">{t('autoQuote')}</span>
+                    <span className="sm:hidden text-xs">Auto</span>
+                  </Button>
+                )}
               </CardHeader>
               <CardContent className="space-y-6">
                 
@@ -533,10 +540,11 @@ export default function AdvisorQuoteBuilder() {
                         
                         {(item.status !== 'Pass') && (
                           <div className="w-full md:w-48">
-                            <Label className="text-xs text-muted-foreground mb-1 block">
+                            <Label htmlFor={`quote-price-${item.id}`} className="text-xs text-muted-foreground mb-1 block">
                               {t('partPrice')} ({workshopSettings?.currencySymbol || "$"})
                             </Label>
                             <Input 
+                              id={`quote-price-${item.id}`}
                               type="number"
                               min="0"
                               placeholder="0.00"
@@ -556,10 +564,11 @@ export default function AdvisorQuoteBuilder() {
                 
                 <div className="flex flex-col md:flex-row gap-4 items-end justify-between bg-secondary/50 dark:bg-black/40 p-4 rounded-lg border border-border">
                    <div className="w-full md:w-1/3">
-                      <Label className="text-muted-foreground mb-1 block">
+                      <Label htmlFor="quote-labor-cost" className="text-muted-foreground mb-1 block">
                         {t('globalLabor')} ({workshopSettings?.currencySymbol || "$"})
                       </Label>
                       <Input 
+                        id="quote-labor-cost"
                         type="number" 
                         min="0"
                         className="bg-background border-border text-blue-600 dark:text-blue-400 font-mono"

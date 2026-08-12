@@ -1,0 +1,130 @@
+// @vitest-environment jsdom
+
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import PaymentsPage from "@/app/advisor/payments/page";
+import { makeJob, workshopFixture } from "../fixtures/jobs";
+
+const state = vi.hoisted(() => ({
+  jobs: [] as ReturnType<typeof makeJob>[],
+  registerPayment: vi.fn(),
+  toastError: vi.fn(),
+  toastSuccess: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
+vi.mock("@/components/ProtectedRoute", () => ({
+  ProtectedRoute: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+vi.mock("@/contexts/AuthContext", () => ({
+  useAuth: () => ({ workshopSettings: workshopFixture }),
+}));
+
+vi.mock("@/hooks/useRealtimeJobs", () => ({
+  useRealtimeJobs: () => ({ jobs: state.jobs, loading: false }),
+}));
+
+vi.mock("@/lib/db", () => ({
+  registerPayment: state.registerPayment,
+}));
+
+vi.mock("@/lib/pdf", () => ({ generateReceiptPDF: vi.fn() }));
+
+vi.mock("sonner", () => ({
+  toast: {
+    error: state.toastError,
+    success: state.toastSuccess,
+  },
+}));
+
+beforeEach(() => {
+  state.jobs = [makeJob({
+    id: "job-payment-fixture",
+    vehicleId: "QA-PAY-01",
+    status: "Ready",
+    totalEstimate: 100,
+    approvedAmount: 100,
+    approvedAt: new Date("2026-08-11T12:30:00.000Z"),
+    payments: [{
+      id: "payment-1",
+      amount: 40,
+      method: "Efectivo",
+      date: "2026-08-11T13:00:00.000Z",
+      actorId: "advisor-fixture",
+    }],
+  })];
+  state.registerPayment.mockReset();
+  state.toastError.mockReset();
+  state.toastSuccess.mockReset();
+});
+
+afterEach(() => cleanup());
+
+describe("PaymentsPage", () => {
+  it("opens a payment card from the keyboard and registers the exact remaining balance", async () => {
+    const user = userEvent.setup();
+    state.registerPayment.mockResolvedValue({ remainingBalance: 0, status: "Delivered" });
+    render(<PaymentsPage />);
+
+    const cardToggle = screen.getByRole("button", { name: "Detalles de pago para QA-PAY-01" });
+    cardToggle.focus();
+    await user.keyboard("{Enter}");
+    expect(cardToggle.getAttribute("aria-expanded")).toBe("true");
+
+    await user.click(screen.getByRole("button", { name: "Saldo completo" }));
+    expect((screen.getByLabelText("Monto (S/.)") as HTMLInputElement).value).toBe("60.00");
+    await user.click(screen.getByRole("button", { name: "Registrar Pago" }));
+
+    await waitFor(() => {
+      expect(state.registerPayment).toHaveBeenCalledWith("job-payment-fixture", {
+        amount: 60,
+        method: "Efectivo",
+        reference: "",
+      });
+    });
+  });
+
+  it("rejects a non-cash overpayment before calling the API", async () => {
+    const user = userEvent.setup();
+    render(<PaymentsPage />);
+
+    await user.click(screen.getByRole("button", { name: "Detalles de pago para QA-PAY-01" }));
+    const cardMethod = screen.getByRole("button", { name: "Tarjeta" });
+    await user.click(cardMethod);
+    expect(cardMethod.getAttribute("aria-pressed")).toBe("true");
+    await user.type(screen.getByLabelText("Monto (S/.)"), "70");
+    await user.click(screen.getByRole("button", { name: "Registrar Pago" }));
+
+    expect(state.registerPayment).not.toHaveBeenCalled();
+    expect(state.toastError).toHaveBeenCalledWith("El monto supera el saldo (S/.60.00).");
+  });
+
+  it("keeps a fully paid QC order open until QC completes", async () => {
+    const user = userEvent.setup();
+    state.jobs = [makeJob({
+      id: "job-paid-qc",
+      vehicleId: "QA-PAID-QC",
+      status: "QC",
+      totalEstimate: 100,
+      approvedAmount: 100,
+      approvedAt: new Date("2026-08-11T12:30:00.000Z"),
+      payments: [{
+        id: "payment-full",
+        amount: 100,
+        method: "Transferencia",
+        date: "2026-08-11T13:00:00.000Z",
+        actorId: "advisor-fixture",
+      }],
+    })];
+    render(<PaymentsPage />);
+
+    await user.click(screen.getByRole("button", { name: "Detalles de pago para QA-PAID-QC" }));
+    expect(screen.getByText("Pago completo registrado. La orden todavía debe completar el flujo de QC.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Registrar Pago" })).toBeNull();
+  });
+});

@@ -461,7 +461,7 @@ export default function QualityControlPage() {
                             {/* Check 1 */}
                             <div className="flex items-center justify-between p-3.5 bg-zinc-950/20 border border-border/30 rounded-xl transition-all hover:border-pink-500/30">
                               <div className="space-y-0.5 pr-4">
-                                <Label className="text-sm font-semibold text-foreground cursor-pointer flex items-center gap-1.5">
+                                <Label htmlFor="qc-symptoms-resolved" className="text-sm font-semibold text-foreground cursor-pointer flex items-center gap-1.5">
                                   Síntomas Resueltos
                                 </Label>
                                 <p className="text-xs text-muted-foreground">
@@ -469,6 +469,7 @@ export default function QualityControlPage() {
                                 </p>
                               </div>
                               <Switch
+                                id="qc-symptoms-resolved"
                                 checked={checks.symptomsResolved}
                                 onCheckedChange={(val) => setChecks({ ...checks, symptomsResolved: val })}
                               />
@@ -477,7 +478,7 @@ export default function QualityControlPage() {
                             {/* Check 2 */}
                             <div className="flex items-center justify-between p-3.5 bg-zinc-950/20 border border-border/30 rounded-xl transition-all hover:border-pink-500/30">
                               <div className="space-y-0.5 pr-4">
-                                <Label className="text-sm font-semibold text-foreground cursor-pointer">
+                                <Label htmlFor="qc-torque-verified" className="text-sm font-semibold text-foreground cursor-pointer">
                                   Seguridad y Ajustes Mecánicos
                                 </Label>
                                 <p className="text-xs text-muted-foreground">
@@ -485,6 +486,7 @@ export default function QualityControlPage() {
                                 </p>
                               </div>
                               <Switch
+                                id="qc-torque-verified"
                                 checked={checks.torqueVerified}
                                 onCheckedChange={(val) => setChecks({ ...checks, torqueVerified: val })}
                               />
@@ -493,7 +495,7 @@ export default function QualityControlPage() {
                             {/* Check 3 */}
                             <div className="flex items-center justify-between p-3.5 bg-zinc-950/20 border border-border/30 rounded-xl transition-all hover:border-pink-500/30">
                               <div className="space-y-0.5 pr-4">
-                                <Label className="text-sm font-semibold text-foreground cursor-pointer">
+                                <Label htmlFor="qc-fluids-checked" className="text-sm font-semibold text-foreground cursor-pointer">
                                   Fluidos y Fugas
                                 </Label>
                                 <p className="text-xs text-muted-foreground">
@@ -501,6 +503,7 @@ export default function QualityControlPage() {
                                 </p>
                               </div>
                               <Switch
+                                id="qc-fluids-checked"
                                 checked={checks.fluidsDoubleChecked}
                                 onCheckedChange={(val) => setChecks({ ...checks, fluidsDoubleChecked: val })}
                               />
@@ -509,7 +512,7 @@ export default function QualityControlPage() {
                             {/* Check 4 */}
                             <div className="flex items-center justify-between p-3.5 bg-zinc-950/20 border border-border/30 rounded-xl transition-all hover:border-pink-500/30">
                               <div className="space-y-0.5 pr-4">
-                                <Label className="text-sm font-semibold text-foreground cursor-pointer">
+                                <Label htmlFor="qc-cleanliness-checked" className="text-sm font-semibold text-foreground cursor-pointer">
                                   Estética y Limpieza
                                 </Label>
                                 <p className="text-xs text-muted-foreground">
@@ -517,6 +520,7 @@ export default function QualityControlPage() {
                                 </p>
                               </div>
                               <Switch
+                                id="qc-cleanliness-checked"
                                 checked={checks.cleanlinessChecked}
                                 onCheckedChange={(val) => setChecks({ ...checks, cleanlinessChecked: val })}
                               />
@@ -525,7 +529,7 @@ export default function QualityControlPage() {
                             {/* Check 5 */}
                             <div className="flex items-center justify-between p-3.5 bg-zinc-950/20 border border-border/30 rounded-xl transition-all hover:border-pink-500/30">
                               <div className="space-y-0.5 pr-4">
-                                <Label className="text-sm font-semibold text-foreground cursor-pointer">
+                                <Label htmlFor="qc-road-test-verified" className="text-sm font-semibold text-foreground cursor-pointer">
                                   Prueba de Ruta Validada
                                 </Label>
                                 <p className="text-xs text-muted-foreground">
@@ -533,6 +537,7 @@ export default function QualityControlPage() {
                                 </p>
                               </div>
                               <Switch
+                                id="qc-road-test-verified"
                                 checked={checks.roadTestVerified}
                                 onCheckedChange={(val) => setChecks({ ...checks, roadTestVerified: val })}
                               />

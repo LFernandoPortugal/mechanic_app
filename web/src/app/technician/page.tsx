@@ -499,9 +499,10 @@ export default function TechnicianDashboard() {
                   <h3 className="font-semibold text-foreground">{t('addInspectionItem')}</h3>
                   
                   <div className="space-y-2">
-                    <Label>{t('componentDetail')}</Label>
+                    <Label htmlFor="inspection-component">{t('componentDetail')}</Label>
                     <div className="flex gap-2">
                       <Input 
+                        id="inspection-component"
                         value={isListening ? (transcript || newItemName) : newItemName} 
                         onChange={e => setNewItemName(e.target.value)} 
                         className="bg-background border-border flex-1" 
@@ -538,8 +539,8 @@ export default function TechnicianDashboard() {
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>{t('statusTitle')}</Label>
+                  <div className="space-y-2" role="group" aria-labelledby="inspection-status-label">
+                    <Label id="inspection-status-label">{t('statusTitle')}</Label>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                       {(['Pass', 'Recommended', 'Fail', 'Critical'] as const).map(status => (
                         <Button
@@ -553,6 +554,7 @@ export default function TechnicianDashboard() {
                             ${newItemStatus !== status ? 'border-border text-muted-foreground' : ''}
                           `}
                           onClick={() => setNewItemStatus(status)}
+                          aria-pressed={newItemStatus === status}
                         >
                           {t(STATUS_MAP[status])}
                         </Button>
@@ -561,8 +563,9 @@ export default function TechnicianDashboard() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>{t('technicianNotes')}</Label>
+                    <Label htmlFor="inspection-notes">{t('technicianNotes')}</Label>
                     <Textarea 
+                      id="inspection-notes"
                       value={newItemNotes} 
                       onChange={e => setNewItemNotes(e.target.value)} 
                       className="bg-background border-border"
@@ -572,8 +575,9 @@ export default function TechnicianDashboard() {
 
                   {newItemStatus !== 'Pass' && (
                     <div className="space-y-2">
-                      <Label>Evidencia Fotográfica (Opcional)</Label>
+                      <Label htmlFor="inspection-evidence">Evidencia Fotográfica (Opcional)</Label>
                       <Input 
+                        id="inspection-evidence"
                         type="file" 
                         accept="image/*" 
                         capture="environment" 
