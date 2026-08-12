@@ -2,19 +2,19 @@
 
 > Última actualización: 2026-08-12
 > Producción oficial: rama `main` en Vercel
-> Código funcional de producción verificado: `f3cac1e` en `https://mechanic-app-zeta.vercel.app/`
+> Código funcional de producción verificado: `961d827` en `https://mechanic-app-zeta.vercel.app/`
 
 ## Punto de reanudación rápido
 
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
-- **Producción:** `origin/main` está en `6accbc3` e incluye recuperación visible para operaciones críticas además del runtime base `f3cac1e`; CI y Vercel Production pasaron y `https://mechanic-app-zeta.vercel.app/` respondió HTTP 200 en cotización, QC y pagos.
-- **Rama de trabajo:** PR #37 (`codex/idempotent-operations`) añade renovación controlada de sesión, idempotencia server-side para pagos/QC y detección de saldos obsoletos; debe pasar CI/Preview antes de integrarse.
+- **Producción:** `origin/main` está en `961d827` e incluye renovación controlada de sesión, idempotencia server-side para pagos/QC y detección de saldos obsoletos; CI y Vercel Production pasaron y `https://mechanic-app-zeta.vercel.app/` respondió HTTP 200 en `/`, login, Asesor, QC y Pagos.
+- **Rama de trabajo:** `codex/handoff-idempotency-production` solo registra este cierre documental; no contiene cambios runtime ni de Firebase.
 - **Árbol local al cerrar:** limpio y sincronizado con `origin/main` después de integrar el checkpoint documental.
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas de la estabilización están desplegadas y fueron releídas desde el proyecto activo.
-- **Último hito:** la rama idempotente fuerza una renovación de token ante el primer 401, guía al login si la sesión sigue inválida, evita dobles envíos en UI y garantiza que repetir el mismo pago/QC produzca una sola escritura.
+- **Último hito:** PR #37 se integró como `961d827`; fuerza una renovación de token ante el primer 401, guía al login si la sesión sigue inválida, evita dobles envíos en UI y garantiza que repetir el mismo pago/QC produzca una sola escritura.
 - **Calidad verificada:** TypeScript, lint, 102 pruebas unitarias, 8 de integración de API, 23 pruebas de reglas, 3 E2E Chromium, audit runtime en 0 vulnerabilidades, build de 19 páginas/5 APIs, QA visual en 390×844 y 1440×900 y HTTP 200 en las rutas oficiales auditadas.
-- **Siguiente paso recomendado:** validar la rama idempotente en CI/Preview y después revisar recuperación de borradores al recargar/reautenticar y los flujos secundarios aún sin E2E; mantener cualquier trabajo visual simultáneo en una rama separada.
+- **Siguiente paso recomendado:** revisar recuperación de borradores al recargar/reautenticar y los flujos secundarios aún sin E2E; mantener cualquier trabajo visual simultáneo en una rama separada.
 - **No repetir ni asumir:** EmailJS confirmó aceptación y una persona confirmó recepción/presentación correcta en un inbox controlado. No hace falta recrear las órdenes QA ya eliminadas; verificar siempre el deployment vigente antes de un nuevo cambio.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
@@ -23,7 +23,7 @@ Para retomar, leer este documento completo y luego seguir el orden obligatorio d
 
 La aplicación es un SGA multitenant en Next.js 16, Firebase Auth/Firestore y Vercel. La estabilización está integrada en `main`, desplegada en Vercel Production y acompañada por sus reglas Firestore en `mechanic-app-7d459`.
 
-- `origin/main` está en `6accbc3` y producción sirve la recuperación de operaciones críticas de `6accbc3` sobre el runtime base `f3cac1e` en `https://mechanic-app-zeta.vercel.app/`; los handoffs E2E mínimos quedan en `bf1df3f`, el E2E integral ADMIN en `0043693`, su tramo de recepción/diagnóstico en `b4c27e9`, el E2E base en `02931ea`, los flujos administrativos en `ac49ea7`, los operativos en `4e3882e`, acceso/portal en `1e1b049`, accesibilidad operativa en `eb29f26`, login en `0bd69a3`, enlaces revocables en `4a21b96` y la estabilización en `c903185`.
+- `origin/main` está en `961d827` y producción sirve la recuperación e idempotencia de operaciones críticas de `961d827` sobre el runtime base `f3cac1e` en `https://mechanic-app-zeta.vercel.app/`; los handoffs E2E mínimos quedan en `bf1df3f`, el E2E integral ADMIN en `0043693`, su tramo de recepción/diagnóstico en `b4c27e9`, el E2E base en `02931ea`, los flujos administrativos en `ac49ea7`, los operativos en `4e3882e`, acceso/portal en `1e1b049`, accesibilidad operativa en `eb29f26`, login en `0bd69a3`, enlaces revocables en `4a21b96` y la estabilización en `c903185`.
 - Las URLs Preview son efímeras y se toman del PR activo; no reutilizar aliases de ramas ya integradas.
 - Las reglas nuevas se compilaron y publicaron únicamente como `firestore:rules`; no se desplegaron Hosting, Storage ni índices.
 - El taller tester `p1` fue reparado: conserva su cuenta Auth y ahora tiene un único perfil ADMIN y un `settings/p1` vacío/activo. No se combinaron usuarios antiguos.
@@ -350,9 +350,19 @@ La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos 
 6. Los 3 E2E pasan juntos junto con 88 unitarias, 23 Rules y 5 integraciones API; TypeScript, lint, auditoría runtime y build de 19 páginas/5 APIs pasan.
 7. Producción respondió HTTP 200 en `/`, `/reception`, `/technician`, `/advisor`, `/qc` y `/advisor/payments`. No cambiaron ni se desplegaron Rules, índices, Storage o Firebase Hosting y no se tocaron datos reales, `p1` o SUPER_ADMIN.
 
+## Idempotencia y recuperación de sesión del 2026-08-12
+
+1. PR #37 se integró por squash en `main` como `961d827`; ambos CI de Preview, CI de `main` y Vercel Preview/Production completaron correctamente.
+2. Las llamadas autenticadas de pagos y QC fuerzan una sola renovación del ID token después del primer 401; un segundo 401 se presenta como sesión expirada con una ruta clara de regreso al login.
+3. Pagos y QC generan claves estables de idempotencia. Repetir la misma solicitud después de perder la respuesta devuelve el resultado ya registrado sin duplicar pagos, auditoría ni transiciones.
+4. Pagos compara el total observado por el formulario con el total vigente dentro de la transacción y devuelve 409 antes de escribir si otra caja registró un abono concurrente.
+5. La UI bloquea dobles clics sin esperar un rerender. QC también detecta por listener si la orden dejó de estar en `QC`, conserva lo escrito en memoria y desactiva el envío obsoleto.
+6. La suite queda en 102 unitarias, 23 Rules, 8 integraciones API y 3 E2E Chromium; TypeScript, lint, auditoría runtime y build de 19 páginas/5 APIs pasan.
+7. Producción respondió HTTP 200 en `/`, `/login`, `/advisor`, `/qc` y `/advisor/payments`. No cambiaron ni se desplegaron Rules, índices, Storage o Firebase Hosting y no se tocaron datos reales, `p1` o SUPER_ADMIN.
+
 ## Siguiente bloque recomendado
 
-1. Añadir estados de error/carga a la cobertura de componente solo donde exista una recuperación real para la persona usuaria, priorizando cotización, QC y pago.
+1. Diseñar recuperación de borradores al recargar o reautenticar sin persistir datos sensibles innecesarios; priorizar notas/checklist de QC y el contexto de pago, con expiración y limpieza explícitas.
 2. Coordinar cualquier chat de Diseño mediante una rama `codex/*` distinta; verificar `origin/main`, rebase/merge no destructivo y los gates antes de integrar para evitar solapar archivos de runtime.
 3. La variante de pago completo antes de QC ya está cubierta por integración de API y QA histórico; automatizarla en navegador solo si se requiere una regresión visual/estado adicional.
 4. Mantener `p1` como fixture de testers hasta finalizar el flujo crítico y limpiar cada orden descartable creada. No repetir despliegues de Rules ni pruebas con SUPER_ADMIN si el siguiente cambio no toca seguridad, roles o datos privilegiados.
