@@ -2,6 +2,7 @@
   "appTitle": "SGA",
   "appSubtitle": "Automotive Management System",
   "home": "Home",
+  "skipToContent": "Skip to main content",
 
   "reception": "Vehicle Reception",
   "receptionDesc": "Vehicle logging and initial liability sign-off.",

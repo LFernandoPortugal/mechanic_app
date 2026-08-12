@@ -244,3 +244,35 @@ La ronda final pasó en Preview y Producción. El enlace oficial se emitió, abr
 - El parámetro `redirect` rechaza orígenes externos, URLs protocol-relative, barras invertidas y saltos de línea antes de entregarlo al router.
 - El CTA y el subtítulo en español/inglés ya no ofrecen auto-registro; indican que las credenciales son asignadas por el administrador.
 - Pruebas unitarias cubren destinos internos y entradas inseguras. El navegador local confirmó redirección a `/`, redirección válida a `/inventory`, login tester y ausencia de errores de consola.
+
+---
+
+## v1.10 — Accesibilidad operativa (2026-08-11)
+
+### A11Y-001: Formularios y búsquedas dependían de placeholders
+
+**Síntoma**: campos de Recepción, las búsquedas de Clientes/QC/Inventario y todos los controles de los modales de Inventario perdían su nombre al desaparecer el placeholder o no asociaban visualmente la etiqueta con el control.
+
+**Corrección**:
+
+- Se asociaron etiquetas mediante `id`/`htmlFor` en Recepción e Inventario, incluyendo VIN, modelo, color, teléfono, síntomas, objetos de valor, cantidades y notas de stock.
+- Las búsquedas y filtros ahora tienen nombres semánticos aunque la etiqueta permanezca visualmente oculta.
+- Los botones repetidos de fluidos anuncian tanto el fluido como el valor y exponen su estado mediante `aria-pressed`.
+- Los selectores de roles de usuario exponen su estado seleccionado con `aria-pressed`.
+
+### A11Y-002: Modales de Inventario sin gestión de teclado
+
+**Síntoma**: los formularios superpuestos no se anunciaban como diálogos, no atrapaban el foco, no cerraban con Escape y permitían seguir accediendo al fondo.
+
+**Corrección**:
+
+- Se incorporó un contenedor modal reutilizable con nombre accesible, foco inicial, trampa de Tab/Shift+Tab, cierre con Escape y restauración del foco al control que lo abrió.
+- Mientras el diálogo está activo, el fondo queda `inert`, oculto del árbol accesible y con el scroll bloqueado.
+
+### A11Y-003: Navegación y ampliación móvil limitadas
+
+- Todas las páginas comparten un landmark `<main>` y un enlace bilingüe para saltar directamente al contenido.
+- Los controles interactivos reciben un foco visible global y los botones principales del header alcanzan 44×44 px.
+- Se eliminó `maximumScale: 1` para permitir zoom en dispositivos móviles.
+
+La validación local cubrió 390×844 y 1440×900, ambos temas, etiquetas anunciadas, diálogo nombrado, trampa de foco en ambas direcciones, Escape, restauración del foco y ausencia de desbordamiento visible. Gates: TypeScript y lint sin errores, 39 pruebas unitarias, 23 de reglas, 5 de integración y build de 19 páginas/5 APIs.

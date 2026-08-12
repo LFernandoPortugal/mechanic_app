@@ -45,7 +45,7 @@ export function Header() {
           {user && hasRole('SUPER_ADMIN') && (
             <Link
               href="/super-admin"
-              className="header-tool-btn w-9 h-9 hover:text-red-400 hover:border-red-500/40 hover:shadow-[0_0_10px_rgba(239,68,68,0.15)] text-red-400/80"
+              className="header-tool-btn w-11 h-11 hover:text-red-400 hover:border-red-500/40 hover:shadow-[0_0_10px_rgba(239,68,68,0.15)] text-red-400/80"
               title="Super Admin"
               aria-label="Super Admin"
             >
@@ -57,7 +57,7 @@ export function Header() {
           {user && hasRole('ADMIN') && (
             <Link
               href="/admin/users"
-              className="header-tool-btn w-9 h-9 hover:text-purple-400 hover:border-purple-500/40 hover:shadow-[0_0_10px_rgba(168,85,247,0.15)]"
+              className="header-tool-btn w-11 h-11 hover:text-purple-400 hover:border-purple-500/40 hover:shadow-[0_0_10px_rgba(168,85,247,0.15)]"
               title={t('userManagement')}
               aria-label={t('userManagement')}
             >
@@ -68,7 +68,7 @@ export function Header() {
           {/* Language toggle */}
           <button
             onClick={() => setLanguage(lang === 'es' ? 'en' : 'es')}
-            className="header-tool-btn h-9 w-9 gap-0 px-0 sm:w-auto sm:gap-2 sm:px-3 hover:text-amber-400 hover:border-amber-500/40 hover:shadow-[0_0_10px_rgba(251,191,36,0.15)] font-mono text-sm"
+            className="header-tool-btn h-11 w-11 gap-0 px-0 sm:w-auto sm:gap-2 sm:px-3 hover:text-amber-400 hover:border-amber-500/40 hover:shadow-[0_0_10px_rgba(251,191,36,0.15)] font-mono text-sm"
             title="Toggle Language"
             aria-label="Cambiar idioma"
           >
@@ -79,7 +79,7 @@ export function Header() {
           {/* Theme toggle */}
           <button
             onClick={toggleTheme}
-            className="header-tool-btn w-9 h-9 hover:text-emerald-400 hover:border-emerald-500/40 hover:shadow-[0_0_10px_rgba(52,211,153,0.15)]"
+            className="header-tool-btn w-11 h-11 hover:text-emerald-400 hover:border-emerald-500/40 hover:shadow-[0_0_10px_rgba(52,211,153,0.15)]"
             title="Toggle Theme"
             aria-label="Cambiar tema"
           >
@@ -100,7 +100,7 @@ export function Header() {
               </span>
               <button
                 onClick={handleSignOut}
-                className="header-tool-btn w-9 h-9 hover:text-red-400 hover:border-red-500/40 hover:shadow-[0_0_10px_rgba(248,113,113,0.15)]"
+                className="header-tool-btn w-11 h-11 hover:text-red-400 hover:border-red-500/40 hover:shadow-[0_0_10px_rgba(248,113,113,0.15)]"
                 title={t('signOut')}
                 aria-label={t('signOut')}
               >

@@ -146,8 +146,10 @@ export default function ClientsPage() {
           <Card className="glass-panel">
             <CardContent className="py-4">
               <div className="relative">
+                <label htmlFor="client-search" className="sr-only">Buscar clientes</label>
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
+                  id="client-search"
                   placeholder="Buscar por nombre, teléfono o placa..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
