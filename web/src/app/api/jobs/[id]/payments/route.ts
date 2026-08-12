@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getAdminFirestore } from "@/lib/firebase-admin";
 import { HttpError, requireRoles } from "@/lib/server-auth";
 import { isWorkshopActive } from "@/lib/server-workshop";
-import { calculatePayment, getPayableTotal } from "@/lib/transactions";
+import { calculatePayment, calculatePaymentBalance, getPayableTotal } from "@/lib/transactions";
 import type { Job } from "@/types";
 
 export const runtime = "nodejs";
@@ -36,11 +36,19 @@ export async function POST(
     const amount = Number(body.amount);
     const method = String(body.method || "") as typeof METHODS[number];
     const reference = String(body.reference || "").trim();
+    const requestId = String(body.requestId || "").trim();
+    const expectedTotalPaid = Number(body.expectedTotalPaid);
     if (!Number.isFinite(amount) || amount <= 0) {
       throw new HttpError(400, "El monto no es v\u00e1lido.");
     }
     if (!METHODS.includes(method)) throw new HttpError(400, "El m\u00e9todo de pago no es v\u00e1lido.");
     if (reference.length > 100) throw new HttpError(400, "La referencia es demasiado larga.");
+    if (!Number.isFinite(expectedTotalPaid) || expectedTotalPaid < 0) {
+      throw new HttpError(400, "El total pagado esperado no es v\u00e1lido.");
+    }
+    if (!/^pay_[A-Za-z0-9_-]{16,128}$/.test(requestId)) {
+      throw new HttpError(400, "El identificador de la operaci\u00f3n no es v\u00e1lido.");
+    }
 
     const db = getAdminFirestore();
     const jobRef = db.collection("jobs").doc(id);
@@ -53,8 +61,39 @@ export async function POST(
       if (!isSuperAdmin && job.workshopId !== caller.workshopId) {
         throw new HttpError(403, "La orden pertenece a otro taller.");
       }
+
+      const existingPayments = job.payments ?? [];
+      const repeatedPayment = existingPayments.find((payment) => payment.requestId === requestId);
+      if (repeatedPayment) {
+        if (
+          repeatedPayment.actorId !== caller.uid
+          || repeatedPayment.method !== method
+          || (repeatedPayment.reference ?? "") !== reference
+          || Math.abs(repeatedPayment.amount - amount) > 0.001
+        ) {
+          throw new HttpError(409, "El identificador de pago ya fue utilizado con otros datos.");
+        }
+        const payableTotal = getPayableTotal(job);
+        const balance = calculatePaymentBalance(
+          payableTotal,
+          existingPayments.map((payment) => payment.amount),
+        );
+        return {
+          payment: repeatedPayment,
+          status: job.status,
+          totalPaid: balance.totalPaid,
+          remainingBalance: balance.remainingBalance,
+          idempotent: true,
+        };
+      }
+
       if (!PAYABLE_STATUSES.includes(job.status)) {
         throw new HttpError(409, "La orden no admite nuevos pagos en su estado actual.");
+      }
+
+      const currentTotalPaid = existingPayments.reduce((total, payment) => total + payment.amount, 0);
+      if (Math.abs(currentTotalPaid - expectedTotalPaid) > 0.001) {
+        throw new HttpError(409, "La orden recibi\u00f3 otro pago. Revisa el saldo actualizado antes de continuar.");
       }
 
       const settingsSnapshot = await transaction.get(db.collection("settings").doc(job.workshopId));
@@ -65,7 +104,6 @@ export async function POST(
         throw new HttpError(403, "El taller no est\u00e1 activo.");
       }
 
-      const existingPayments = job.payments ?? [];
       let payableTotal: number;
       try {
         payableTotal = getPayableTotal(job);
@@ -86,6 +124,7 @@ export async function POST(
       const now = Timestamp.now();
       const payment = {
         id: `pay_${db.collection("payment_ids").doc().id}`,
+        requestId,
         amount: calculation.appliedAmount,
         method,
         reference,

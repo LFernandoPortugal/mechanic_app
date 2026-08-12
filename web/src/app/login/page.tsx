@@ -29,6 +29,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = getSafeAuthRedirect(searchParams.get('redirect'));
+  const sessionExpired = searchParams.get("reason") === "session-expired";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -111,6 +112,12 @@ function LoginForm() {
         <Card className="glass-panel">
           <CardContent className="pt-6">
             <form onSubmit={handleLogin} className="space-y-4">
+              {sessionExpired && !error && (
+                <div role="status" className="bg-amber-100 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-900/50 text-amber-700 dark:text-amber-300 p-3 rounded flex items-center gap-2 text-sm">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  Tu sesión expiró. Inicia sesión nuevamente para continuar donde estabas.
+                </div>
+              )}
               {error && (
                 <div className="bg-red-100 dark:bg-red-950/50 border border-red-300 dark:border-red-900/50 text-red-600 dark:text-red-500 p-3 rounded flex items-center gap-2 text-sm">
                   <AlertCircle className="w-4 h-4" />

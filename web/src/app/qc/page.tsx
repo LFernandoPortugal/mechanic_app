@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useRealtimeJobs } from "@/hooks/useRealtimeJobs";
@@ -32,10 +32,11 @@ import {
 import { WorkflowStepper } from "@/components/WorkflowStepper";
 import { VehicleIcon } from "@/components/ui/vehicle-icons";
 import { useAuth } from "@/contexts/AuthContext";
+import { ApiRequestError } from "@/lib/api-errors";
 
 export default function QualityControlPage() {
   const router = useRouter();
-  const { workshopSettings } = useAuth();
+  const { workshopSettings, signOut } = useAuth();
   const currencySymbol = workshopSettings?.currencySymbol || "$";
   const formatMoney = (amount: number) => `${currencySymbol}${amount.toFixed(2)}`;
 
@@ -59,7 +60,9 @@ export default function QualityControlPage() {
   });
   const [inspectorNotes, setInspectorNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [operationError, setOperationError] = useState<string | null>(null);
+  const [operationStatus, setOperationStatus] = useState<number | null>(null);
 
   // Filter jobs based on status and search query
   const qcPendingJobs = useMemo(() => {
@@ -80,6 +83,7 @@ export default function QualityControlPage() {
   const selectedJob = useMemo(() => {
     return jobs.find((job) => job.id === selectedJobId) || null;
   }, [jobs, selectedJobId]);
+  const selectedJobStale = selectedJob !== null && selectedJob.status !== "QC";
 
   // Reset checklist when selected job changes
   useEffect(() => {
@@ -94,6 +98,7 @@ export default function QualityControlPage() {
     setIsRejecting(false);
     setRejectionReason("");
     setOperationError(null);
+    setOperationStatus(null);
   }, [selectedJobId]);
 
   // Set first job as selected by default if available
@@ -104,7 +109,7 @@ export default function QualityControlPage() {
   }, [qcPendingJobs, selectedJobId]);
 
   const handlePassQC = async () => {
-    if (!selectedJob) return;
+    if (!selectedJob || submittingRef.current) return;
 
     const allChecked = Object.values(checks).every((val) => val === true);
     if (!allChecked) {
@@ -112,8 +117,10 @@ export default function QualityControlPage() {
       return;
     }
 
+    submittingRef.current = true;
     setSubmitting(true);
     setOperationError(null);
+    setOperationStatus(null);
     try {
       const result = await submitQualityControl(selectedJob.id, {
         outcome: "pass",
@@ -129,21 +136,25 @@ export default function QualityControlPage() {
       console.error("Error approving QC:", error);
       const message = error instanceof Error ? error.message : "Error al aprobar el control de calidad.";
       setOperationError(message);
+      setOperationStatus(error instanceof ApiRequestError ? error.status : null);
       toast.error(message);
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
 
   const handleFailQC = async () => {
-    if (!selectedJob) return;
+    if (!selectedJob || submittingRef.current) return;
     if (!rejectionReason.trim()) {
       toast.error("Por favor, ingrese el motivo del rechazo.");
       return;
     }
 
+    submittingRef.current = true;
     setSubmitting(true);
     setOperationError(null);
+    setOperationStatus(null);
     try {
       await submitQualityControl(selectedJob.id, {
         outcome: "fail",
@@ -157,10 +168,17 @@ export default function QualityControlPage() {
       console.error("Error rejecting QC:", error);
       const message = error instanceof Error ? error.message : "Error al registrar el rechazo.";
       setOperationError(message);
+      setOperationStatus(error instanceof ApiRequestError ? error.status : null);
       toast.error(message);
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
+  };
+
+  const handleReauthenticate = async () => {
+    await signOut();
+    router.push("/login?redirect=%2Fqc&reason=session-expired");
   };
 
   return (
@@ -360,12 +378,19 @@ export default function QualityControlPage() {
                           />
                         </div>
 
-                        {operationError && (
+                        {(operationError || selectedJobStale) && (
                           <div role="alert" className="flex items-start gap-3 rounded-lg border border-rose-500/30 bg-rose-950/20 px-4 py-3 text-sm text-rose-300">
                             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                             <div>
-                              <p className="font-semibold">No se guardó el rechazo de QC.</p>
-                              <p className="mt-0.5 text-xs text-rose-200/80">{operationError} El motivo se conservó; puedes reintentar.</p>
+                              <p className="font-semibold">
+                                {operationStatus === 401 ? "Tu sesión expiró." : operationStatus === 409 || selectedJobStale ? "La orden cambió mientras la revisabas." : "No se guardó el rechazo de QC."}
+                              </p>
+                              <p className="mt-0.5 text-xs text-rose-200/80">{operationError || "La orden ya no está pendiente de QC. La información visible fue actualizada en tiempo real."} El motivo se conservó.</p>
+                              {operationStatus === 401 && (
+                                <Button type="button" variant="outline" size="sm" className="mt-3" onClick={handleReauthenticate}>
+                                  Iniciar sesión nuevamente
+                                </Button>
+                              )}
                             </div>
                           </div>
                         )}
@@ -382,7 +407,7 @@ export default function QualityControlPage() {
                           <Button
                             onClick={handleFailQC}
                             className="bg-rose-600 hover:bg-rose-500 text-white font-bold px-6"
-                            disabled={submitting || !rejectionReason.trim()}
+                            disabled={submitting || selectedJob.status !== "QC" || !rejectionReason.trim()}
                           >
                             {submitting ? (
                               <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Procesando...</>
@@ -591,12 +616,19 @@ export default function QualityControlPage() {
                           />
                         </div>
 
-                        {operationError && (
+                        {(operationError || selectedJobStale) && (
                           <div role="alert" className="flex items-start gap-3 rounded-lg border border-rose-500/30 bg-rose-950/20 px-4 py-3 text-sm text-rose-300">
                             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                             <div>
-                              <p className="font-semibold">No se guardó el control de calidad.</p>
-                              <p className="mt-0.5 text-xs text-rose-200/80">{operationError} Tus selecciones siguen intactas; puedes reintentar.</p>
+                              <p className="font-semibold">
+                                {operationStatus === 401 ? "Tu sesión expiró." : operationStatus === 409 || selectedJobStale ? "La orden cambió mientras la revisabas." : "No se guardó el control de calidad."}
+                              </p>
+                              <p className="mt-0.5 text-xs text-rose-200/80">{operationError || "La orden ya no está pendiente de QC. La información visible fue actualizada en tiempo real."} Tus selecciones siguen intactas.</p>
+                              {operationStatus === 401 && (
+                                <Button type="button" variant="outline" size="sm" className="mt-3" onClick={handleReauthenticate}>
+                                  Iniciar sesión nuevamente
+                                </Button>
+                              )}
                             </div>
                           </div>
                         )}
@@ -621,6 +653,7 @@ export default function QualityControlPage() {
                             className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-12 flex-1 sm:ml-auto"
                             disabled={
                               submitting ||
+                              selectedJob.status !== "QC" ||
                               !Object.values(checks).every((val) => val === true)
                             }
                           >

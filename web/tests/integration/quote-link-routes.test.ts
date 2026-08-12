@@ -35,6 +35,8 @@ import {
   GET as getPublicQuote,
   POST as approvePublicQuote,
 } from "@/app/api/public/quotes/[id]/route";
+import { POST as registerPayment } from "@/app/api/jobs/[id]/payments/route";
+import { POST as submitQualityControl } from "@/app/api/jobs/[id]/qc/route";
 
 const JOB_ID = "AbCdEfGhIjKlMnOpQrSt";
 const WORKSHOP_ID = "ws-route-a";
@@ -57,6 +59,17 @@ function publicRequest(token: string, init: RequestInit = {}) {
   return new Request(`http://localhost/api/public/quotes/${JOB_ID}`, {
     ...init,
     headers,
+  });
+}
+
+function authenticatedRequest(path: "payments" | "qc", body: Record<string, unknown>) {
+  return new Request(`http://localhost/api/jobs/${JOB_ID}/${path}`, {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer route-test-token",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
   });
 }
 
@@ -271,5 +284,104 @@ describe("revocable public quote route contract", () => {
       "Enlace de Cotización Emitido",
       "Enlace de Cotización Revocado",
     ]);
+  });
+});
+
+describe("idempotent authenticated job operations", () => {
+  it("records a repeated payment request exactly once", async () => {
+    await db.collection("jobs").doc(JOB_ID).update({
+      status: "Ready",
+      approvedAmount: 100,
+      totalEstimate: 100,
+      payments: [],
+      auditLog: [],
+    });
+    const payload = {
+      amount: 40,
+      method: "Efectivo",
+      reference: "IDEMPOTENT-01",
+      expectedTotalPaid: 0,
+      requestId: "pay_1234567890abcdef",
+    };
+
+    const first = await registerPayment(authenticatedRequest("payments", payload), routeContext);
+    const repeated = await registerPayment(authenticatedRequest("payments", payload), routeContext);
+    expect(first.status).toBe(200);
+    expect(repeated.status).toBe(200);
+    expect(await repeated.json()).toMatchObject({ idempotent: true, totalPaid: 40 });
+
+    const job = (await db.collection("jobs").doc(JOB_ID).get()).data();
+    expect(job?.payments).toHaveLength(1);
+    expect(job?.payments[0]).toMatchObject({ requestId: payload.requestId, amount: 40 });
+    expect(job?.auditLog.filter((entry: { action: string }) => entry.action === "Pago Registrado"))
+      .toHaveLength(1);
+
+    const reusedWithOtherData = await registerPayment(authenticatedRequest("payments", {
+      ...payload,
+      amount: 41,
+    }), routeContext);
+    expect(reusedWithOtherData.status).toBe(409);
+  });
+
+  it("rejects a payment based on a stale balance before writing", async () => {
+    await db.collection("jobs").doc(JOB_ID).update({
+      status: "Ready",
+      approvedAmount: 100,
+      totalEstimate: 100,
+      payments: [{
+        id: "existing-payment",
+        amount: 10,
+        method: "Efectivo",
+        date: "2026-08-12T00:00:00.000Z",
+        actorId: "advisor-route-test",
+      }],
+      auditLog: [],
+    });
+
+    const response = await registerPayment(authenticatedRequest("payments", {
+      amount: 20,
+      method: "Efectivo",
+      reference: "",
+      expectedTotalPaid: 0,
+      requestId: "pay_stale1234567890x",
+    }), routeContext);
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({
+      error: "La orden recibió otro pago. Revisa el saldo actualizado antes de continuar.",
+    });
+    const job = (await db.collection("jobs").doc(JOB_ID).get()).data();
+    expect(job?.payments).toHaveLength(1);
+  });
+
+  it("applies a repeated QC request once and rejects key reuse with other notes", async () => {
+    await db.collection("jobs").doc(JOB_ID).update({
+      status: "QC",
+      approvedAmount: 100,
+      totalEstimate: 100,
+      payments: [],
+      auditLog: [],
+    });
+    const payload = {
+      outcome: "fail",
+      notes: "Persiste una vibración.",
+      requestId: "qc_1234567890abcdef",
+    };
+
+    const first = await submitQualityControl(authenticatedRequest("qc", payload), routeContext);
+    const repeated = await submitQualityControl(authenticatedRequest("qc", payload), routeContext);
+    expect(first.status).toBe(200);
+    expect(repeated.status).toBe(200);
+    expect(await repeated.json()).toMatchObject({ idempotent: true, status: "Repair" });
+
+    const job = (await db.collection("jobs").doc(JOB_ID).get()).data();
+    expect(job?.status).toBe("Repair");
+    expect(job?.auditLog.filter((entry: { action: string }) => entry.action === "QC Rechazado"))
+      .toHaveLength(1);
+
+    const reusedWithOtherNotes = await submitQualityControl(authenticatedRequest("qc", {
+      ...payload,
+      notes: "Otro resultado.",
+    }), routeContext);
+    expect(reusedWithOtherNotes.status).toBe(409);
   });
 });

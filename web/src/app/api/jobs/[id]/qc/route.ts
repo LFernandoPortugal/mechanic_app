@@ -33,6 +33,7 @@ export async function POST(
     const body = await request.json() as Record<string, unknown>;
     const outcome = body.outcome;
     const notes = typeof body.notes === "string" ? body.notes.trim() : "";
+    const requestId = String(body.requestId || "").trim();
     if (outcome !== "pass" && outcome !== "fail") {
       throw new HttpError(400, "El resultado de QC no es válido.");
     }
@@ -41,6 +42,9 @@ export async function POST(
     }
     if (outcome === "fail" && notes.length === 0) {
       throw new HttpError(400, "El rechazo de QC requiere un motivo.");
+    }
+    if (!/^qc_[A-Za-z0-9_-]{16,128}$/.test(requestId)) {
+      throw new HttpError(400, "El identificador de la operaci\u00f3n no es v\u00e1lido.");
     }
 
     const db = getAdminFirestore();
@@ -54,6 +58,24 @@ export async function POST(
       if (!isSuperAdmin && job.workshopId !== caller.workshopId) {
         throw new HttpError(403, "La orden pertenece a otro taller.");
       }
+      const repeatedEntry = (job.auditLog ?? []).find((entry) => (
+        (entry as unknown as Record<string, unknown>).requestId === requestId
+      )) as unknown as Record<string, unknown> | undefined;
+      if (repeatedEntry) {
+        const expectedAction = outcome === "pass" ? "QC Aprobado" : "QC Rechazado";
+        const resultStatus = repeatedEntry.resultStatus;
+        if (
+          repeatedEntry.actorId !== caller.uid
+          || repeatedEntry.action !== expectedAction
+          || repeatedEntry.notes !== notes
+          || repeatedEntry.requestOutcome !== outcome
+          || !["Repair", "Ready", "Delivered"].includes(String(resultStatus))
+        ) {
+          throw new HttpError(409, "El identificador de QC ya fue utilizado con otros datos.");
+        }
+        return { status: resultStatus as "Repair" | "Ready" | "Delivered", idempotent: true };
+      }
+
       if (job.status !== "QC") {
         throw new HttpError(409, "La orden ya no está pendiente de QC.");
       }
@@ -77,6 +99,9 @@ export async function POST(
             action: "QC Rechazado",
             actorId: caller.uid,
             notes,
+            requestId,
+            requestOutcome: outcome,
+            resultStatus: "Repair",
           }),
         });
         return { status: "Repair" as const };
@@ -103,6 +128,9 @@ export async function POST(
         action: "QC Aprobado",
         actorId: caller.uid,
         notes,
+        requestId,
+        requestOutcome: outcome,
+        resultStatus: status,
       }];
       if (status === "Delivered") {
         entries.push({

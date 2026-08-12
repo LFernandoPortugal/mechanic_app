@@ -127,6 +127,7 @@ export interface Job {
   approvedAmount: number;
   payments?: {
     id: string;
+    requestId?: string;
     amount: number;
     method: 'Efectivo' | 'Tarjeta' | 'Transferencia' | 'Yape/Plin';
     reference?: string;

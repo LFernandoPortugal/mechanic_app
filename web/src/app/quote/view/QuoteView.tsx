@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -26,6 +26,7 @@ export default function ClientQuoteView() {
   const [approvals, setApprovals] = useState<Record<string, boolean>>({});
   const [approvalSignature, setApprovalSignature] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<"not-found" | "server" | null>(null);
   const [retryToken, setRetryToken] = useState(0);
@@ -120,12 +121,13 @@ export default function ClientQuoteView() {
   };
 
   const handleAcceptQuote = async () => {
-    if (!job) return;
+    if (!job || submittingRef.current) return;
     if (!approvalSignature) {
       toast.warning("Confirma tu firma antes de aprobar la cotizaci\u00f3n.");
       return;
     }
 
+    submittingRef.current = true;
     setSubmitting(true);
     setSubmitError(null);
     try {
@@ -150,6 +152,7 @@ export default function ClientQuoteView() {
       setSubmitError(message);
       toast.error(message);
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };

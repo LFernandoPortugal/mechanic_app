@@ -61,6 +61,8 @@ El ID de la orden no concede acceso por sí solo: un token ausente, incorrecto, 
 - Los navegadores no pueden añadir pagos directamente a Firestore.
 - `/api/jobs/[id]/payments` verifica ID token, rol ADMIN/ADVISOR, tenant, trial, estado y saldo.
 - El servidor deriva `actorId`, calcula el saldo dentro de una transacción y rechaza sobrepagos o concurrencia inválida.
+- Cada intento incluye un `requestId` opaco: repetir exactamente la misma operación devuelve su resultado sin añadir otro pago; reutilizarlo con otros datos devuelve 409.
+- El cliente envía el total pagado que observó y el servidor lo compara dentro de la transacción; un abono concurrente obliga a revisar el saldo actualizado.
 - Un pago solo entrega automáticamente una orden que ya está en `Ready`; pagar durante `QC` no omite el checklist.
 
 ## Control de calidad
@@ -69,6 +71,13 @@ El ID de la orden no concede acceso por sí solo: un token ausente, incorrecto, 
 - `/api/jobs/[id]/qc` verifica token, rol, tenant, vigencia y estado dentro de una transacción.
 - Un rechazo exige motivo y vuelve a `Repair`.
 - Una aprobación pasa a `Ready`, o a `Delivered` si el total aprobado ya estaba pagado.
+- El `requestId` de QC queda enlazado a su entrada de auditoría; repetir el mismo resultado es idempotente y reutilizar la clave con otro resultado, actor o notas devuelve 409.
+
+## Sesiones en operaciones server-side
+
+- El cliente intenta una única renovación forzada del ID token si una API autenticada responde 401.
+- Si la renovación también falla, no repite indefinidamente: muestra sesión expirada, conserva el formulario en memoria y ofrece volver al login con una ruta interna validada.
+- Los botones críticos usan un bloqueo síncrono además del estado visual para ignorar dobles clics antes del siguiente render.
 
 ## Inventario y auditoría
 

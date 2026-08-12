@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -21,6 +21,7 @@ import {
   DollarSign, CreditCard, Banknote, Smartphone, CheckCircle2,
   ChevronDown, ChevronUp, Loader2, FileText, ArrowLeft, AlertTriangle, RefreshCw,
 } from "lucide-react";
+import { ApiRequestError } from "@/lib/api-errors";
 
 type PaymentMethod = PaymentInput["method"];
 
@@ -54,13 +55,15 @@ function payableTotal(job: Job): number {
   }
 }
 
-function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onPaymentRegistered: () => void; workshopSettings: WorkshopSettings | null }) {
+function JobCard({ job, onPaymentRegistered, onSessionExpired, workshopSettings }: { job: Job; onPaymentRegistered: () => void; onSessionExpired: () => Promise<void>; workshopSettings: WorkshopSettings | null }) {
   const [expanded, setExpanded] = useState(false);
   const [amount, setAmount]     = useState("");
   const [reference, setRef]     = useState("");
   const [method, setMethod]     = useState<PaymentMethod>("Efectivo");
   const [loading, setLoading]   = useState(false);
+  const loadingRef = useRef(false);
   const [operationError, setOperationError] = useState<string | null>(null);
+  const [operationStatus, setOperationStatus] = useState<number | null>(null);
 
   const paid         = totalPaid(job);
   const approvedTotal = payableTotal(job);
@@ -70,6 +73,7 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
   const isFullyPaid  = balance <= 0;
 
   const handlePay = async () => {
+    if (loadingRef.current) return;
     const amt = parseFloat(amount);
     if (isNaN(amt) || amt <= 0) { toast.error("Ingresa un monto válido."); return; }
     
@@ -86,10 +90,17 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
       }
     }
 
+    loadingRef.current = true;
     setLoading(true);
     setOperationError(null);
+    setOperationStatus(null);
     try {
-      const result = await registerPayment(job.id, { amount: appliedAmount, method, reference });
+      const result = await registerPayment(job.id, {
+        amount: appliedAmount,
+        method,
+        reference,
+        expectedTotalPaid: paid,
+      });
       if (change > 0) {
         toast.success(`✅ Pago completo. Vuelto a entregar: ${workshopSettings?.currencySymbol || "$"}${change.toFixed(2)}`);
       } else {
@@ -105,8 +116,10 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
     } catch (error) {
       const message = error instanceof Error ? error.message : "Error al registrar el pago.";
       setOperationError(message);
+      setOperationStatus(error instanceof ApiRequestError ? error.status : null);
       toast.error(message);
     } finally {
+      loadingRef.current = false;
       setLoading(false);
     }
   };
@@ -239,8 +252,15 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
                 <div role="alert" className="flex items-start gap-3 rounded-lg border border-rose-500/30 bg-rose-950/20 px-4 py-3 text-sm text-rose-300">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                   <div>
-                    <p className="font-semibold">El pago no fue registrado.</p>
+                    <p className="font-semibold">
+                      {operationStatus === 401 ? "Tu sesión expiró." : operationStatus === 409 ? "La orden cambió antes de registrar el pago." : "El pago no fue registrado."}
+                    </p>
                     <p className="mt-0.5 text-xs text-rose-200/80">{operationError} El monto y la referencia se conservaron para reintentar.</p>
+                    {operationStatus === 401 && (
+                      <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => void onSessionExpired()}>
+                        Iniciar sesión nuevamente
+                      </Button>
+                    )}
                   </div>
                 </div>
               )}
@@ -316,7 +336,7 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
 
 export default function PaymentsPage() {
   const router = useRouter();
-  const { workshopSettings } = useAuth();
+  const { workshopSettings, signOut } = useAuth();
   const { jobs, loading, error: jobsError, retry: retryJobs } = useRealtimeJobs({ statuses: ["Ready", "Approved", "Delivered", "QC"] });
 
   // Sort: pending first, then delivered
@@ -328,6 +348,11 @@ export default function PaymentsPage() {
 
   const pending   = sorted.filter(j => j.status !== "Delivered");
   const delivered = sorted.filter(j => j.status === "Delivered");
+
+  const handleSessionExpired = async () => {
+    await signOut();
+    router.push("/login?redirect=%2Fadvisor%2Fpayments&reason=session-expired");
+  };
 
   return (
     <ProtectedRoute allowedRoles={["ADMIN", "ADVISOR"]}>
@@ -411,7 +436,7 @@ export default function PaymentsPage() {
           )}
 
           {!loading && !jobsError && pending.map(job => (
-            <JobCard key={job.id} job={job} onPaymentRegistered={() => {}} workshopSettings={workshopSettings} />
+            <JobCard key={job.id} job={job} onPaymentRegistered={() => {}} onSessionExpired={handleSessionExpired} workshopSettings={workshopSettings} />
           ))}
 
           {/* Delivered section */}
@@ -421,7 +446,7 @@ export default function PaymentsPage() {
                 Entregados Recientes
               </p>
               {delivered.map(job => (
-                <JobCard key={job.id} job={job} onPaymentRegistered={() => {}} workshopSettings={workshopSettings} />
+                <JobCard key={job.id} job={job} onPaymentRegistered={() => {}} onSessionExpired={handleSessionExpired} workshopSettings={workshopSettings} />
               ))}
             </div>
           )}

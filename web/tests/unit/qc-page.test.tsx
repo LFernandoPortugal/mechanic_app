@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import QualityControlPage from "@/app/qc/page";
 import { makeJob, workshopFixture } from "../fixtures/jobs";
+import { ApiRequestError } from "@/lib/api-errors";
 
 const state = vi.hoisted(() => ({
   jobs: [] as ReturnType<typeof makeJob>[],
@@ -13,10 +14,12 @@ const state = vi.hoisted(() => ({
   retryJobs: vi.fn(),
   toastError: vi.fn(),
   toastSuccess: vi.fn(),
+  signOut: vi.fn(),
+  routerPush: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: state.routerPush }),
 }));
 
 vi.mock("@/components/ProtectedRoute", () => ({
@@ -28,7 +31,7 @@ vi.mock("@/hooks/useRealtimeJobs", () => ({
 }));
 
 vi.mock("@/contexts/AuthContext", () => ({
-  useAuth: () => ({ workshopSettings: workshopFixture }),
+  useAuth: () => ({ workshopSettings: workshopFixture, signOut: state.signOut }),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -67,6 +70,9 @@ beforeEach(() => {
   state.retryJobs.mockReset();
   state.toastError.mockReset();
   state.toastSuccess.mockReset();
+  state.signOut.mockReset();
+  state.signOut.mockResolvedValue(undefined);
+  state.routerPush.mockReset();
 });
 
 afterEach(() => cleanup());
@@ -179,5 +185,49 @@ describe("QualityControlPage", () => {
     expect((await screen.findByRole("alert")).textContent).toContain("No se pudieron cargar las órdenes");
     await user.click(screen.getByRole("button", { name: "Reconectar" }));
     expect(state.retryJobs).toHaveBeenCalledOnce();
+  });
+
+  it("preserves QC input and offers reauthentication after a rejected refresh", async () => {
+    const user = userEvent.setup();
+    state.submitQualityControl.mockRejectedValue(new ApiRequestError("La sesión expiró.", 401));
+    render(<QualityControlPage />);
+
+    for (const name of [
+      "Síntomas Resueltos",
+      "Seguridad y Ajustes Mecánicos",
+      "Fluidos y Fugas",
+      "Estética y Limpieza",
+      "Prueba de Ruta Validada",
+    ]) {
+      await user.click(await screen.findByRole("switch", { name }));
+    }
+    await user.click(screen.getByRole("button", { name: "Aprobar y Marcar Listo para Entrega" }));
+
+    expect((await screen.findByRole("alert")).textContent).toContain("Tu sesión expiró");
+    expect(screen.getAllByRole("switch").every((control) => control.getAttribute("data-state") === "checked")).toBe(true);
+    await user.click(screen.getByRole("button", { name: "Iniciar sesión nuevamente" }));
+    expect(state.signOut).toHaveBeenCalledOnce();
+    expect(state.routerPush).toHaveBeenCalledWith("/login?redirect=%2Fqc&reason=session-expired");
+  });
+
+  it("disables a stale QC form when the realtime listener reports another outcome", async () => {
+    const user = userEvent.setup();
+    const view = render(<QualityControlPage />);
+
+    for (const name of [
+      "Síntomas Resueltos",
+      "Seguridad y Ajustes Mecánicos",
+      "Fluidos y Fugas",
+      "Estética y Limpieza",
+      "Prueba de Ruta Validada",
+    ]) {
+      await user.click(await screen.findByRole("switch", { name }));
+    }
+    state.jobs = [{ ...state.jobs[0], status: "Ready" }];
+    view.rerender(<QualityControlPage />);
+
+    expect((await screen.findByRole("alert")).textContent).toContain("La orden cambió mientras la revisabas");
+    expect((screen.getByRole("button", { name: "Aprobar y Marcar Listo para Entrega" }) as HTMLButtonElement).disabled)
+      .toBe(true);
   });
 });

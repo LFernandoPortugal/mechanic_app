@@ -1,8 +1,9 @@
-import { auth, db } from "./firebase";
+import { db } from "./firebase";
 import { arrayUnion, collection, addDoc, Timestamp, doc, getDoc, getDocs, query, where, updateDoc, deleteDoc, setDoc, orderBy, runTransaction } from "firebase/firestore";
 import { Job, UserProfile, UserRole, InventoryItem, InventoryTransaction, StockMovementType, WorkshopSettings } from "@/types";
 import { calculateStockAfterMovement } from "@/lib/transactions";
 import { revokeQuoteLink } from "@/lib/quote-link-client";
+import { authenticatedJsonRequest } from "@/lib/authenticated-api";
 
 // ─── User Profile Functions (RBAC) ──────────────────────
 
@@ -389,6 +390,21 @@ export interface PaymentInput {
   amount: number;
   method: 'Efectivo' | 'Tarjeta' | 'Transferencia' | 'Yape/Plin';
   reference?: string;
+  expectedTotalPaid: number;
+}
+
+const pendingPaymentRequestIds = new Map<string, string>();
+const pendingQcRequestIds = new Map<string, string>();
+
+function createOperationRequestId(prefix: "pay" | "qc") {
+  const randomId = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  return `${prefix}_${randomId}`;
+}
+
+function stableOperationKey(jobId: string, payload: Record<string, unknown>) {
+  return `${jobId}:${JSON.stringify(payload)}`;
 }
 
 export interface PaymentResult {
@@ -404,23 +420,29 @@ export interface PaymentResult {
  * Ready order to Delivered when the balance is cleared.
  */
 export async function registerPayment(jobId: string, payment: PaymentInput): Promise<PaymentResult> {
-  const currentUser = auth.currentUser;
-  if (!currentUser) throw new Error("La sesi\u00f3n no est\u00e1 disponible.");
+  const normalizedPayment = {
+    amount: payment.amount,
+    method: payment.method,
+    reference: payment.reference?.trim() || "",
+    expectedTotalPaid: payment.expectedTotalPaid,
+  };
+  const operationKey = stableOperationKey(jobId, normalizedPayment);
+  const requestId = pendingPaymentRequestIds.get(operationKey) || createOperationRequestId("pay");
+  pendingPaymentRequestIds.set(operationKey, requestId);
 
-  const token = await currentUser.getIdToken();
-  const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}/payments`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
+  const result = await authenticatedJsonRequest<Partial<PaymentResult> & { error?: string }>(
+    `/api/jobs/${encodeURIComponent(jobId)}/payments`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ...normalizedPayment, requestId }),
     },
-    body: JSON.stringify(payment),
-  });
-  const result = await response.json().catch(() => ({})) as Partial<PaymentResult> & { error?: string };
-  if (!response.ok) throw new Error(result.error || "No se pudo registrar el pago.");
+  );
   if (!result.payment || !result.status || typeof result.totalPaid !== "number") {
     throw new Error("El servidor devolvió una respuesta de pago incompleta.");
   }
+  pendingPaymentRequestIds.delete(operationKey);
   return result as PaymentResult;
 }
 
@@ -433,25 +455,27 @@ export async function submitQualityControl(
   jobId: string,
   input: QualityControlInput,
 ): Promise<{ status: Job["status"]; remainingBalance?: number }> {
-  const currentUser = auth.currentUser;
-  if (!currentUser) throw new Error("La sesión no está disponible.");
+  const normalizedInput = {
+    outcome: input.outcome,
+    notes: input.notes?.trim() || "",
+  };
+  const operationKey = stableOperationKey(jobId, normalizedInput);
+  const requestId = pendingQcRequestIds.get(operationKey) || createOperationRequestId("qc");
+  pendingQcRequestIds.set(operationKey, requestId);
 
-  const token = await currentUser.getIdToken();
-  const response = await fetch(`/api/jobs/${encodeURIComponent(jobId)}/qc`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(input),
-  });
-  const result = await response.json().catch(() => ({})) as {
+  const result = await authenticatedJsonRequest<{
     error?: string;
     status?: Job["status"];
     remainingBalance?: number;
-  };
-  if (!response.ok) throw new Error(result.error || "No se pudo registrar el control de calidad.");
+  }>(`/api/jobs/${encodeURIComponent(jobId)}/qc`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ ...normalizedInput, requestId }),
+  });
   if (!result.status) throw new Error("El servidor devolvió una respuesta de QC incompleta.");
+  pendingQcRequestIds.delete(operationKey);
   return { status: result.status, remainingBalance: result.remainingBalance };
 }
 
