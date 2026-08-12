@@ -8,13 +8,13 @@
 
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
-- **Producción:** `origin/main` está en `25bfa6b` e incluye el runtime `f3cac1e`; la estabilización, las rondas visuales, EmailJS, enlaces revocables, login, accesibilidad y los smoke tests de acceso, operación, recepción, administración y navegador real están desplegados en `https://mechanic-app-zeta.vercel.app/`. El HEAD puede avanzar por commits exclusivamente documentales o de pruebas.
-- **Rama de trabajo:** PR #35 (`codex/recovery-states`) añade recuperación visible para errores transitorios de cotización, QC y pagos; debe pasar CI/Preview antes de integrarse. PR #23, PR #25, PR #27, PR #29, PR #31, PR #33 y PR #34 están integradas.
+- **Producción:** `origin/main` está en `6accbc3` e incluye recuperación visible para operaciones críticas además del runtime base `f3cac1e`; CI y Vercel Production pasaron y `https://mechanic-app-zeta.vercel.app/` respondió HTTP 200 en cotización, QC y pagos.
+- **Rama de trabajo:** ninguna funcional pendiente; PR #23, PR #25, PR #27, PR #29, PR #31, PR #33, PR #34 y PR #35 están integradas.
 - **Árbol local al cerrar:** limpio y sincronizado con `origin/main` después de integrar el checkpoint documental.
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas de la estabilización están desplegadas y fueron releídas desde el proyecto activo.
-- **Último hito:** la rama de recuperación conserva firma/selecciones, checklist, motivo de rechazo y datos de pago después de fallos transitorios; QC y Caja permiten reconectar sus listeners Firestore sin recargar toda la aplicación.
+- **Último hito:** PR #35 integrada y desplegada: cotización, QC y pagos conservan sus datos después de fallos transitorios, y QC/Caja permiten reconectar los listeners Firestore sin recargar toda la aplicación.
 - **Calidad verificada:** TypeScript, lint, 94 pruebas unitarias, 5 de integración de API, 23 pruebas de reglas, 3 E2E Chromium, audit runtime en 0 vulnerabilidades, build de 19 páginas/5 APIs, QA visual en 390×844 y 1440×900 y HTTP 200 en las rutas oficiales auditadas.
-- **Siguiente paso recomendado:** validar la rama de recuperación en CI/Preview y, después, cubrir sesión expirada y doble envío en operaciones críticas; mantener cualquier trabajo visual simultáneo en una rama separada y actualizarla desde `main` antes de fusionar.
+- **Siguiente paso recomendado:** cubrir sesión expirada y doble envío en operaciones críticas; mantener cualquier trabajo visual simultáneo en una rama separada y actualizarla desde `main` antes de fusionar.
 - **No repetir ni asumir:** EmailJS confirmó aceptación y una persona confirmó recepción/presentación correcta en un inbox controlado. No hace falta recrear las órdenes QA ya eliminadas; verificar siempre el deployment vigente antes de un nuevo cambio.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
@@ -23,7 +23,7 @@ Para retomar, leer este documento completo y luego seguir el orden obligatorio d
 
 La aplicación es un SGA multitenant en Next.js 16, Firebase Auth/Firestore y Vercel. La estabilización está integrada en `main`, desplegada en Vercel Production y acompañada por sus reglas Firestore en `mechanic-app-7d459`.
 
-- `origin/main` está en `25bfa6b` y producción sirve el código funcional de `f3cac1e` en `https://mechanic-app-zeta.vercel.app/`; los handoffs E2E mínimos quedan en `bf1df3f`, el E2E integral ADMIN en `0043693`, hasta aprobación pública en `f3cac1e`, su tramo de recepción/diagnóstico en `b4c27e9`, el E2E base en `02931ea`, los flujos administrativos en `ac49ea7`, los operativos en `4e3882e`, acceso/portal en `1e1b049`, accesibilidad operativa en `eb29f26`, login en `0bd69a3`, enlaces revocables en `4a21b96` y la estabilización en `c903185`.
+- `origin/main` está en `6accbc3` y producción sirve la recuperación de operaciones críticas de `6accbc3` sobre el runtime base `f3cac1e` en `https://mechanic-app-zeta.vercel.app/`; los handoffs E2E mínimos quedan en `bf1df3f`, el E2E integral ADMIN en `0043693`, su tramo de recepción/diagnóstico en `b4c27e9`, el E2E base en `02931ea`, los flujos administrativos en `ac49ea7`, los operativos en `4e3882e`, acceso/portal en `1e1b049`, accesibilidad operativa en `eb29f26`, login en `0bd69a3`, enlaces revocables en `4a21b96` y la estabilización en `c903185`.
 - Las URLs Preview son efímeras y se toman del PR activo; no reutilizar aliases de ramas ya integradas.
 - Las reglas nuevas se compilaron y publicaron únicamente como `firestore:rules`; no se desplegaron Hosting, Storage ni índices.
 - El taller tester `p1` fue reparado: conserva su cuenta Auth y ahora tiene un único perfil ADMIN y un `settings/p1` vacío/activo. No se combinaron usuarios antiguos.
