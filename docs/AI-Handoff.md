@@ -9,7 +9,7 @@
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
 - **Producción:** `origin/main` está en `6accbc3` e incluye recuperación visible para operaciones críticas además del runtime base `f3cac1e`; CI y Vercel Production pasaron y `https://mechanic-app-zeta.vercel.app/` respondió HTTP 200 en cotización, QC y pagos.
-- **Rama de trabajo:** `codex/idempotent-operations` añade renovación controlada de sesión, idempotencia server-side para pagos/QC y detección de saldos obsoletos; debe pasar CI/Preview antes de integrarse.
+- **Rama de trabajo:** PR #37 (`codex/idempotent-operations`) añade renovación controlada de sesión, idempotencia server-side para pagos/QC y detección de saldos obsoletos; debe pasar CI/Preview antes de integrarse.
 - **Árbol local al cerrar:** limpio y sincronizado con `origin/main` después de integrar el checkpoint documental.
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas de la estabilización están desplegadas y fueron releídas desde el proyecto activo.
 - **Último hito:** la rama idempotente fuerza una renovación de token ante el primer 401, guía al login si la sesión sigue inválida, evita dobles envíos en UI y garantiza que repetir el mismo pago/QC produzca una sola escritura.
