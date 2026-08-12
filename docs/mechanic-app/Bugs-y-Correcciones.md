@@ -294,3 +294,20 @@ La validación local cubrió 390×844 y 1440×900, ambos temas, etiquetas anunci
 - Testing Library, user-event y jsdom se incorporan exclusivamente como dependencias de desarrollo; el audit de dependencias runtime permanece en 0 vulnerabilidades.
 
 La suite queda en 45 pruebas unitarias, 23 de reglas y 5 de integración API. TypeScript, lint, `npm audit --omit=dev --audit-level=high`, `test:all` y build de 19 páginas/5 APIs pasan localmente.
+
+---
+
+## v1.12 — Smoke automatizado de acceso y portal público (2026-08-11)
+
+### TEST-004: RBAC, trial y portal dependían de recorridos manuales
+
+**Riesgo**: cambios en Auth, la matriz de rutas o el portal podían permitir una ruta indebida, perder el destino de login, filtrar el token en la URL de la API o desplazar el tracker sin que CI lo detectara.
+
+**Cobertura añadida**:
+
+- `ProtectedRoute` verifica sesión ausente, destino interno codificado, trial vencido y el caso Auth sin perfil Firestore.
+- La matriz completa de ADMIN, RECEPTION, TECHNICIAN, ADVISOR y SUPER_ADMIN se ejecuta contra el mismo helper RBAC que usa `AuthContext`.
+- El portal usa fixtures sanitizados y comprueba token ausente, token exclusivamente en `X-Quote-Token`, 404 neutral, error temporal, reintento y recarga al cambiar solo el fragmento.
+- Los estados `Approved`, `Repair`, `QC`, `Ready` y `Delivered` señalan semánticamente el paso actual mediante `aria-current="step"`.
+
+La suite queda en 58 pruebas unitarias, 23 de reglas y 5 de integración API. TypeScript, lint, `npm audit --omit=dev --audit-level=high`, `test:all` y build de 19 páginas/5 APIs pasan localmente. Los tests usan fixtures y Firestore Emulator; no escriben datos de Producción ni requieren SUPER_ADMIN.
