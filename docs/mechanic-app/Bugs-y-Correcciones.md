@@ -490,3 +490,22 @@ La validación queda en 94 unitarias, 23 Rules, 5 integraciones API y 3 E2E Chro
 - QC detecta mediante su listener que la orden dejó de estar pendiente, conserva lo ingresado y deshabilita las acciones obsoletas.
 
 La validación queda en 102 unitarias, 23 Rules, 8 integraciones API y 3 E2E Chromium; TypeScript, lint, auditoría runtime en 0 vulnerabilidades y build de 19 páginas/5 APIs pasan. Las integraciones comprueban una sola escritura, reutilización inválida de claves y saldo obsoleto contra Firestore Emulator. No se modificaron reglas ni datos reales.
+
+---
+
+## v1.22 — Borradores de sesión y notificaciones no bloqueantes (2026-08-12)
+
+### UX-014: Reautenticar o recargar descartaba el formulario y un toast podía bloquear el header
+
+**Riesgo**: la recuperación de v1.21 preservaba datos solo mientras la página seguía montada. Al aceptar la reautenticación, QC perdía checklist/notas y Caja perdía monto/método/referencia. Además, los toasts `top-right` ocupaban la misma zona que “Cerrar Sesión”; un E2E reprodujo que la notificación interceptaba el clic durante todo el timeout.
+
+**Corrección y cobertura**:
+
+- QC guarda selección, cinco controles, notas y motivo de rechazo en `sessionStorage`; Caja guarda método, monto y referencia.
+- Las claves se aíslan por función, taller, UID y orden. Los valores tienen esquema acotado, TTL de 30 minutos y no incluyen tokens o credenciales.
+- El borrador se restaura después de recargar o recorrer login en la misma pestaña, se identifica mediante un aviso persistente y puede descartarse manualmente.
+- Una respuesta exitosa elimina el borrador. Contenido vencido, corrupto, de otra cuenta o de otro taller no se restaura.
+- Sonner conserva `top-right`, pero comienza 72 px debajo del viewport para dejar libre el header sticky tanto en escritorio como en móvil.
+- Pruebas unitarias cubren aislamiento, expiración, corrupción y restauración de ambos formularios; el E2E completo vuelve a ejecutar los cambios de usuario con clics normales, sin `force` ni ocultar overlays.
+
+La validación queda en 107 unitarias, 23 Rules, 8 integraciones API y 3 E2E Chromium; TypeScript, lint, auditoría runtime en 0 vulnerabilidades y build de 19 páginas/5 APIs pasan. Todo usa fixtures o `demo-mechanic-app`; no se modificaron Rules, Firebase real, `p1` ni SUPER_ADMIN.

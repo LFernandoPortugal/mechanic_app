@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -22,8 +22,20 @@ import {
   ChevronDown, ChevronUp, Loader2, FileText, ArrowLeft, AlertTriangle, RefreshCw,
 } from "lucide-react";
 import { ApiRequestError } from "@/lib/api-errors";
+import {
+  makeSessionDraftKey,
+  readSessionDraft,
+  removeSessionDraft,
+  writeSessionDraft,
+} from "@/lib/session-drafts";
 
 type PaymentMethod = PaymentInput["method"];
+
+interface PaymentDraft {
+  amount: string;
+  reference: string;
+  method: PaymentMethod;
+}
 
 const METHOD_CONFIG: Record<PaymentMethod, { label: string; icon: React.ReactNode; color: string }> = {
   Efectivo:     { label: "Efectivo",     icon: <Banknote className="w-4 h-4" />,    color: "bg-emerald-600 hover:bg-emerald-500" },
@@ -31,6 +43,17 @@ const METHOD_CONFIG: Record<PaymentMethod, { label: string; icon: React.ReactNod
   Transferencia:{ label: "Transferencia",icon: <DollarSign className="w-4 h-4" />, color: "bg-purple-600 hover:bg-purple-500" },
   "Yape/Plin":  { label: "Yape / Plin",  icon: <Smartphone className="w-4 h-4" />, color: "bg-orange-500 hover:bg-orange-400" },
 };
+
+function isPaymentDraft(value: unknown): value is PaymentDraft {
+  if (!value || typeof value !== "object") return false;
+  const draft = value as Partial<PaymentDraft>;
+
+  return Boolean(
+    typeof draft.amount === "string" && draft.amount.length <= 32 &&
+    typeof draft.reference === "string" && draft.reference.length <= 160 &&
+    typeof draft.method === "string" && draft.method in METHOD_CONFIG
+  );
+}
 
 const STATUS_LABELS: Record<string, string> = {
   Reception: "Recepción",
@@ -55,7 +78,7 @@ function payableTotal(job: Job): number {
   }
 }
 
-function JobCard({ job, onPaymentRegistered, onSessionExpired, workshopSettings }: { job: Job; onPaymentRegistered: () => void; onSessionExpired: () => Promise<void>; workshopSettings: WorkshopSettings | null }) {
+function JobCard({ job, onPaymentRegistered, onSessionExpired, workshopSettings, draftOwner }: { job: Job; onPaymentRegistered: () => void; onSessionExpired: () => Promise<void>; workshopSettings: WorkshopSettings | null; draftOwner: { userId: string; workshopId: string } | null }) {
   const [expanded, setExpanded] = useState(false);
   const [amount, setAmount]     = useState("");
   const [reference, setRef]     = useState("");
@@ -64,6 +87,8 @@ function JobCard({ job, onPaymentRegistered, onSessionExpired, workshopSettings 
   const loadingRef = useRef(false);
   const [operationError, setOperationError] = useState<string | null>(null);
   const [operationStatus, setOperationStatus] = useState<number | null>(null);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const hydratingDraftRef = useRef(false);
 
   const paid         = totalPaid(job);
   const approvedTotal = payableTotal(job);
@@ -71,6 +96,56 @@ function JobCard({ job, onPaymentRegistered, onSessionExpired, workshopSettings 
   const pctPaid      = approvedTotal > 0 ? Math.min((paid / approvedTotal) * 100, 100) : 0;
   const isDelivered  = job.status === "Delivered";
   const isFullyPaid  = balance <= 0;
+  const draftKey = draftOwner
+    ? makeSessionDraftKey("payment", draftOwner.userId, draftOwner.workshopId, job.id)
+    : null;
+
+  useEffect(() => {
+    const draft = draftKey ? readSessionDraft(draftKey, isPaymentDraft) : null;
+    hydratingDraftRef.current = true;
+    setAmount(draft?.amount || "");
+    setRef(draft?.reference || "");
+    setMethod(draft?.method || "Efectivo");
+    setExpanded(Boolean(draft));
+    setDraftRestored(Boolean(draft));
+    setOperationError(null);
+    setOperationStatus(null);
+  }, [draftKey]);
+
+  useEffect(() => {
+    if (!draftKey) return;
+    if (isDelivered || isFullyPaid) {
+      removeSessionDraft(draftKey);
+      return;
+    }
+    if (hydratingDraftRef.current) {
+      hydratingDraftRef.current = false;
+      return;
+    }
+
+    const hasContent = amount.trim().length > 0 || reference.trim().length > 0 || method !== "Efectivo";
+    if (!hasContent) {
+      removeSessionDraft(draftKey);
+      return;
+    }
+
+    writeSessionDraft<PaymentDraft>(draftKey, {
+      amount: amount.slice(0, 32),
+      reference: reference.slice(0, 160),
+      method,
+    });
+  }, [amount, draftKey, isDelivered, isFullyPaid, method, reference]);
+
+  const discardDraft = () => {
+    removeSessionDraft(draftKey);
+    hydratingDraftRef.current = true;
+    setAmount("");
+    setRef("");
+    setMethod("Efectivo");
+    setDraftRestored(false);
+    setOperationError(null);
+    setOperationStatus(null);
+  };
 
   const handlePay = async () => {
     if (loadingRef.current) return;
@@ -111,7 +186,7 @@ function JobCard({ job, onPaymentRegistered, onSessionExpired, workshopSettings 
           : `💰 Abono registrado: ${workshopSettings?.currencySymbol || "$"}${appliedAmount.toFixed(2)}`
         );
       }
-      setAmount(""); setRef("");
+      discardDraft();
       onPaymentRegistered();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Error al registrar el pago.";
@@ -198,6 +273,15 @@ function JobCard({ job, onPaymentRegistered, onSessionExpired, workshopSettings 
           {!isDelivered && !isFullyPaid && (
             <div className="space-y-4 border-t border-border pt-4">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Registrar Pago</p>
+
+              {draftRestored && (
+                <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-sky-500/30 bg-sky-950/20 px-4 py-3 text-xs text-sky-200">
+                  <span>Se restauró el borrador de pago guardado en esta pestaña.</span>
+                  <Button type="button" variant="ghost" size="sm" onClick={discardDraft}>
+                    Descartar borrador
+                  </Button>
+                </div>
+              )}
 
               {/* Method selector */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -336,7 +420,7 @@ function JobCard({ job, onPaymentRegistered, onSessionExpired, workshopSettings 
 
 export default function PaymentsPage() {
   const router = useRouter();
-  const { workshopSettings, signOut } = useAuth();
+  const { user, userProfile, workshopSettings, signOut } = useAuth();
   const { jobs, loading, error: jobsError, retry: retryJobs } = useRealtimeJobs({ statuses: ["Ready", "Approved", "Delivered", "QC"] });
 
   // Sort: pending first, then delivered
@@ -348,6 +432,9 @@ export default function PaymentsPage() {
 
   const pending   = sorted.filter(j => j.status !== "Delivered");
   const delivered = sorted.filter(j => j.status === "Delivered");
+  const draftOwner = user && userProfile?.workshopId
+    ? { userId: user.uid, workshopId: userProfile.workshopId }
+    : null;
 
   const handleSessionExpired = async () => {
     await signOut();
@@ -436,7 +523,7 @@ export default function PaymentsPage() {
           )}
 
           {!loading && !jobsError && pending.map(job => (
-            <JobCard key={job.id} job={job} onPaymentRegistered={() => {}} onSessionExpired={handleSessionExpired} workshopSettings={workshopSettings} />
+            <JobCard key={job.id} job={job} onPaymentRegistered={() => {}} onSessionExpired={handleSessionExpired} workshopSettings={workshopSettings} draftOwner={draftOwner} />
           ))}
 
           {/* Delivered section */}
@@ -446,7 +533,7 @@ export default function PaymentsPage() {
                 Entregados Recientes
               </p>
               {delivered.map(job => (
-                <JobCard key={job.id} job={job} onPaymentRegistered={() => {}} onSessionExpired={handleSessionExpired} workshopSettings={workshopSettings} />
+                <JobCard key={job.id} job={job} onPaymentRegistered={() => {}} onSessionExpired={handleSessionExpired} workshopSettings={workshopSettings} draftOwner={draftOwner} />
               ))}
             </div>
           )}

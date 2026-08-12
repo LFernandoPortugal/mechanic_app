@@ -33,10 +33,56 @@ import { WorkflowStepper } from "@/components/WorkflowStepper";
 import { VehicleIcon } from "@/components/ui/vehicle-icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { ApiRequestError } from "@/lib/api-errors";
+import {
+  makeSessionDraftKey,
+  readSessionDraft,
+  removeSessionDraft,
+  writeSessionDraft,
+} from "@/lib/session-drafts";
+
+const EMPTY_CHECKS = {
+  symptomsResolved: false,
+  torqueVerified: false,
+  fluidsDoubleChecked: false,
+  cleanlinessChecked: false,
+  roadTestVerified: false,
+};
+
+type QcChecks = typeof EMPTY_CHECKS;
+
+interface QcDraft {
+  checks: QcChecks;
+  inspectorNotes: string;
+  isRejecting: boolean;
+  rejectionReason: string;
+}
+
+function isQcDraft(value: unknown): value is QcDraft {
+  if (!value || typeof value !== "object") return false;
+  const draft = value as Partial<QcDraft>;
+  const checks = draft.checks as Partial<QcChecks> | undefined;
+
+  return Boolean(
+    checks &&
+    Object.keys(EMPTY_CHECKS).every((key) => typeof checks[key as keyof QcChecks] === "boolean") &&
+    typeof draft.inspectorNotes === "string" && draft.inspectorNotes.length <= 2000 &&
+    typeof draft.isRejecting === "boolean" &&
+    typeof draft.rejectionReason === "string" && draft.rejectionReason.length <= 2000
+  );
+}
+
+function isQcSelectionDraft(value: unknown): value is { jobId: string } {
+  return Boolean(
+    value &&
+    typeof value === "object" &&
+    typeof (value as { jobId?: unknown }).jobId === "string" &&
+    (value as { jobId: string }).jobId.length <= 160
+  );
+}
 
 export default function QualityControlPage() {
   const router = useRouter();
-  const { workshopSettings, signOut } = useAuth();
+  const { user, userProfile, workshopSettings, signOut } = useAuth();
   const currencySymbol = workshopSettings?.currencySymbol || "$";
   const formatMoney = (amount: number) => `${currencySymbol}${amount.toFixed(2)}`;
 
@@ -51,14 +97,10 @@ export default function QualityControlPage() {
   const [rejectionReason, setRejectionReason] = useState("");
 
   // QC Inspector Checklist States
-  const [checks, setChecks] = useState({
-    symptomsResolved: false,
-    torqueVerified: false,
-    fluidsDoubleChecked: false,
-    cleanlinessChecked: false,
-    roadTestVerified: false,
-  });
+  const [checks, setChecks] = useState<QcChecks>(EMPTY_CHECKS);
   const [inspectorNotes, setInspectorNotes] = useState("");
+  const [draftRestored, setDraftRestored] = useState(false);
+  const hydratingDraftRef = useRef(false);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
   const [operationError, setOperationError] = useState<string | null>(null);
@@ -84,29 +126,88 @@ export default function QualityControlPage() {
     return jobs.find((job) => job.id === selectedJobId) || null;
   }, [jobs, selectedJobId]);
   const selectedJobStale = selectedJob !== null && selectedJob.status !== "QC";
+  const draftOwner = user && userProfile?.workshopId
+    ? { userId: user.uid, workshopId: userProfile.workshopId }
+    : null;
+  const selectionDraftKey = draftOwner
+    ? makeSessionDraftKey("qc-selection", draftOwner.userId, draftOwner.workshopId, "active")
+    : null;
+  const currentDraftKey = draftOwner && selectedJobId
+    ? makeSessionDraftKey("qc", draftOwner.userId, draftOwner.workshopId, selectedJobId)
+    : null;
 
-  // Reset checklist when selected job changes
+  // Restore only a same-user, same-workshop draft for the selected order.
   useEffect(() => {
-    setChecks({
-      symptomsResolved: false,
-      torqueVerified: false,
-      fluidsDoubleChecked: false,
-      cleanlinessChecked: false,
-      roadTestVerified: false,
+    const draft = currentDraftKey ? readSessionDraft(currentDraftKey, isQcDraft) : null;
+    hydratingDraftRef.current = true;
+    setChecks(draft?.checks || EMPTY_CHECKS);
+    setInspectorNotes(draft?.inspectorNotes || "");
+    setIsRejecting(draft?.isRejecting || false);
+    setRejectionReason(draft?.rejectionReason || "");
+    setDraftRestored(Boolean(draft));
+    setOperationError(null);
+    setOperationStatus(null);
+  }, [currentDraftKey]);
+
+  useEffect(() => {
+    if (!currentDraftKey) return;
+    if (hydratingDraftRef.current) {
+      hydratingDraftRef.current = false;
+      return;
+    }
+
+    const hasContent = Object.values(checks).some(Boolean) ||
+      inspectorNotes.trim().length > 0 ||
+      isRejecting ||
+      rejectionReason.trim().length > 0;
+
+    if (!hasContent) {
+      removeSessionDraft(currentDraftKey);
+      return;
+    }
+
+    writeSessionDraft<QcDraft>(currentDraftKey, {
+      checks,
+      inspectorNotes: inspectorNotes.slice(0, 2000),
+      isRejecting,
+      rejectionReason: rejectionReason.slice(0, 2000),
     });
+  }, [checks, currentDraftKey, inspectorNotes, isRejecting, rejectionReason]);
+
+  // Set first job as selected by default if available
+  useEffect(() => {
+    if (qcPendingJobs.length > 0 && !selectedJobId) {
+      const savedSelection = selectionDraftKey
+        ? readSessionDraft(selectionDraftKey, isQcSelectionDraft)
+        : null;
+      const restoredJob = savedSelection
+        ? qcPendingJobs.find((job) => job.id === savedSelection.jobId)
+        : null;
+      setSelectedJobId(restoredJob?.id || qcPendingJobs[0].id);
+    }
+  }, [qcPendingJobs, selectedJobId, selectionDraftKey]);
+
+  useEffect(() => {
+    if (!selectionDraftKey || !selectedJobId) return;
+    writeSessionDraft(selectionDraftKey, { jobId: selectedJobId });
+  }, [selectedJobId, selectionDraftKey]);
+
+  const clearCurrentDraft = () => {
+    removeSessionDraft(currentDraftKey);
+    removeSessionDraft(selectionDraftKey);
+    setDraftRestored(false);
+  };
+
+  const discardCurrentDraft = () => {
+    clearCurrentDraft();
+    hydratingDraftRef.current = true;
+    setChecks(EMPTY_CHECKS);
     setInspectorNotes("");
     setIsRejecting(false);
     setRejectionReason("");
     setOperationError(null);
     setOperationStatus(null);
-  }, [selectedJobId]);
-
-  // Set first job as selected by default if available
-  useEffect(() => {
-    if (qcPendingJobs.length > 0 && !selectedJobId) {
-      setSelectedJobId(qcPendingJobs[0].id);
-    }
-  }, [qcPendingJobs, selectedJobId]);
+  };
 
   const handlePassQC = async () => {
     if (!selectedJob || submittingRef.current) return;
@@ -131,6 +232,7 @@ export default function QualityControlPage() {
         ? `✅ Vehículo ${selectedJob.vehicleId} aprobado y entregado (pago completo)!`
         : `✅ Vehículo ${selectedJob.vehicleId} aprobado y listo para entrega!`
       );
+      clearCurrentDraft();
       setSelectedJobId(null);
     } catch (error) {
       console.error("Error approving QC:", error);
@@ -162,6 +264,7 @@ export default function QualityControlPage() {
       });
 
       toast.success(`❌ Vehículo ${selectedJob.vehicleId} rechazado. Retornado a reparación.`);
+      clearCurrentDraft();
       setSelectedJobId(null);
       setIsRejecting(false);
     } catch (error) {
@@ -364,6 +467,14 @@ export default function QualityControlPage() {
                       </div>
 
                       <div className="space-y-4">
+                        {draftRestored && (
+                          <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-sky-500/30 bg-sky-950/20 px-4 py-3 text-xs text-sky-200">
+                            <span>Se restauró el borrador de QC guardado en esta pestaña.</span>
+                            <Button type="button" variant="ghost" size="sm" onClick={discardCurrentDraft}>
+                              Descartar borrador
+                            </Button>
+                          </div>
+                        )}
                         <div className="space-y-2">
                           <Label htmlFor="rejection-reason" className="text-sm font-semibold text-foreground">
                             Motivo del Rechazo / Instrucciones para el Técnico
@@ -441,6 +552,14 @@ export default function QualityControlPage() {
                       </CardHeader>
 
                       <CardContent className="p-6 space-y-6">
+                        {draftRestored && (
+                          <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-sky-500/30 bg-sky-950/20 px-4 py-3 text-xs text-sky-200">
+                            <span>Se restauró el borrador de QC guardado en esta pestaña.</span>
+                            <Button type="button" variant="ghost" size="sm" onClick={discardCurrentDraft}>
+                              Descartar borrador
+                            </Button>
+                          </div>
+                        )}
                         {/* Reported Symptoms */}
                         {selectedJob.symptoms && (
                           <div className="bg-zinc-950/40 border border-border/50 rounded-xl p-4 space-y-1.5">

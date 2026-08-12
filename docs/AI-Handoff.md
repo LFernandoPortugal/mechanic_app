@@ -9,12 +9,12 @@
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
 - **Producción:** el último cambio runtime es `961d827` e incluye renovación controlada de sesión, idempotencia server-side para pagos/QC y detección de saldos obsoletos; CI y Vercel Production pasaron y `https://mechanic-app-zeta.vercel.app/` respondió HTTP 200 en `/`, login, Asesor, QC y Pagos.
-- **Rama de trabajo:** PR #38 (`codex/handoff-idempotency-production`) solo registra este cierre documental; no contiene cambios runtime ni de Firebase.
+- **Rama de trabajo:** `codex/session-draft-recovery` añade borradores de sesión acotados para QC/pago y evita que los toasts cubran el header; debe pasar CI/Preview antes de integrarse.
 - **Árbol local al cerrar:** limpio y sincronizado con `origin/main` después de integrar el checkpoint documental.
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas de la estabilización están desplegadas y fueron releídas desde el proyecto activo.
 - **Último hito:** PR #37 se integró como `961d827`; fuerza una renovación de token ante el primer 401, guía al login si la sesión sigue inválida, evita dobles envíos en UI y garantiza que repetir el mismo pago/QC produzca una sola escritura.
-- **Calidad verificada:** TypeScript, lint, 102 pruebas unitarias, 8 de integración de API, 23 pruebas de reglas, 3 E2E Chromium, audit runtime en 0 vulnerabilidades, build de 19 páginas/5 APIs, QA visual en 390×844 y 1440×900 y HTTP 200 en las rutas oficiales auditadas.
-- **Siguiente paso recomendado:** revisar recuperación de borradores al recargar/reautenticar y los flujos secundarios aún sin E2E; mantener cualquier trabajo visual simultáneo en una rama separada.
+- **Calidad verificada:** la rama pasa TypeScript, lint, 107 pruebas unitarias, 8 de integración de API, 23 pruebas de reglas, 3 E2E Chromium, audit runtime en 0 vulnerabilidades y build de 19 páginas/5 APIs; producción conserva además QA visual en 390×844 y 1440×900 y HTTP 200 en las rutas oficiales auditadas.
+- **Siguiente paso recomendado:** validar la rama de borradores en CI/Preview y después cubrir los flujos secundarios aún sin E2E; mantener cualquier trabajo visual simultáneo en una rama separada.
 - **No repetir ni asumir:** EmailJS confirmó aceptación y una persona confirmó recepción/presentación correcta en un inbox controlado. No hace falta recrear las órdenes QA ya eliminadas; verificar siempre el deployment vigente antes de un nuevo cambio.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.

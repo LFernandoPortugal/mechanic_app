@@ -31,7 +31,12 @@ vi.mock("@/hooks/useRealtimeJobs", () => ({
 }));
 
 vi.mock("@/contexts/AuthContext", () => ({
-  useAuth: () => ({ workshopSettings: workshopFixture, signOut: state.signOut }),
+  useAuth: () => ({
+    user: { uid: "qc-fixture" },
+    userProfile: { workshopId: "workshop-fixture" },
+    workshopSettings: workshopFixture,
+    signOut: state.signOut,
+  }),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -54,6 +59,7 @@ vi.mock("@/components/ui/vehicle-icons", () => ({
 }));
 
 beforeEach(() => {
+  window.sessionStorage.clear();
   state.jobs = [makeJob({
     id: "job-qc-fixture",
     vehicleId: "QA-QC-01",
@@ -190,7 +196,7 @@ describe("QualityControlPage", () => {
   it("preserves QC input and offers reauthentication after a rejected refresh", async () => {
     const user = userEvent.setup();
     state.submitQualityControl.mockRejectedValue(new ApiRequestError("La sesión expiró.", 401));
-    render(<QualityControlPage />);
+    const view = render(<QualityControlPage />);
 
     for (const name of [
       "Síntomas Resueltos",
@@ -208,6 +214,11 @@ describe("QualityControlPage", () => {
     await user.click(screen.getByRole("button", { name: "Iniciar sesión nuevamente" }));
     expect(state.signOut).toHaveBeenCalledOnce();
     expect(state.routerPush).toHaveBeenCalledWith("/login?redirect=%2Fqc&reason=session-expired");
+
+    view.unmount();
+    render(<QualityControlPage />);
+    expect(await screen.findByText("Se restauró el borrador de QC guardado en esta pestaña.")).toBeTruthy();
+    expect(screen.getAllByRole("switch").every((control) => control.getAttribute("data-state") === "checked")).toBe(true);
   });
 
   it("disables a stale QC form when the realtime listener reports another outcome", async () => {
@@ -229,5 +240,30 @@ describe("QualityControlPage", () => {
     expect((await screen.findByRole("alert")).textContent).toContain("La orden cambió mientras la revisabas");
     expect((screen.getByRole("button", { name: "Aprobar y Marcar Listo para Entrega" }) as HTMLButtonElement).disabled)
       .toBe(true);
+  });
+
+  it("restores the selected QC order, checklist, and notes after remounting", async () => {
+    const user = userEvent.setup();
+    const view = render(<QualityControlPage />);
+
+    for (const name of [
+      "Síntomas Resueltos",
+      "Seguridad y Ajustes Mecánicos",
+      "Fluidos y Fugas",
+      "Estética y Limpieza",
+      "Prueba de Ruta Validada",
+    ]) {
+      await user.click(await screen.findByRole("switch", { name }));
+    }
+    await user.type(screen.getByLabelText("Notas del Inspector (Opcional)"), "Borrador restaurable.");
+    await waitFor(() => expect(window.sessionStorage.length).toBeGreaterThan(1));
+
+    view.unmount();
+    render(<QualityControlPage />);
+
+    expect(await screen.findByText("Se restauró el borrador de QC guardado en esta pestaña.")).toBeTruthy();
+    expect(screen.getAllByRole("switch").every((control) => control.getAttribute("data-state") === "checked")).toBe(true);
+    expect((screen.getByLabelText("Notas del Inspector (Opcional)") as HTMLTextAreaElement).value)
+      .toBe("Borrador restaurable.");
   });
 });

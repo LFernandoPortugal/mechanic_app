@@ -53,7 +53,12 @@ export default function RootLayout({
               <main id="main-content" tabIndex={-1}>
                 {children}
               </main>
-              <Toaster richColors position="top-right" />
+              <Toaster
+                richColors
+                position="top-right"
+                offset={{ top: 72, right: 16 }}
+                mobileOffset={{ top: 72, right: 16, left: 16 }}
+              />
             </AuthProvider>
           </LanguageProvider>
         </ThemeProvider>

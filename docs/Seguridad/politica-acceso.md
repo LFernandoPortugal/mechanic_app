@@ -76,8 +76,12 @@ El ID de la orden no concede acceso por sí solo: un token ausente, incorrecto, 
 ## Sesiones en operaciones server-side
 
 - El cliente intenta una única renovación forzada del ID token si una API autenticada responde 401.
-- Si la renovación también falla, no repite indefinidamente: muestra sesión expirada, conserva el formulario en memoria y ofrece volver al login con una ruta interna validada.
+- Si la renovación también falla, no repite indefinidamente: muestra sesión expirada, conserva un borrador acotado y ofrece volver al login con una ruta interna validada.
 - Los botones críticos usan un bloqueo síncrono además del estado visual para ignorar dobles clics antes del siguiente render.
+- Los borradores de QC y pago viven únicamente en `sessionStorage`, no se sincronizan ni se envían al servidor antes de confirmar la operación.
+- Cada clave queda aislada por función, taller, UID y orden; otra identidad o tenant no restaura el contenido.
+- Caducan a los 30 minutos y se eliminan al completar la operación o descartarla. Valores vencidos, corruptos o fuera del esquema se borran sin bloquear el flujo.
+- Solo se guardan los campos necesarios para retomar QC o pago; nunca tokens, contraseñas, credenciales ni datos de `.env`.
 
 ## Inventario y auditoría
 
