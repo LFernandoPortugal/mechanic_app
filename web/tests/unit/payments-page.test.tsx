@@ -27,7 +27,12 @@ vi.mock("@/components/ProtectedRoute", () => ({
 }));
 
 vi.mock("@/contexts/AuthContext", () => ({
-  useAuth: () => ({ workshopSettings: workshopFixture, signOut: state.signOut }),
+  useAuth: () => ({
+    user: { uid: "advisor-fixture" },
+    userProfile: { workshopId: "workshop-fixture" },
+    workshopSettings: workshopFixture,
+    signOut: state.signOut,
+  }),
 }));
 
 vi.mock("@/hooks/useRealtimeJobs", () => ({
@@ -48,6 +53,7 @@ vi.mock("sonner", () => ({
 }));
 
 beforeEach(() => {
+  window.sessionStorage.clear();
   state.jobs = [makeJob({
     id: "job-payment-fixture",
     vehicleId: "QA-PAY-01",
@@ -178,7 +184,7 @@ describe("PaymentsPage", () => {
   it("offers a safe login redirect when the refreshed session is rejected", async () => {
     const user = userEvent.setup();
     state.registerPayment.mockRejectedValue(new ApiRequestError("La sesión expiró.", 401));
-    render(<PaymentsPage />);
+    const view = render(<PaymentsPage />);
 
     await user.click(screen.getByRole("button", { name: "Detalles de pago para QA-PAY-01" }));
     await user.click(screen.getByRole("button", { name: "Saldo completo" }));
@@ -190,5 +196,29 @@ describe("PaymentsPage", () => {
     expect(state.routerPush).toHaveBeenCalledWith(
       "/login?redirect=%2Fadvisor%2Fpayments&reason=session-expired",
     );
+
+    view.unmount();
+    render(<PaymentsPage />);
+    expect(await screen.findByText("Se restauró el borrador de pago guardado en esta pestaña.")).toBeTruthy();
+    expect((screen.getByLabelText("Monto (S/.)") as HTMLInputElement).value).toBe("60.00");
+  });
+
+  it("restores a scoped payment draft after the page is remounted", async () => {
+    const user = userEvent.setup();
+    const view = render(<PaymentsPage />);
+
+    await user.click(screen.getByRole("button", { name: "Detalles de pago para QA-PAY-01" }));
+    await user.click(screen.getByRole("button", { name: "Transferencia" }));
+    await user.type(screen.getByLabelText("Monto (S/.)"), "25.50");
+    await user.type(screen.getByLabelText("Referencia / N° de Operación"), "OP-RESTORE-01");
+    await waitFor(() => expect(window.sessionStorage.length).toBeGreaterThan(0));
+
+    view.unmount();
+    render(<PaymentsPage />);
+
+    expect(await screen.findByText("Se restauró el borrador de pago guardado en esta pestaña.")).toBeTruthy();
+    expect((screen.getByLabelText("Monto (S/.)") as HTMLInputElement).value).toBe("25.5");
+    expect((screen.getByLabelText("Referencia / N° de Operación") as HTMLInputElement).value).toBe("OP-RESTORE-01");
+    expect(screen.getByRole("button", { name: "Transferencia" }).getAttribute("aria-pressed")).toBe("true");
   });
 });
