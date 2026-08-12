@@ -35,7 +35,7 @@ npm.cmd run build
 - [x] TypeScript sin errores.
 - [x] Lint sin errores; warnings revisados/aceptados.
 - [x] Unit tests, integración de API routes y Firestore Emulator Rules tests pasan.
-- [x] E2E de login, redirect, RBAC y `Reception -> Diagnosis -> Approval -> Approved` pasa contra Auth/Firestore Emulator con proyecto `demo-mechanic-app`; incluye API autenticada, enlace público y firma, nunca Producción.
+- [x] E2E de login, redirect, RBAC y el flujo completo `Reception -> Diagnosis -> Approval -> Approved -> Repair -> QC -> Ready -> Delivered` pasa contra Auth/Firestore Emulator con proyecto `demo-mechanic-app`; incluye firma, enlace público, rechazo/reintento de QC y pago autenticado, nunca Producción.
 - [x] Build Next.js completo pasa. Next.js genera `.next`, no `out/`.
 
 ## Preview Vercel

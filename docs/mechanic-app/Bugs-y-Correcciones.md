@@ -415,3 +415,21 @@ La validación local queda en 80 unitarias, 23 Rules, 5 integraciones API y 3 E2
 - El campo de stock inicial normaliza un valor vacío a `0`, evitando que React reciba `NaN` durante la edición del inventario.
 
 La validación local queda en 88 unitarias, 23 Rules, 5 integraciones API y 3 E2E; TypeScript, lint, audit de dependencias de producción en 0 vulnerabilidades y build pasan. El recorrido completo desde Recepción hasta aprobación del cliente usa únicamente Next.js local, Auth Emulator y Firestore Emulator bajo `demo-mechanic-app`.
+
+---
+
+## v1.18 — Ciclo completo hasta pago y entrega E2E (2026-08-12)
+
+### TEST-010: El tramo posterior a `Approved` no se recorría integrado en navegador
+
+**Riesgo**: las pruebas de componente y API cubrían cada pantalla por separado, pero no demostraban que los listeners, Firestore Rules, autenticación server-side y estados de UI conservaran la misma orden a través de reparación, rechazo/reintento de QC, pago y entrega.
+
+**Cobertura añadida**:
+
+- El ADMIN abre en Técnico la orden recién aprobada, ejecuta `Approved -> Repair` y la envía a `QC` mediante las escrituras reales permitidas por Rules.
+- QC rechaza primero la orden por la API autenticada, exige motivo, responde HTTP 200 y devuelve el estado a `Repair`.
+- Técnico corrige y reenvía; QC activa los cinco controles, agrega notas y recibe HTTP 200 con estado `Ready`.
+- Caja abre la misma orden, selecciona el saldo exacto de `S/. 170.00`, registra el pago por la API real y exige HTTP 200 con `totalPaid: 170`, saldo cero y estado `Delivered`.
+- La UI de Caja confirma finalmente la etiqueta `Entregado`; el test no modifica el estado por acceso directo ni simula las respuestas de API.
+
+Los 3 E2E pasan juntos en Chromium y el recorrido principal cubre ahora el flujo canónico completo, incluida la rama de rechazo de QC. Auth, Firestore, usuarios, taller y orden existen solo durante la ejecución bajo `demo-mechanic-app`; los emuladores se destruyen al terminar y no se usan `p1`, SUPER_ADMIN, Firebase real o Vercel.

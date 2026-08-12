@@ -56,8 +56,8 @@ test("a RECEPTION user is denied technician access and can sign out", async ({ p
   await expect(page.getByRole("button", { name: "Iniciar Sesión" })).toBeVisible();
 });
 
-test("an ADMIN takes a signed reception through client quote approval", async ({ page }, testInfo) => {
-  test.setTimeout(120_000);
+test("an ADMIN takes a signed reception through delivery", async ({ page }, testInfo) => {
+  test.setTimeout(180_000);
   const plate = `E2E-${401 + testInfo.retry}`;
 
   await page.goto("/login");
@@ -140,4 +140,88 @@ test("an ADMIN takes a signed reception through client quote approval", async ({
   expect(approvalResponse.status()).toBe(200);
   await expect(clientPage.getByRole("heading", { name: "¡Cotización Aprobada!" })).toBeVisible();
   await expect(clientPage.getByText("S/. 170.00", { exact: true })).toBeVisible();
+  await clientPage.close();
+
+  await page.goto("/technician");
+  await expect(page.getByRole("heading", { name: "Área de Técnico" })).toBeVisible();
+  const approvedJobButton = page.getByRole("button").filter({ hasText: plate }).first();
+  await expect(approvedJobButton).toBeVisible();
+  await approvedJobButton.click();
+  await expect(page.getByRole("heading", { name: "Reparación Autorizada" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Iniciar Reparación" }).click();
+  await expect(page.getByRole("heading", { name: "Reparación en Curso" })).toBeVisible();
+  await page.getByRole("button", { name: "Finalizar Reparación y Enviar a QC" }).click();
+  await expect(page.getByText("Vehículo enviado a control de calidad")).toBeVisible();
+
+  await page.goto("/qc");
+  await expect(page.getByRole("heading", { name: "Control de Calidad (QC)" })).toBeVisible();
+  await expect(page.getByText(`Vehículo: ${plate}`)).toBeVisible();
+  await page.getByRole("button", { name: "Rechazar y Devolver a Taller" }).click();
+  await page.getByLabel("Motivo del Rechazo / Instrucciones para el Técnico").fill(
+    "La prueba E2E detectó un ajuste pendiente antes de aprobar QC.",
+  );
+  const rejectionResponsePromise = page.waitForResponse(
+    (response) => response.url().includes("/api/jobs/")
+      && response.url().endsWith("/qc")
+      && response.request().method() === "POST",
+    { timeout: 30_000 },
+  );
+  await page.getByRole("button", { name: "Confirmar Rechazo y Enviar a Técnico" }).click();
+  const rejectionResponse = await rejectionResponsePromise;
+  expect(rejectionResponse.status()).toBe(200);
+  await expect(rejectionResponse.json()).resolves.toMatchObject({ status: "Repair" });
+
+  await page.goto("/technician");
+  const repairJobButton = page.getByRole("button").filter({ hasText: plate }).first();
+  await expect(repairJobButton).toBeVisible();
+  await repairJobButton.click();
+  await expect(page.getByRole("heading", { name: "Reparación en Curso" })).toBeVisible();
+  await page.getByRole("button", { name: "Finalizar Reparación y Enviar a QC" }).click();
+  await expect(page.getByText("Vehículo enviado a control de calidad")).toBeVisible();
+
+  await page.goto("/qc");
+  await expect(page.getByText(`Vehículo: ${plate}`)).toBeVisible();
+  for (const name of [
+    "Síntomas Resueltos",
+    "Seguridad y Ajustes Mecánicos",
+    "Fluidos y Fugas",
+    "Estética y Limpieza",
+    "Prueba de Ruta Validada",
+  ]) {
+    await page.getByRole("switch", { name }).click();
+  }
+  await page.getByLabel("Notas del Inspector (Opcional)").fill("Todos los controles E2E conformes.");
+  const qcApprovalResponsePromise = page.waitForResponse(
+    (response) => response.url().includes("/api/jobs/")
+      && response.url().endsWith("/qc")
+      && response.request().method() === "POST",
+    { timeout: 30_000 },
+  );
+  await page.getByRole("button", { name: "Aprobar y Marcar Listo para Entrega" }).click();
+  const qcApprovalResponse = await qcApprovalResponsePromise;
+  expect(qcApprovalResponse.status()).toBe(200);
+  await expect(qcApprovalResponse.json()).resolves.toMatchObject({ status: "Ready" });
+
+  await page.goto("/advisor/payments");
+  await expect(page.getByRole("heading", { name: "Caja / Pagos" })).toBeVisible();
+  const paymentDetails = page.getByRole("button", { name: `Detalles de pago para ${plate}` });
+  await expect(paymentDetails).toBeVisible();
+  await paymentDetails.click();
+  await page.getByRole("button", { name: "Saldo completo" }).click();
+  const paymentResponsePromise = page.waitForResponse(
+    (response) => response.url().includes("/api/jobs/")
+      && response.url().endsWith("/payments")
+      && response.request().method() === "POST",
+    { timeout: 30_000 },
+  );
+  await page.getByRole("button", { name: "Registrar Pago" }).click();
+  const paymentResponse = await paymentResponsePromise;
+  expect(paymentResponse.status()).toBe(200);
+  await expect(paymentResponse.json()).resolves.toMatchObject({
+    status: "Delivered",
+    totalPaid: 170,
+    remainingBalance: 0,
+  });
+  await expect(paymentDetails.getByText("Entregado", { exact: true })).toBeVisible();
 });
