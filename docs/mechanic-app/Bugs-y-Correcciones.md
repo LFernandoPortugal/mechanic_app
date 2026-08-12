@@ -433,3 +433,22 @@ La validación local queda en 88 unitarias, 23 Rules, 5 integraciones API y 3 E2
 - La UI de Caja confirma finalmente la etiqueta `Entregado`; el test no modifica el estado por acceso directo ni simula las respuestas de API.
 
 Los 3 E2E pasan juntos en Chromium y el recorrido principal cubre ahora el flujo canónico completo, incluida la rama de rechazo de QC. Auth, Firestore, usuarios, taller y orden existen solo durante la ejecución bajo `demo-mechanic-app`; los emuladores se destruyen al terminar y no se usan `p1`, SUPER_ADMIN, Firebase real o Vercel.
+
+---
+
+## v1.19 — Handoffs E2E con privilegios mínimos (2026-08-12)
+
+### TEST-011: El ciclo integral usaba ADMIN en todas las etapas
+
+**Riesgo**: el flujo probaba las pantallas y transiciones reales, pero el bypass operativo de ADMIN podía ocultar una discrepancia entre navegación, Firestore Rules y autorización de las API para los roles especializados.
+
+**Cobertura añadida**:
+
+- El seed local incorpora cuatro identidades separadas: ADMIN, RECEPTION, TECHNICIAN y ADVISOR; cada una tiene un único rol y comparte solo el taller sintético.
+- RECEPTION crea la orden y confirma la firma, pero no ejecuta Diagnóstico.
+- El navegador cierra sesión e inicia como TECHNICIAN para Diagnóstico y los dos ciclos de Reparación.
+- Cambia a ADVISOR para cotización, emisión del enlace, rechazo/aprobación de QC y pago/entrega.
+- Cada cambio exige volver a `/login`, autenticar contra Auth Emulator y alcanzar únicamente el destino permitido; los listeners recargan la misma orden desde Firestore Emulator.
+- La prueba administrativa confirma que los cuatro perfiles sembrados aparecen en Gestión de Usuarios, mientras la prueba negativa independiente conserva el bloqueo de RECEPTION en Técnico.
+
+Los 3 E2E pasan juntos en Chromium con los handoffs reales. No se reutiliza ADMIN en el recorrido funcional ni se escriben datos fuera de `demo-mechanic-app`; `p1`, SUPER_ADMIN y Firebase real permanecen fuera de alcance.

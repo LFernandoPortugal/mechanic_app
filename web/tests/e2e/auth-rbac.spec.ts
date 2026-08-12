@@ -8,6 +8,14 @@ async function signIn(page: Page, email: string) {
   await page.getByRole("button", { name: "Iniciar Sesión" }).click();
 }
 
+async function switchUser(page: Page, email: string, destination: string) {
+  await page.getByRole("button", { name: "Cerrar Sesión" }).click();
+  await expect(page).toHaveURL(/\/login(?:\?.*)?$/);
+  await page.goto(`/login?redirect=${encodeURIComponent(destination)}`);
+  await signIn(page, email);
+  await expect(page).toHaveURL(new URL(destination, page.url()).toString());
+}
+
 async function drawAndConfirmSignature(page: Page) {
   const signatureCanvas = page.locator("canvas");
   await signatureCanvas.scrollIntoViewIfNeeded();
@@ -37,7 +45,7 @@ test("an ADMIN returns to the protected destination and opens user management", 
   await page.getByRole("link", { name: "Gestión de Usuarios" }).click();
   await expect(page).toHaveURL(/\/admin\/users$/);
   await expect(page.getByRole("heading", { name: "Gestión de Usuarios" })).toBeVisible();
-  await expect(page.getByText("2 usuarios registrados")).toBeVisible();
+  await expect(page.getByText("4 usuarios registrados")).toBeVisible();
 });
 
 test("a RECEPTION user is denied technician access and can sign out", async ({ page }) => {
@@ -56,12 +64,12 @@ test("a RECEPTION user is denied technician access and can sign out", async ({ p
   await expect(page.getByRole("button", { name: "Iniciar Sesión" })).toBeVisible();
 });
 
-test("an ADMIN takes a signed reception through delivery", async ({ page }, testInfo) => {
-  test.setTimeout(180_000);
+test("minimum-role users take a signed reception through delivery", async ({ page }, testInfo) => {
+  test.setTimeout(240_000);
   const plate = `E2E-${401 + testInfo.retry}`;
 
   await page.goto("/login");
-  await signIn(page, "admin.e2e@example.com");
+  await signIn(page, "reception.e2e@example.com");
   await expect(page).toHaveURL(/\/$/);
 
   await page.goto("/reception");
@@ -80,8 +88,7 @@ test("an ADMIN takes a signed reception through delivery", async ({ page }, test
   await expect(page.getByRole("heading", { name: "Recepción Completa" })).toBeVisible();
   await expect(page.getByText(`El vehículo ${plate} está ahora en cola para inspección.`)).toBeVisible();
 
-  await page.getByRole("button", { name: "Ir al Panel de Técnico" }).click();
-  await expect(page).toHaveURL(/\/technician$/);
+  await switchUser(page, "technician.e2e@example.com", "/technician");
   await expect(page.getByRole("heading", { name: "Área de Técnico" })).toBeVisible();
 
   const jobButton = page.getByRole("button").filter({ hasText: plate });
@@ -100,8 +107,7 @@ test("an ADMIN takes a signed reception through delivery", async ({ page }, test
   await expect(page.getByRole("heading", { name: "Diagnóstico Enviado" })).toBeVisible();
   await expect(page.getByText(`El vehículo ${plate} está listo para cotización.`)).toBeVisible();
 
-  await page.getByRole("button", { name: "Ir al Panel de Asesor" }).click();
-  await expect(page).toHaveURL(/\/advisor$/);
+  await switchUser(page, "advisor.e2e@example.com", "/advisor");
   await expect(page.getByRole("heading", { name: "Área de Asesor" })).toBeVisible();
 
   const quoteJobButton = page.getByRole("button").filter({ hasText: plate });
@@ -142,7 +148,7 @@ test("an ADMIN takes a signed reception through delivery", async ({ page }, test
   await expect(clientPage.getByText("S/. 170.00", { exact: true })).toBeVisible();
   await clientPage.close();
 
-  await page.goto("/technician");
+  await switchUser(page, "technician.e2e@example.com", "/technician");
   await expect(page.getByRole("heading", { name: "Área de Técnico" })).toBeVisible();
   const approvedJobButton = page.getByRole("button").filter({ hasText: plate }).first();
   await expect(approvedJobButton).toBeVisible();
@@ -154,7 +160,7 @@ test("an ADMIN takes a signed reception through delivery", async ({ page }, test
   await page.getByRole("button", { name: "Finalizar Reparación y Enviar a QC" }).click();
   await expect(page.getByText("Vehículo enviado a control de calidad")).toBeVisible();
 
-  await page.goto("/qc");
+  await switchUser(page, "advisor.e2e@example.com", "/qc");
   await expect(page.getByRole("heading", { name: "Control de Calidad (QC)" })).toBeVisible();
   await expect(page.getByText(`Vehículo: ${plate}`)).toBeVisible();
   await page.getByRole("button", { name: "Rechazar y Devolver a Taller" }).click();
@@ -172,7 +178,7 @@ test("an ADMIN takes a signed reception through delivery", async ({ page }, test
   expect(rejectionResponse.status()).toBe(200);
   await expect(rejectionResponse.json()).resolves.toMatchObject({ status: "Repair" });
 
-  await page.goto("/technician");
+  await switchUser(page, "technician.e2e@example.com", "/technician");
   const repairJobButton = page.getByRole("button").filter({ hasText: plate }).first();
   await expect(repairJobButton).toBeVisible();
   await repairJobButton.click();
@@ -180,7 +186,7 @@ test("an ADMIN takes a signed reception through delivery", async ({ page }, test
   await page.getByRole("button", { name: "Finalizar Reparación y Enviar a QC" }).click();
   await expect(page.getByText("Vehículo enviado a control de calidad")).toBeVisible();
 
-  await page.goto("/qc");
+  await switchUser(page, "advisor.e2e@example.com", "/qc");
   await expect(page.getByText(`Vehículo: ${plate}`)).toBeVisible();
   for (const name of [
     "Síntomas Resueltos",

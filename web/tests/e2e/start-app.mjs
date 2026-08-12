@@ -64,6 +64,16 @@ const seededUsers = [
     displayName: "Recepción E2E",
     roles: ["RECEPTION"],
   },
+  {
+    email: "technician.e2e@example.com",
+    displayName: "Técnico E2E",
+    roles: ["TECHNICIAN"],
+  },
+  {
+    email: "advisor.e2e@example.com",
+    displayName: "Asesor E2E",
+    roles: ["ADVISOR"],
+  },
 ];
 
 const authUsers = [];
