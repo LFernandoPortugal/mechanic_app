@@ -9,7 +9,7 @@
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
 - **Producción:** el último cambio runtime es `961d827` e incluye renovación controlada de sesión, idempotencia server-side para pagos/QC y detección de saldos obsoletos; CI y Vercel Production pasaron y `https://mechanic-app-zeta.vercel.app/` respondió HTTP 200 en `/`, login, Asesor, QC y Pagos.
-- **Rama de trabajo:** `codex/session-draft-recovery` añade borradores de sesión acotados para QC/pago y evita que los toasts cubran el header; debe pasar CI/Preview antes de integrarse.
+- **Rama de trabajo:** PR #39 (`codex/session-draft-recovery`) añade borradores de sesión acotados para QC/pago y evita que los toasts cubran el header; debe pasar CI/Preview antes de integrarse.
 - **Árbol local al cerrar:** limpio y sincronizado con `origin/main` después de integrar el checkpoint documental.
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas de la estabilización están desplegadas y fueron releídas desde el proyecto activo.
 - **Último hito:** PR #37 se integró como `961d827`; fuerza una renovación de token ante el primer 401, guía al login si la sesión sigue inválida, evita dobles envíos en UI y garantiza que repetir el mismo pago/QC produzca una sola escritura.
