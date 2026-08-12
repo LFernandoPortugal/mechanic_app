@@ -276,3 +276,21 @@ La ronda final pasó en Preview y Producción. El enlace oficial se emitió, abr
 - Se eliminó `maximumScale: 1` para permitir zoom en dispositivos móviles.
 
 La validación local cubrió 390×844 y 1440×900, ambos temas, etiquetas anunciadas, diálogo nombrado, trampa de foco en ambas direcciones, Escape, restauración del foco y ausencia de desbordamiento visible. Gates: TypeScript y lint sin errores, 39 pruebas unitarias, 23 de reglas, 5 de integración y build de 19 páginas/5 APIs.
+
+---
+
+## v1.11 — Regresiones automáticas de accesibilidad (2026-08-11)
+
+### TEST-003: El comportamiento de teclado dependía solo de QA manual
+
+**Riesgo**: una modificación posterior podía romper el foco inicial, la trampa de Tab, Escape, la restauración del fondo o el salto al contenido sin que las pruebas unitarias lo detectaran.
+
+**Cobertura añadida**:
+
+- `AccessibleModal` anuncia nombre y modalidad, enfoca el primer control, aísla el fondo y bloquea el scroll.
+- Tab y Shift+Tab permanecen dentro del diálogo; un diálogo sin controles conserva el foco en su contenedor.
+- Escape desmonta el diálogo, restaura `inert`/`aria-hidden`/scroll y devuelve el foco al botón que lo abrió.
+- `SkipLink` enfoca y desplaza el landmark principal, conserva el fragmento y mantiene el fallback nativo cuando el destino no existe.
+- Testing Library, user-event y jsdom se incorporan exclusivamente como dependencias de desarrollo; el audit de dependencias runtime permanece en 0 vulnerabilidades.
+
+La suite queda en 45 pruebas unitarias, 23 de reglas y 5 de integración API. TypeScript, lint, `npm audit --omit=dev --audit-level=high`, `test:all` y build de 19 páginas/5 APIs pasan localmente.
