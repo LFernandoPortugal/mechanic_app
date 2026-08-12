@@ -376,3 +376,22 @@ La suite queda en 80 pruebas unitarias, 23 de reglas y 5 de integración API. Ty
 - La conexión del SDK web a emuladores exige `NEXT_PUBLIC_USE_FIREBASE_EMULATORS=true`, ejecución en navegador y `NODE_ENV !== production`; Producción no puede activarla.
 
 CI instala Chromium y ejecuta este gate después de las suites unitarias/Rules/API. La validación local queda en 80 unitarias, 23 Rules, 5 integraciones API y 2 E2E; TypeScript, lint, audit runtime en 0 vulnerabilidades y build de 19 páginas/5 APIs pasan. La revisión visual del navegador local confirmó login y acceso denegado sin errores de consola ni datos reales.
+
+---
+
+## v1.16 — Recepción y diagnóstico E2E con reglas reales (2026-08-12)
+
+### TEST-008: El primer tramo operativo solo se comprobaba con componentes aislados
+
+**Riesgo**: el formulario podía verse correcto y aun así fallar al crear la orden, guardar la firma, montar el listener en Técnico o cumplir la lista de campos y transiciones permitidas por Firestore Rules.
+
+**Cobertura añadida**:
+
+- ADMIN inicia sesión y completa la recepción real con vehículo, cliente, síntomas y una firma dibujada/confirmada en canvas.
+- Firestore Emulator acepta la creación únicamente con el payload `Reception` y el actor/taller del perfil autenticado.
+- La pantalla de éxito abre Técnico; el listener en tiempo real muestra la orden recién creada.
+- Seleccionar la orden ejecuta `Reception -> Diagnosis`, asigna al técnico autenticado y agrega la auditoría exigida por Rules.
+- El técnico registra un elemento de inspección y envía `Diagnosis -> Approval`; la pantalla confirma que la orden está lista para cotización.
+- La placa cambia en cada reintento para impedir colisiones si un intento anterior alcanzó a escribir antes de fallar.
+
+La validación local queda en 80 unitarias, 23 Rules, 5 integraciones API y 3 E2E; TypeScript, lint, audit runtime en 0 vulnerabilidades y build de 19 páginas/5 APIs pasan. La revisión visual adicional en 1440×900 y 390×844 confirmó Recepción, firma, resultado y cola técnica sin overflow horizontal ni errores de consola. Todo el recorrido usa `demo-mechanic-app`; no escribe Auth, Firestore, Storage o Vercel reales.
