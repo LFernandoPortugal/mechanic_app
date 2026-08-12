@@ -112,6 +112,17 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
       <CardHeader
         className="cursor-pointer flex flex-row items-start justify-between gap-2"
         onClick={() => setExpanded(p => !p)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            setExpanded((current) => !current);
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-expanded={expanded}
+        aria-controls={`payment-details-${job.id}`}
+        aria-label={`Detalles de pago para ${job.vehicleId}`}
       >
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -148,7 +159,7 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
       </CardHeader>
 
       {expanded && (
-        <CardContent className="space-y-5 pt-0">
+        <CardContent id={`payment-details-${job.id}`} className="space-y-5 pt-0">
           {/* Payment history */}
           {(job.payments || []).length > 0 && (
             <div className="space-y-1.5">
@@ -177,6 +188,7 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
                   <button
                     key={m}
                     onClick={() => setMethod(m)}
+                    aria-pressed={method === m}
                     className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold border transition-all
                       ${method === m
                         ? "border-emerald-500 bg-emerald-950/50 text-emerald-300"
@@ -190,12 +202,13 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
               </div>
                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                    <Label className="text-xs">Monto ({workshopSettings?.currencySymbol || "$"})</Label>
+                    <Label htmlFor={`payment-amount-${job.id}`} className="text-xs">Monto ({workshopSettings?.currencySymbol || "$"})</Label>
                     <div className="relative flex items-center">
                       <span className="absolute left-3 text-xs font-mono font-semibold text-muted-foreground select-none">
                         {workshopSettings?.currencySymbol || "$"}
                       </span>
                       <Input
+                        id={`payment-amount-${job.id}`}
                         type="number"
                         placeholder={`Saldo: ${workshopSettings?.currencySymbol || "$"}${balance.toFixed(2)}`}
                         value={amount}
@@ -207,8 +220,9 @@ function JobCard({ job, onPaymentRegistered, workshopSettings }: { job: Job; onP
                     </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Referencia / N° de Operación</Label>
+                  <Label htmlFor={`payment-reference-${job.id}`} className="text-xs">Referencia / N° de Operación</Label>
                   <Input
+                    id={`payment-reference-${job.id}`}
                     placeholder="Opcional"
                     value={reference}
                     onChange={e => setRef(e.target.value)}

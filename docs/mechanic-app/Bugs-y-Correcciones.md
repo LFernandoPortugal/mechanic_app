@@ -311,3 +311,26 @@ La suite queda en 45 pruebas unitarias, 23 de reglas y 5 de integración API. Ty
 - Los estados `Approved`, `Repair`, `QC`, `Ready` y `Delivered` señalan semánticamente el paso actual mediante `aria-current="step"`.
 
 La suite queda en 58 pruebas unitarias, 23 de reglas y 5 de integración API. TypeScript, lint, `npm audit --omit=dev --audit-level=high`, `test:all` y build de 19 páginas/5 APIs pasan localmente. Los tests usan fixtures y Firestore Emulator; no escriben datos de Producción ni requieren SUPER_ADMIN.
+
+---
+
+## v1.13 — Flujos operativos reproducibles (2026-08-11)
+
+### TEST-005: Técnico, Asesor, QC y Caja dependían de datos reales
+
+**Riesgo**: los estados intermedios del flujo solo se comprobaban con órdenes descartables. Un cambio visual podía romper controles, importes o transiciones antes de ser detectado en Producción.
+
+**Cobertura añadida**:
+
+- Técnico bloquea diagnósticos vacíos, registra un hallazgo con estado/notas y recorre `Diagnosis -> Approval -> Approved -> Repair -> QC` mediante las acciones reales de la página.
+- Asesor calcula una cotización manual, conserva ítems sin costo, guarda `totalEstimate` y emite el enlace seguro. La auto-cotización aleatoria queda visible solo en `demoMode`.
+- QC exige motivo para rechazar, envía `fail` a la API y solo permite `pass` después de validar los cinco checks.
+- Caja abre tarjetas con mouse, Enter o Espacio; registra el saldo exacto, bloquea sobrepagos no efectivos y conserva una orden pagada en QC hasta completar el control.
+
+### A11Y-004: Controles operativos sin nombre o teclado
+
+- Los cinco switches de QC, los campos de diagnóstico, precios, mano de obra, monto y referencia tienen etiquetas asociadas.
+- Selectores de estado/método exponen `aria-pressed`; la tarjeta de Caja comunica `aria-expanded` y su panel controlado.
+- El CTA responsive de auto-cotización expone un único nombre accesible.
+
+La suite queda en 69 pruebas unitarias, 23 de reglas y 5 de integración API. Los recorridos usan fixtures locales y dobles de API; no requieren credenciales ni escrituras de Producción.
