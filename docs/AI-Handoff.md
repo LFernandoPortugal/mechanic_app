@@ -8,13 +8,13 @@
 
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
-- **Producción:** `origin/main` incluye `f3cac1e`; la estabilización, las rondas visuales, EmailJS, enlaces revocables, login, accesibilidad y los smoke tests de acceso, operación, recepción, administración y navegador real están desplegados en `https://mechanic-app-zeta.vercel.app/`. El HEAD puede avanzar por commits exclusivamente documentales.
-- **Rama de trabajo:** ninguna funcional de runtime pendiente; PR #23, PR #25, PR #27 y PR #29 están integradas.
+- **Producción:** `origin/main` está en `0043693` e incluye el runtime `f3cac1e`; la estabilización, las rondas visuales, EmailJS, enlaces revocables, login, accesibilidad y los smoke tests de acceso, operación, recepción, administración y navegador real están desplegados en `https://mechanic-app-zeta.vercel.app/`. El HEAD puede avanzar por commits exclusivamente documentales.
+- **Rama de trabajo:** ninguna funcional de runtime pendiente; PR #23, PR #25, PR #27, PR #29 y PR #31 están integradas.
 - **Árbol local al cerrar:** limpio y sincronizado con `origin/main` después de integrar el checkpoint documental.
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas de la estabilización están desplegadas y fueron releídas desde el proyecto activo.
-- **Último hito:** PR #29 integrada y desplegada: Playwright recorre `Reception -> Diagnosis -> Approval -> Approved`, incluida autenticación server-side emulada, cotización, enlace público y firma independiente del cliente.
+- **Último hito:** PR #31 integrada y desplegada: Playwright recorre el ciclo completo `Reception -> Diagnosis -> Approval -> Approved -> Repair -> QC -> Ready -> Delivered`, incluido rechazo/reintento de QC y pago autenticado.
 - **Calidad verificada:** TypeScript, lint, 88 pruebas unitarias, 5 de integración de API, 23 pruebas de reglas, 3 E2E Chromium, audit runtime en 0 vulnerabilidades, build de 19 páginas/5 APIs, QA visual en 390×844 y 1440×900 y HTTP 200 en las rutas oficiales auditadas.
-- **Siguiente paso recomendado:** extender el E2E aislado desde `Approved` hasta `Repair -> QC -> Ready -> Delivered`, incluidos pagos y rechazo de QC; después cubrir estados de error/carga con recuperación visible.
+- **Siguiente paso recomendado:** cubrir estados de error/carga con recuperación visible y un recorrido multiusuario por roles mínimos; añadir la variante de pago completo antes de QC si aporta valor frente a su cobertura API existente.
 - **No repetir ni asumir:** EmailJS confirmó aceptación y una persona confirmó recepción/presentación correcta en un inbox controlado. No hace falta recrear las órdenes QA ya eliminadas; verificar siempre el deployment vigente antes de un nuevo cambio.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
@@ -23,7 +23,7 @@ Para retomar, leer este documento completo y luego seguir el orden obligatorio d
 
 La aplicación es un SGA multitenant en Next.js 16, Firebase Auth/Firestore y Vercel. La estabilización está integrada en `main`, desplegada en Vercel Production y acompañada por sus reglas Firestore en `mechanic-app-7d459`.
 
-- Producción sirve el código funcional de `f3cac1e` en `https://mechanic-app-zeta.vercel.app/` desde `main`; el E2E hasta aprobación pública queda en `f3cac1e`, su tramo de recepción/diagnóstico en `b4c27e9`, el E2E base en `02931ea`, los flujos administrativos en `ac49ea7`, los operativos en `4e3882e`, acceso/portal en `1e1b049`, accesibilidad operativa en `eb29f26`, login en `0bd69a3`, enlaces revocables en `4a21b96` y la estabilización en `c903185`.
+- `origin/main` está en `0043693` y producción sirve el código funcional de `f3cac1e` en `https://mechanic-app-zeta.vercel.app/`; el E2E integral queda en `0043693`, hasta aprobación pública en `f3cac1e`, su tramo de recepción/diagnóstico en `b4c27e9`, el E2E base en `02931ea`, los flujos administrativos en `ac49ea7`, los operativos en `4e3882e`, acceso/portal en `1e1b049`, accesibilidad operativa en `eb29f26`, login en `0bd69a3`, enlaces revocables en `4a21b96` y la estabilización en `c903185`.
 - Las URLs Preview son efímeras y se toman del PR activo; no reutilizar aliases de ramas ya integradas.
 - Las reglas nuevas se compilaron y publicaron únicamente como `firestore:rules`; no se desplegaron Hosting, Storage ni índices.
 - El taller tester `p1` fue reparado: conserva su cuenta Auth y ahora tiene un único perfil ADMIN y un `settings/p1` vacío/activo. No se combinaron usuarios antiguos.
@@ -330,12 +330,22 @@ La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos 
 6. La suite queda en 88 unitarias, 23 Rules, 5 integraciones API y 3 E2E; TypeScript, lint, auditoría runtime y build de 19 páginas/5 APIs pasan. El campo de stock inicial ya no entrega `NaN` a React al vaciarse.
 7. Producción respondió HTTP 200 en `/`, `/login`, `/reception` y `/quote/view`. No cambiaron ni se desplegaron Rules, índices, Storage o Firebase Hosting.
 
+## Ciclo completo hasta entrega E2E emulado del 2026-08-12
+
+1. PR #31 se integró por squash en `main` como `0043693`; ambos CI de Preview, CI de `main` y Vercel Preview/Production completaron correctamente.
+2. El ADMIN abre la orden aprobada en Técnico, ejecuta `Approved -> Repair -> QC` y observa cada estado mediante los listeners reales y Firestore Rules.
+3. La primera revisión QC exige un motivo, llama la API autenticada, recibe HTTP 200 y devuelve la orden a `Repair`; Técnico corrige y la reenvía.
+4. La segunda revisión activa los cinco controles, agrega notas y recibe HTTP 200 con `Ready` y saldo pendiente.
+5. Caja selecciona el saldo exacto de `S/. 170.00`, llama la API autenticada y exige HTTP 200 con `totalPaid: 170`, saldo cero y `Delivered`; la UI confirma `Entregado`.
+6. Los 3 E2E pasan juntos en Chromium en aproximadamente 46 segundos locales. El principal usa UI, APIs y persistencia reales dentro de los emuladores; no sustituye estados ni respuestas con mocks.
+7. Producción respondió HTTP 200 en `/`, `/login`, `/technician`, `/qc` y `/advisor/payments`. No cambiaron ni se desplegaron Rules, índices, Storage o Firebase Hosting y no se tocaron datos reales, `p1` o SUPER_ADMIN.
+
 ## Siguiente bloque recomendado
 
-1. Extender el E2E aislado desde `Approved` por inicio/fin de reparación, rechazo/aprobación de QC, pagos y `Ready -> Delivered`; cubrir por separado la variante con saldo pendiente.
-2. Añadir estados de error/carga a la cobertura de componente solo donde exista una recuperación real para la persona usuaria.
-3. Mantener `p1` como fixture de testers hasta finalizar el flujo crítico y limpiar cada orden descartable creada.
-4. No repetir despliegues de Rules ni pruebas con SUPER_ADMIN si el siguiente cambio no toca seguridad, roles o datos privilegiados.
+1. Añadir estados de error/carga a la cobertura de componente solo donde exista una recuperación real para la persona usuaria, priorizando cotización, QC y pago.
+2. Evaluar un E2E multiusuario que cambie entre RECEPTION, TECHNICIAN y ADVISOR para confirmar handoffs y mínimos privilegios; no duplicar el recorrido ADMIN si no añade una frontera RBAC real.
+3. La variante de pago completo antes de QC ya está cubierta por integración de API y QA histórico; automatizarla en navegador solo si se requiere una regresión visual/estado adicional.
+4. Mantener `p1` como fixture de testers hasta finalizar el flujo crítico y limpiar cada orden descartable creada. No repetir despliegues de Rules ni pruebas con SUPER_ADMIN si el siguiente cambio no toca seguridad, roles o datos privilegiados.
 5. Mantener aceptados por ahora los 5 avisos moderados dev-only de `firebase-tools`; no aplicar el downgrade automático sugerido por `npm audit --force`.
 
 ## Reglas para la próxima IA
