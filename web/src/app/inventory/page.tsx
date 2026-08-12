@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AccessibleModal } from "@/components/AccessibleModal";
 import {
   getInventoryItems,
   addInventoryItem,
@@ -283,8 +284,10 @@ export default function InventoryPage() {
           {/* Filters */}
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
             <div className="relative flex-1">
+              <Label htmlFor="inventory-search" className="sr-only">Buscar inventario</Label>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
+                id="inventory-search"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Buscar por nombre o SKU..."
@@ -301,7 +304,9 @@ export default function InventoryPage() {
                 </button>
               )}
             </div>
+            <Label htmlFor="inventory-category-filter" className="sr-only">Filtrar por categoría</Label>
             <select
+              id="inventory-category-filter"
               value={filterCategory}
               onChange={e => setFilterCategory(e.target.value)}
               className="h-10 rounded-md border border-border bg-secondary text-foreground px-3 text-sm"
@@ -526,11 +531,11 @@ export default function InventoryPage() {
 
       {/* ── Add / Edit Modal ────────────────────────────────── */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
+        <AccessibleModal labelledBy="inventory-form-title" onClose={() => setShowForm(false)} className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
           <Card className="glass-panel w-full max-w-2xl max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] overflow-y-auto border-emerald-500/30">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-emerald-400">{editingItem ? 'Editar Repuesto' : 'Agregar Repuesto'}</CardTitle>
+                <CardTitle id="inventory-form-title" className="text-emerald-400">{editingItem ? 'Editar Repuesto' : 'Agregar Repuesto'}</CardTitle>
                 <button type="button" onClick={() => setShowForm(false)} aria-label="Cerrar formulario">
                   <X className="w-5 h-5 text-muted-foreground hover:text-foreground" />
                 </button>
@@ -539,61 +544,61 @@ export default function InventoryPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-muted-foreground text-xs">SKU *</Label>
-                  <Input value={form.sku} onChange={e => setForm(f => ({...f, sku: e.target.value}))} placeholder="FRE-001" className="mt-1 bg-secondary border-border" />
+                  <Label htmlFor="inventory-sku" className="text-muted-foreground text-xs">SKU *</Label>
+                  <Input id="inventory-sku" value={form.sku} onChange={e => setForm(f => ({...f, sku: e.target.value}))} placeholder="FRE-001" className="mt-1 bg-secondary border-border" />
                 </div>
                 <div>
-                  <Label className="text-muted-foreground text-xs">Unidad</Label>
-                  <select value={form.unit} onChange={e => setForm(f => ({...f, unit: e.target.value}))} className="mt-1 w-full h-10 rounded-md border border-border bg-secondary text-foreground px-3 text-sm">
+                  <Label htmlFor="inventory-unit" className="text-muted-foreground text-xs">Unidad</Label>
+                  <select id="inventory-unit" value={form.unit} onChange={e => setForm(f => ({...f, unit: e.target.value}))} className="mt-1 w-full h-10 rounded-md border border-border bg-secondary text-foreground px-3 text-sm">
                     {UNITS.map(u => <option key={u}>{u}</option>)}
                   </select>
                 </div>
               </div>
 
               <div>
-                <Label className="text-muted-foreground text-xs">Nombre del repuesto / servicio *</Label>
-                <Input value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} placeholder="Pastillas de Freno Delanteras" className="mt-1 bg-secondary border-border" />
+                <Label htmlFor="inventory-name" className="text-muted-foreground text-xs">Nombre del repuesto / servicio *</Label>
+                <Input id="inventory-name" value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} placeholder="Pastillas de Freno Delanteras" className="mt-1 bg-secondary border-border" />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-muted-foreground text-xs">Categoría</Label>
-                  <select value={form.category} onChange={e => setForm(f => ({...f, category: e.target.value as InventoryCategory}))} className="mt-1 w-full h-10 rounded-md border border-border bg-secondary text-foreground px-3 text-sm">
+                  <Label htmlFor="inventory-category" className="text-muted-foreground text-xs">Categoría</Label>
+                  <select id="inventory-category" value={form.category} onChange={e => setForm(f => ({...f, category: e.target.value as InventoryCategory}))} className="mt-1 w-full h-10 rounded-md border border-border bg-secondary text-foreground px-3 text-sm">
                     {CATEGORIES.map(c => <option key={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground text-xs">Proveedor</Label>
-                  <Input value={form.supplier} onChange={e => setForm(f => ({...f, supplier: e.target.value}))} placeholder="Nombre del proveedor" className="mt-1 bg-secondary border-border" />
+                  <Label htmlFor="inventory-supplier" className="text-muted-foreground text-xs">Proveedor</Label>
+                  <Input id="inventory-supplier" value={form.supplier} onChange={e => setForm(f => ({...f, supplier: e.target.value}))} placeholder="Nombre del proveedor" className="mt-1 bg-secondary border-border" />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <Label className="text-muted-foreground text-xs">Precio Venta ({currencySymbol})</Label>
-                  <Input type="number" min="0" step="0.01" value={form.unitPrice} onChange={e => setForm(f => ({...f, unitPrice: parseFloat(e.target.value) || 0}))} className="mt-1 bg-secondary border-border" />
+                  <Label htmlFor="inventory-unit-price" className="text-muted-foreground text-xs">Precio Venta ({currencySymbol})</Label>
+                  <Input id="inventory-unit-price" type="number" min="0" step="0.01" value={form.unitPrice} onChange={e => setForm(f => ({...f, unitPrice: parseFloat(e.target.value) || 0}))} className="mt-1 bg-secondary border-border" />
                 </div>
                 <div>
-                  <Label className="text-muted-foreground text-xs">Costo ({currencySymbol})</Label>
-                  <Input type="number" min="0" step="0.01" value={form.costPrice} onChange={e => setForm(f => ({...f, costPrice: parseFloat(e.target.value) || 0}))} className="mt-1 bg-secondary border-border" />
+                  <Label htmlFor="inventory-cost-price" className="text-muted-foreground text-xs">Costo ({currencySymbol})</Label>
+                  <Input id="inventory-cost-price" type="number" min="0" step="0.01" value={form.costPrice} onChange={e => setForm(f => ({...f, costPrice: parseFloat(e.target.value) || 0}))} className="mt-1 bg-secondary border-border" />
                 </div>
                 <div>
-                  <Label className="text-muted-foreground text-xs">Stock Mínimo (alerta)</Label>
-                  <Input type="number" min="0" value={form.minStock} onChange={e => setForm(f => ({...f, minStock: parseInt(e.target.value) || 0}))} className="mt-1 bg-secondary border-border" />
+                  <Label htmlFor="inventory-min-stock" className="text-muted-foreground text-xs">Stock Mínimo (alerta)</Label>
+                  <Input id="inventory-min-stock" type="number" min="0" value={form.minStock} onChange={e => setForm(f => ({...f, minStock: parseInt(e.target.value) || 0}))} className="mt-1 bg-secondary border-border" />
                 </div>
               </div>
 
               {!editingItem && (
                 <div>
-                  <Label className="text-muted-foreground text-xs">Stock Inicial</Label>
-                  <Input type="number" min="-1" value={form.stock} onChange={e => setForm(f => ({...f, stock: parseInt(e.target.value) }))} placeholder="-1 para ilimitado (servicios)" className="mt-1 bg-secondary border-border" />
-                  <p className="text-xs text-muted-foreground mt-1">Use -1 para repuestos ilimitados como mano de obra.</p>
+                  <Label htmlFor="inventory-initial-stock" className="text-muted-foreground text-xs">Stock Inicial</Label>
+                  <Input id="inventory-initial-stock" type="number" min="-1" value={form.stock} onChange={e => setForm(f => ({...f, stock: parseInt(e.target.value) }))} placeholder="-1 para ilimitado (servicios)" aria-describedby="inventory-stock-help" className="mt-1 bg-secondary border-border" />
+                  <p id="inventory-stock-help" className="text-xs text-muted-foreground mt-1">Use -1 para repuestos ilimitados como mano de obra.</p>
                 </div>
               )}
 
               <div>
-                <Label className="text-muted-foreground text-xs">Descripción</Label>
-                <Input value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))} placeholder="Descripción opcional..." className="mt-1 bg-secondary border-border" />
+                <Label htmlFor="inventory-description" className="text-muted-foreground text-xs">Descripción</Label>
+                <Input id="inventory-description" value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))} placeholder="Descripción opcional..." className="mt-1 bg-secondary border-border" />
               </div>
 
               <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row">
@@ -604,17 +609,17 @@ export default function InventoryPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </AccessibleModal>
       )}
 
       {/* ── Stock Movement Modal ─────────────────────────────── */}
       {movementItem && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
+        <AccessibleModal labelledBy="inventory-movement-title" onClose={() => setMovementItem(null)} className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
           <Card className="glass-panel w-full max-w-md max-h-[calc(100dvh-1rem)] overflow-y-auto border-emerald-500/30">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-base">{movType === 'IN' ? '📦 Entrada de Stock' : movType === 'OUT' ? '📤 Salida de Stock' : '⚙️ Ajuste de Stock'}</CardTitle>
+                  <CardTitle id="inventory-movement-title" className="text-base">{movType === 'IN' ? '📦 Entrada de Stock' : movType === 'OUT' ? '📤 Salida de Stock' : '⚙️ Ajuste de Stock'}</CardTitle>
                   <CardDescription className="mt-1">{movementItem.name}</CardDescription>
                 </div>
                 <button type="button" onClick={() => setMovementItem(null)} aria-label="Cerrar movimiento">
@@ -643,8 +648,9 @@ export default function InventoryPage() {
               </div>
 
               <div>
-                <Label className="text-muted-foreground text-xs">Cantidad</Label>
+                <Label htmlFor="movement-quantity" className="text-muted-foreground text-xs">Cantidad</Label>
                 <Input
+                  id="movement-quantity"
                   type="number"
                   min={movType === 'ADJUSTMENT' ? -1 : 1}
                   step="1"
@@ -653,15 +659,15 @@ export default function InventoryPage() {
                   className="mt-1 bg-secondary border-border"
                 />
                 {movType !== 'ADJUSTMENT' && movementItem.stock >= 0 && (
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-1" aria-live="polite">
                     Resultado: {movType === 'IN' ? movementItem.stock + movQty : Math.max(0, movementItem.stock - movQty)} {movementItem.unit}
                   </p>
                 )}
               </div>
 
               <div>
-                <Label className="text-muted-foreground text-xs">Notas (opcional)</Label>
-                <Input value={movNotes} onChange={e => setMovNotes(e.target.value)} placeholder="Motivo del movimiento..." className="mt-1 bg-secondary border-border" />
+                <Label htmlFor="movement-notes" className="text-muted-foreground text-xs">Notas (opcional)</Label>
+                <Input id="movement-notes" value={movNotes} onChange={e => setMovNotes(e.target.value)} placeholder="Motivo del movimiento..." className="mt-1 bg-secondary border-border" />
               </div>
 
               <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row">
@@ -676,17 +682,17 @@ export default function InventoryPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </AccessibleModal>
       )}
 
       {/* ── History Drawer ───────────────────────────────────── */}
       {historyItem && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <AccessibleModal labelledBy="inventory-history-title" onClose={() => setHistoryItem(null)} className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <Card className="glass-panel w-full max-w-lg max-h-[80vh] flex flex-col border-blue-500/30">
             <CardHeader className="pb-4 shrink-0">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-blue-400 text-base flex items-center gap-2"><History className="w-4 h-4" /> Historial de Movimientos</CardTitle>
+                  <CardTitle id="inventory-history-title" className="text-blue-400 text-base flex items-center gap-2"><History className="w-4 h-4" /> Historial de Movimientos</CardTitle>
                   <CardDescription className="mt-1">{historyItem.name}</CardDescription>
                 </div>
                 <button type="button" onClick={() => setHistoryItem(null)} aria-label="Cerrar historial">
@@ -725,7 +731,7 @@ export default function InventoryPage() {
               )}
             </CardContent>
           </Card>
-        </div>
+        </AccessibleModal>
       )}
     </ProtectedRoute>
   );

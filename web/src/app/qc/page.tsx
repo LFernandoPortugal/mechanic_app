@@ -196,7 +196,9 @@ export default function QualityControlPage() {
               <Card className="glass-panel border-pink-500/10">
                 <CardContent className="p-4">
                   <div className="relative">
+                    <Label htmlFor="qc-search" className="sr-only">Buscar órdenes para control de calidad</Label>
                     <Input
+                      id="qc-search"
                       placeholder="Buscar por placa o cliente..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}

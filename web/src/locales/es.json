@@ -2,6 +2,7 @@
   "appTitle": "SGA",
   "appSubtitle": "Sistema de Gestión Automotriz",
   "home": "Inicio",
+  "skipToContent": "Saltar al contenido principal",
 
   "reception": "Recepción de Vehículo",
   "receptionDesc": "Registro del vehículo y exención de responsabilidad.",

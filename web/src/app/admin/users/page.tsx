@@ -149,8 +149,10 @@ export default function AdminUsersPage() {
                           return (
                             <button
                               key={role}
+                              type="button"
+                              aria-pressed={isActive}
                               onClick={() => toggleRole(user.uid, role)}
-                              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                              className={`min-h-9 px-3 py-1.5 rounded-full text-xs font-medium border transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                                 isActive
                                   ? ROLE_BADGE_CLASSES[role]
                                   : 'text-muted-foreground border-border bg-secondary/30 hover:border-accent'

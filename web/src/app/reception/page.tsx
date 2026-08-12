@@ -275,8 +275,8 @@ export default function Reception() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t('vinLabel')}</Label>
-                    <Input placeholder={t('scanOrType')} value={vehicle.vin} onChange={(e) => setVehicle({...vehicle, vin: e.target.value})} className="bg-background border-border" />
+                    <Label htmlFor="vehicle-vin">{t('vinLabel')}</Label>
+                    <Input id="vehicle-vin" placeholder={t('scanOrType')} value={vehicle.vin} onChange={(e) => setVehicle({...vehicle, vin: e.target.value})} className="bg-background border-border" />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -285,12 +285,12 @@ export default function Reception() {
                     <Input id="vehicle-make" required placeholder="Toyota" value={vehicle.make} onChange={(e) => setVehicle({...vehicle, make: e.target.value})} className="bg-background border-border" />
                   </div>
                    <div className="space-y-2">
-                    <Label>{t('model')}</Label>
-                    <Input placeholder="Corolla" value={vehicle.model} onChange={(e) => setVehicle({...vehicle, model: e.target.value})} className="bg-background border-border" />
+                    <Label htmlFor="vehicle-model">{t('model')}</Label>
+                    <Input id="vehicle-model" placeholder="Corolla" value={vehicle.model} onChange={(e) => setVehicle({...vehicle, model: e.target.value})} className="bg-background border-border" />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t('colorLabel')}</Label>
-                    <Input placeholder={t('colorPlaceholder')} value={vehicle.color} onChange={(e) => setVehicle({...vehicle, color: e.target.value})} className="bg-background border-border" />
+                    <Label htmlFor="vehicle-color">{t('colorLabel')}</Label>
+                    <Input id="vehicle-color" placeholder={t('colorPlaceholder')} value={vehicle.color} onChange={(e) => setVehicle({...vehicle, color: e.target.value})} className="bg-background border-border" />
                   </div>
                 </div>
                 {pastJobs.length > 0 && (
@@ -326,8 +326,8 @@ export default function Reception() {
                     <Input id="client-name" required placeholder={t('clientNamePlaceholder')} value={client.name} onChange={(e) => setClient({...client, name: e.target.value})} className="bg-background border-border" />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t('clientPhone')}</Label>
-                    <Input placeholder="555-0102" value={client.phone} onChange={(e) => setClient({...client, phone: e.target.value})} className="bg-background border-border" />
+                    <Label htmlFor="client-phone">{t('clientPhone')}</Label>
+                    <Input id="client-phone" type="tel" autoComplete="tel" placeholder="555-0102" value={client.phone} onChange={(e) => setClient({...client, phone: e.target.value})} className="bg-background border-border" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="client-email">{t('clientEmail')}</Label>
@@ -418,13 +418,16 @@ export default function Reception() {
             {/* Symptoms / Reason for Entry */}
             <Card className="glass-panel border-l-4 border-l-amber-500">
               <CardHeader>
-                <CardTitle className="text-lg">{t('symptomsLabel') || "Motivo de Ingreso / Síntomas Reportados *"}</CardTitle>
-                <CardDescription>
+                <CardTitle id="reception-symptoms-label" className="text-lg">{t('symptomsLabel') || "Motivo de Ingreso / Síntomas Reportados *"}</CardTitle>
+                <CardDescription id="reception-symptoms-description">
                   Describe detalladamente la falla o solicitud del cliente para alimentar la IA de diagnóstico.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <textarea
+                  id="reception-symptoms"
+                  aria-labelledby="reception-symptoms-label"
+                  aria-describedby="reception-symptoms-description"
                   value={symptoms}
                   onChange={(e) => setSymptoms(e.target.value)}
                   placeholder={t('symptomsPlaceholder') || "ej. El motor pierde potencia al subir pendientes o chirría al frenar..."}
@@ -531,7 +534,8 @@ export default function Reception() {
                         <button 
                           type="button" 
                           onClick={() => setPhotos(photos.filter((_, index) => index !== i))}
-                          className="absolute top-0 right-0 bg-red-500 text-white w-5 h-5 flex items-center justify-center text-xs"
+                          aria-label={`Eliminar foto ${i + 1}`}
+                          className="absolute top-1 right-1 bg-red-500 text-white w-8 h-8 rounded-full flex items-center justify-center text-xs"
                         >
                           X
                         </button>
@@ -560,6 +564,8 @@ export default function Reception() {
                         type="button"
                         size="sm" 
                         variant={fluids[fluid.key as keyof typeof fluids] === "OK" ? "default" : "outline"}
+                        aria-label={`${t(fluid.labelKey)}: OK`}
+                        aria-pressed={fluids[fluid.key as keyof typeof fluids] === "OK"}
                         className={fluids[fluid.key as keyof typeof fluids] === "OK" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "border-border"}
                         onClick={() => setFluids({...fluids, [fluid.key]: "OK"})}
                       >
@@ -569,6 +575,8 @@ export default function Reception() {
                         type="button"
                         size="sm" 
                         variant={fluids[fluid.key as keyof typeof fluids] !== "OK" ? "destructive" : "outline"}
+                        aria-label={`${t(fluid.labelKey)}: LOW`}
+                        aria-pressed={fluids[fluid.key as keyof typeof fluids] !== "OK"}
                         className={fluids[fluid.key as keyof typeof fluids] !== "OK" ? "" : "border-border"}
                         onClick={() => setFluids({...fluids, [fluid.key]: "LOW"})}
                       >
@@ -599,8 +607,8 @@ export default function Reception() {
                   <Switch id="documents" checked={valuables.documents} onCheckedChange={(c) => setValuables({...valuables, documents: c})} />
                 </div>
                 <div className="space-y-2">
-                  <Label>{t('otherValuables')}</Label>
-                  <Input placeholder={t('otherValuablesPlaceholder')} value={valuables.other} onChange={(e) => setValuables({...valuables, other: e.target.value})} className="bg-background border-border" />
+                  <Label htmlFor="other-valuables">{t('otherValuables')}</Label>
+                  <Input id="other-valuables" placeholder={t('otherValuablesPlaceholder')} value={valuables.other} onChange={(e) => setValuables({...valuables, other: e.target.value})} className="bg-background border-border" />
                 </div>
               </CardContent>
             </Card>

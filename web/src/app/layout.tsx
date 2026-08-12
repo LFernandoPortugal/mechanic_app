@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { Header } from "@/components/Header";
 import { MouseEffects } from "@/components/MouseEffects";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { SkipLink } from "@/components/SkipLink";
 import { Toaster } from "sonner";
 
 const geistSans = Geist({
@@ -22,7 +23,6 @@ const geistMono = Geist_Mono({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
   themeColor: "#10b981",
 };
 
@@ -48,8 +48,11 @@ export default function RootLayout({
             <AuthProvider>
               <ScrollToTop />
               <MouseEffects />
+              <SkipLink />
               <Header />
-              {children}
+              <main id="main-content" tabIndex={-1}>
+                {children}
+              </main>
               <Toaster richColors position="top-right" />
             </AuthProvider>
           </LanguageProvider>
