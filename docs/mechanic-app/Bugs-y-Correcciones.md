@@ -358,3 +358,21 @@ La suite queda en 69 pruebas unitarias, 23 de reglas y 5 de integración API. Lo
 - El visor de evidencia se anuncia como diálogo, atrapa el foco, cierra con Escape y devuelve el foco a la miniatura.
 
 La suite queda en 80 pruebas unitarias, 23 de reglas y 5 de integración API. TypeScript, lint y build de 19 páginas/5 APIs pasan localmente; todos los recorridos usan fixtures, mocks o Firestore Emulator y no escriben en Producción.
+
+---
+
+## v1.15 — Login y RBAC E2E con emuladores (2026-08-11)
+
+### TEST-007: Los providers reales no se montaban en ningún recorrido automatizado
+
+**Riesgo**: las pruebas de componente validaban páginas y helpers por separado, pero no ejercían conjuntamente Firebase Auth, el listener Firestore de `AuthProvider`, redirects de Next.js y controles visibles según rol.
+
+**Cobertura añadida**:
+
+- Playwright levanta Next.js, Auth Emulator y Firestore Emulator con el proyecto aislado `demo-mechanic-app`.
+- El seed crea únicamente un taller y dos usuarios sintéticos locales: ADMIN y RECEPTION.
+- ADMIN abre una ruta protegida sin sesión, inicia sesión, recupera `/inventory` y navega a Gestión de Usuarios con ambos perfiles visibles.
+- RECEPTION inicia sesión, recibe Acceso Denegado en `/technician` y cierra sesión conservando un redirect interno seguro.
+- La conexión del SDK web a emuladores exige `NEXT_PUBLIC_USE_FIREBASE_EMULATORS=true`, ejecución en navegador y `NODE_ENV !== production`; Producción no puede activarla.
+
+CI instala Chromium y ejecuta este gate después de las suites unitarias/Rules/API. La validación local queda en 80 unitarias, 23 Rules, 5 integraciones API y 2 E2E; TypeScript, lint, audit runtime en 0 vulnerabilidades y build de 19 páginas/5 APIs pasan. La revisión visual del navegador local confirmó login y acceso denegado sin errores de consola ni datos reales.

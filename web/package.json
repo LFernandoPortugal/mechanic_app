@@ -10,7 +10,9 @@
     "test": "vitest run tests/unit",
     "test:rules": "firebase emulators:exec --only firestore --project demo-mechanic-app \"vitest run tests/firestore.rules.test.ts\"",
     "test:integration": "firebase emulators:exec --only firestore --project demo-mechanic-app \"vitest run tests/integration\"",
-    "test:all": "npm run test && npm run test:rules && npm run test:integration"
+    "test:all": "npm run test && npm run test:rules && npm run test:integration",
+    "e2e:emulators": "firebase emulators:start --only auth,firestore --project demo-mechanic-app",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
@@ -32,6 +34,7 @@
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.1",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.4",
