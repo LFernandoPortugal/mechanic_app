@@ -146,7 +146,7 @@ Resultado más reciente del 2026-08-11:
 
 - TypeScript: 0 errores.
 - Lint: 0 errores, 0 warnings.
-- Unit tests: 58/58.
+- Unit tests: 69/69.
 - Integración de API routes con Firestore Emulator: 5/5.
 - Firestore Rules tests: 23/23.
 - Build: correcto; 19/19 páginas estáticas y 5 API routes dinámicas.
@@ -279,10 +279,20 @@ La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos 
 5. El paso vigente del tracker expone `aria-current="step"`. La suite queda en 58 unitarias, 23 Rules y 5 integraciones API; TypeScript, lint, auditoría runtime y build de 19 páginas/5 APIs pasan.
 6. Producción respondió HTTP 200 en `/`, `/login` y `/quote/view`. No se modificaron datos, Auth, Rules, índices, Storage, `p1` o SUPER_ADMIN y no hubo despliegue Firebase.
 
+## Flujos operativos reproducibles del 2026-08-11
+
+1. PR #21 se integró por squash en `main` como `4e3882e`; CI de Preview/main y Vercel Preview/Production completaron correctamente.
+2. Técnico tiene cobertura de diagnóstico vacío/completo, hallazgo con estado/notas, envío a Approval, inicio de Repair y envío a QC.
+3. Asesor calcula importes manuales, persiste `totalEstimate`/precios y emite el enlace seguro. `Auto-Cotizar (Demo)` solo aparece con `demoMode`.
+4. QC cubre rechazo con motivo y aprobación tras cinco checks; Caja cubre teclado, saldo exacto, bloqueo de sobrepago no efectivo y pago completo que conserva QC.
+5. Switches, campos y selectores auditados exponen etiquetas/estado; la tarjeta de Caja comunica expansión y el CTA responsive de demo tiene un nombre único.
+6. La suite queda en 69 unitarias, 23 Rules y 5 integraciones API; TypeScript, lint, auditoría runtime y build de 19 páginas/5 APIs pasan. Producción respondió HTTP 200 en `/technician`, `/advisor`, `/qc` y `/advisor/payments`.
+7. Los recorridos usan fixtures locales y dobles de API. No se modificaron datos, Auth, Rules, índices, Storage, `p1` o SUPER_ADMIN y no hubo despliegue Firebase.
+
 ## Siguiente bloque recomendado
 
-1. Auditar con datos sintéticos locales los estados no visibles en `p1` vacío: formularios de Técnico/Asesor, rechazo de QC, pagos y trackers post-aprobación.
-2. Convertir los recorridos estables de Técnico, Asesor, QC y pagos en pruebas de componente o integración reproducibles antes de repetir E2E destructivo.
+1. Extender la cobertura de componente a Recepción, Inventario, Usuarios/Settings y detalle de cliente con el fixture compartido.
+2. Evaluar un runner E2E de navegador contra Auth/Firestore Emulator para cubrir el montaje real de providers sin depender de Producción.
 3. Mantener `p1` como fixture de testers hasta finalizar el flujo crítico y limpiar cada orden descartable creada.
 4. No repetir despliegues de Rules ni pruebas con SUPER_ADMIN si el siguiente cambio no toca seguridad, roles o datos privilegiados.
 5. Resolver o aceptar explícitamente los avisos moderados dev-only de `npm audit` sin aplicar un downgrade automático de `firebase-tools`.
