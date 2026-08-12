@@ -334,3 +334,27 @@ La suite queda en 58 pruebas unitarias, 23 de reglas y 5 de integración API. Ty
 - El CTA responsive de auto-cotización expone un único nombre accesible.
 
 La suite queda en 69 pruebas unitarias, 23 de reglas y 5 de integración API. Los recorridos usan fixtures locales y dobles de API; no requieren credenciales ni escrituras de Producción.
+
+---
+
+## v1.14 — Flujos administrativos y de recepción reproducibles (2026-08-11)
+
+### TEST-006: Recepción, inventario y administración dependían de pruebas manuales
+
+**Riesgo**: era posible romper el payload de una recepción, los movimientos de stock, la edición de roles, la configuración del taller o el historial de un cliente sin que las suites existentes lo detectaran.
+
+**Cobertura añadida**:
+
+- Recepción bloquea órdenes sin firma y verifica el payload normalizado completo, incluidos fluidos, pertenencias, kilometraje y actor/taller.
+- Inventario comprueba altas, entradas auditables con costo de compra y el modo de solo lectura para ADVISOR.
+- Usuarios conserva al menos un rol, persiste la selección exacta y diferencia semánticamente los controles repetidos por persona.
+- Configuración guarda solo campos editables por ADMIN; el reset de un taller tester permanece condicionado por `allowResetData` y la confirmación exacta `ELIMINAR`.
+- El detalle del cliente valida el aislamiento por taller/nombre, el resumen financiero y el visor accesible de evidencia.
+
+### A11Y-005: Historial y roles no identificaban todos sus controles
+
+- Cada selector y botón de guardado de roles incluye el usuario afectado en su nombre accesible.
+- La cabecera de cada visita es un botón con `aria-expanded`/`aria-controls` y funciona con teclado.
+- El visor de evidencia se anuncia como diálogo, atrapa el foco, cierra con Escape y devuelve el foco a la miniatura.
+
+La suite queda en 80 pruebas unitarias, 23 de reglas y 5 de integración API. TypeScript, lint y build de 19 páginas/5 APIs pasan localmente; todos los recorridos usan fixtures, mocks o Firestore Emulator y no escriben en Producción.
