@@ -242,12 +242,16 @@ export default function ClientQuoteView() {
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5" /> Estado de tu vehículo
             </p>
-            <div className="space-y-3">
+            <div className="space-y-3" role="list" aria-label="Progreso de la orden">
               {TRACK_STEPS.map((step, idx) => {
                 const Icon = step.icon;
                 const isDone = idx < trackIdx;
                 return (
-                  <div key={step.label} className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-300 ${
+                  <div
+                    key={step.label}
+                    role="listitem"
+                    aria-current={trackIdx === idx ? "step" : undefined}
+                    className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-300 ${
                     isDone
                       ? 'border-emerald-500/30 bg-emerald-950/20'
                       : trackIdx > idx
@@ -255,7 +259,8 @@ export default function ClientQuoteView() {
                         : trackIdx === idx
                           ? 'border-violet-500/40 bg-violet-950/20'
                           : 'border-border/20 bg-secondary/10 opacity-40'
-                  }`}>
+                  }`}
+                  >
                     <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
                       trackIdx > idx || isDelivered
                         ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-500/40'

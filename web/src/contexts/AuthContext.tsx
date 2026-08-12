@@ -5,6 +5,7 @@ import { User, onAuthStateChanged, signOut as firebaseSignOut } from "firebase/a
 import { auth, db } from "@/lib/firebase";
 import { doc, onSnapshot } from "firebase/firestore";
 import { getUserProfile, getWorkshopSettings } from "@/lib/db";
+import { hasAnyAssignedRole, hasAssignedRole } from "@/lib/rbac";
 import { UserProfile, UserRole, WorkshopSettings } from "@/types";
 
 interface AuthContextType {
@@ -141,12 +142,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasRole = (role: UserRole): boolean => {
     if (!userProfile) return false;
-    return userProfile.roles.includes('SUPER_ADMIN') || userProfile.roles.includes(role);
+    return hasAssignedRole(userProfile.roles, role);
   };
 
   const hasAnyRole = (roles: UserRole[]): boolean => {
     if (!userProfile) return false;
-    return userProfile.roles.includes('SUPER_ADMIN') || roles.some((role) => userProfile.roles.includes(role));
+    return hasAnyAssignedRole(userProfile.roles, roles);
   };
 
   const refreshProfile = async () => {
