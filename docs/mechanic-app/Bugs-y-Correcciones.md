@@ -395,3 +395,23 @@ CI instala Chromium y ejecuta este gate después de las suites unitarias/Rules/A
 - La placa cambia en cada reintento para impedir colisiones si un intento anterior alcanzó a escribir antes de fallar.
 
 La validación local queda en 80 unitarias, 23 Rules, 5 integraciones API y 3 E2E; TypeScript, lint, audit runtime en 0 vulnerabilidades y build de 19 páginas/5 APIs pasan. La revisión visual adicional en 1440×900 y 390×844 confirmó Recepción, firma, resultado y cola técnica sin overflow horizontal ni errores de consola. Todo el recorrido usa `demo-mechanic-app`; no escribe Auth, Firestore, Storage o Vercel reales.
+
+---
+
+## v1.17 — Cotización y aprobación pública E2E aisladas (2026-08-12)
+
+### TEST-009: Las API server-side no usaban Auth Emulator
+
+**Riesgo**: Firestore server-side ya respetaba `FIRESTORE_EMULATOR_HOST`, pero `requireUser` consultaba siempre Identity Toolkit de Google. Un supuesto E2E local de Asesor podía depender de red/credenciales reales o no probar la autenticación de la API.
+
+**Corrección y cobertura**:
+
+- `server-auth` usa Auth Emulator únicamente con `USE_FIREBASE_EMULATORS=true`, `NODE_ENV !== production` y `FIREBASE_AUTH_EMULATOR_HOST` loopback con puerto explícito.
+- Un host ausente, remoto, con ruta o credenciales falla cerrado; producción conserva Identity Toolkit oficial aun si recibe variables de emulador por error.
+- Ocho pruebas unitarias cubren endpoint oficial, endpoint emulado, guardia de producción y configuraciones inválidas.
+- El E2E existente continúa desde `Approval`: Asesor asigna precio y mano de obra, persiste la cotización y recibe HTTP 200 al emitir el enlace autenticado.
+- La vista pública abre `/quote/view?id=JOB_ID#token=TOKEN`, obtiene el DTO sanitizado por API, confirma una firma independiente y recibe HTTP 200 al aprobar.
+- El servidor recalcula el monto autorizado y la UI termina en `Approved`; el token nunca se pasa en query ni al endpoint, solo en `X-Quote-Token`.
+- El campo de stock inicial normaliza un valor vacío a `0`, evitando que React reciba `NaN` durante la edición del inventario.
+
+La validación local queda en 88 unitarias, 23 Rules, 5 integraciones API y 3 E2E; TypeScript, lint, audit de dependencias de producción en 0 vulnerabilidades y build pasan. El recorrido completo desde Recepción hasta aprobación del cliente usa únicamente Next.js local, Auth Emulator y Firestore Emulator bajo `demo-mechanic-app`.

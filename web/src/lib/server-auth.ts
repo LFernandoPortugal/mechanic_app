@@ -20,6 +20,44 @@ export class HttpError extends Error {
   }
 }
 
+const identityLookupPath = "/identitytoolkit.googleapis.com/v1/accounts:lookup";
+
+export function getIdentityLookupEndpoint(
+  apiKey: string,
+  environment: NodeJS.ProcessEnv = process.env,
+) {
+  const officialEndpoint = new URL(
+    `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(apiKey)}`,
+  );
+  const useFirebaseEmulators = environment.NODE_ENV !== "production"
+    && environment.USE_FIREBASE_EMULATORS === "true";
+
+  if (!useFirebaseEmulators) return officialEndpoint.toString();
+
+  const configuredHost = environment.FIREBASE_AUTH_EMULATOR_HOST?.trim();
+  if (!configuredHost) {
+    throw new Error("FIREBASE_AUTH_EMULATOR_HOST is required when emulators are enabled.");
+  }
+
+  const emulatorOrigin = new URL(`http://${configuredHost}`);
+  const isLoopback = ["127.0.0.1", "localhost", "[::1]"].includes(emulatorOrigin.hostname);
+  if (
+    !isLoopback
+    || !emulatorOrigin.port
+    || emulatorOrigin.username
+    || emulatorOrigin.password
+    || emulatorOrigin.pathname !== "/"
+    || emulatorOrigin.search
+    || emulatorOrigin.hash
+  ) {
+    throw new Error("FIREBASE_AUTH_EMULATOR_HOST must be a loopback host and explicit port.");
+  }
+
+  const emulatorEndpoint = new URL(identityLookupPath, emulatorOrigin);
+  emulatorEndpoint.searchParams.set("key", apiKey);
+  return emulatorEndpoint.toString();
+}
+
 export async function requireUser(request: Request): Promise<ServerUserProfile> {
   const authorization = request.headers.get("authorization") || "";
   const idToken = authorization.startsWith("Bearer ")
@@ -30,7 +68,7 @@ export async function requireUser(request: Request): Promise<ServerUserProfile> 
   if (!idToken || !apiKey) throw new HttpError(401, "Sesión no válida.");
 
   const lookupResponse = await fetch(
-    `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(apiKey)}`,
+    getIdentityLookupEndpoint(apiKey),
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },

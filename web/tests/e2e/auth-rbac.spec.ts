@@ -8,6 +8,24 @@ async function signIn(page: Page, email: string) {
   await page.getByRole("button", { name: "Iniciar Sesión" }).click();
 }
 
+async function drawAndConfirmSignature(page: Page) {
+  const signatureCanvas = page.locator("canvas");
+  await signatureCanvas.scrollIntoViewIfNeeded();
+  const signatureBox = await signatureCanvas.boundingBox();
+  if (!signatureBox) throw new Error("The signature canvas is not visible.");
+
+  await page.mouse.move(signatureBox.x + 40, signatureBox.y + 75);
+  await page.mouse.down();
+  await page.mouse.move(signatureBox.x + 110, signatureBox.y + 45, { steps: 4 });
+  await page.mouse.move(signatureBox.x + 180, signatureBox.y + 85, { steps: 4 });
+  await page.mouse.up();
+
+  const confirmSignature = page.getByRole("button", { name: "Confirmar Firma" });
+  await expect(confirmSignature).toBeEnabled();
+  await confirmSignature.click();
+  await expect(page.getByText("Firma confirmada")).toBeVisible();
+}
+
 test("an ADMIN returns to the protected destination and opens user management", async ({ page }) => {
   await page.goto("/inventory");
   await expect(page).toHaveURL(/\/login\?redirect=%2Finventory$/);
@@ -38,8 +56,8 @@ test("a RECEPTION user is denied technician access and can sign out", async ({ p
   await expect(page.getByRole("button", { name: "Iniciar Sesión" })).toBeVisible();
 });
 
-test("an ADMIN registers a signed reception and submits its diagnosis", async ({ page }, testInfo) => {
-  test.setTimeout(60_000);
+test("an ADMIN takes a signed reception through client quote approval", async ({ page }, testInfo) => {
+  test.setTimeout(120_000);
   const plate = `E2E-${401 + testInfo.retry}`;
 
   await page.goto("/login");
@@ -56,21 +74,7 @@ test("an ADMIN registers a signed reception and submits its diagnosis", async ({
   await page.getByLabel("Teléfono").fill("999888777");
   await page.locator("#reception-symptoms").fill("Ruido metálico al frenar durante la prueba E2E.");
 
-  const signatureCanvas = page.locator("canvas");
-  await signatureCanvas.scrollIntoViewIfNeeded();
-  const signatureBox = await signatureCanvas.boundingBox();
-  if (!signatureBox) throw new Error("The reception signature canvas is not visible.");
-
-  await page.mouse.move(signatureBox.x + 40, signatureBox.y + 75);
-  await page.mouse.down();
-  await page.mouse.move(signatureBox.x + 110, signatureBox.y + 45, { steps: 4 });
-  await page.mouse.move(signatureBox.x + 180, signatureBox.y + 85, { steps: 4 });
-  await page.mouse.up();
-
-  const confirmSignature = page.getByRole("button", { name: "Confirmar Firma" });
-  await expect(confirmSignature).toBeEnabled();
-  await confirmSignature.click();
-  await expect(page.getByText("Firma confirmada")).toBeVisible();
+  await drawAndConfirmSignature(page);
 
   await page.getByRole("button", { name: "Registrar e Iniciar" }).click();
   await expect(page.getByRole("heading", { name: "Recepción Completa" })).toBeVisible();
@@ -88,10 +92,52 @@ test("an ADMIN registers a signed reception and submits its diagnosis", async ({
 
   await page.getByLabel("Detalle del Componente (ej. Pastillas de Freno)").fill("Pastillas de freno delanteras");
   await page.getByLabel("Notas del Técnico").fill("Desgaste detectado durante la inspección E2E.");
+  await page.getByRole("button", { name: "Falla", exact: true }).click();
   await page.getByRole("button", { name: "Registrar Elemento" }).click();
   await expect(page.getByText("Pastillas de freno delanteras", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Enviar Diagnóstico al Asesor" }).click();
   await expect(page.getByRole("heading", { name: "Diagnóstico Enviado" })).toBeVisible();
   await expect(page.getByText(`El vehículo ${plate} está listo para cotización.`)).toBeVisible();
+
+  await page.getByRole("button", { name: "Ir al Panel de Asesor" }).click();
+  await expect(page).toHaveURL(/\/advisor$/);
+  await expect(page.getByRole("heading", { name: "Área de Asesor" })).toBeVisible();
+
+  const quoteJobButton = page.getByRole("button").filter({ hasText: plate });
+  await expect(quoteJobButton).toBeVisible();
+  await quoteJobButton.click();
+  await page.getByLabel("Precio Repuesto (S/.)").fill("120");
+  await page.getByLabel("Mano de Obra Global (S/.)").fill("50");
+  await expect(page.getByText("S/.170.00", { exact: true })).toBeVisible();
+
+  const quoteLinkResponsePromise = page.waitForResponse(
+    (response) => response.url().includes("/api/jobs/")
+      && response.url().endsWith("/quote-link")
+      && response.request().method() === "POST",
+    { timeout: 60_000 },
+  );
+  await page.getByRole("button", { name: "Generar Cotización y Enviar Confirmación" }).click();
+  const quoteLinkResponse = await quoteLinkResponsePromise;
+  expect(quoteLinkResponse.status()).toBe(200);
+  await expect(page.getByRole("heading", { name: "Cotización Generada" })).toBeVisible({ timeout: 15_000 });
+
+  const clientPagePromise = page.waitForEvent("popup");
+  await page.getByRole("button", { name: "Abrir Vista del Cliente" }).click();
+  const clientPage = await clientPagePromise;
+  await expect(clientPage).toHaveURL(/\/quote\/view\?id=[A-Za-z0-9]{20}#token=[A-Za-z0-9_-]+$/);
+  await expect(clientPage.getByRole("heading", { name: /Portal del Cliente/ })).toBeVisible({ timeout: 30_000 });
+  await expect(clientPage.getByText("S/. 170.00", { exact: true })).toBeVisible();
+
+  await drawAndConfirmSignature(clientPage);
+  const approvalResponsePromise = clientPage.waitForResponse(
+    (response) => response.url().includes("/api/public/quotes/")
+      && response.request().method() === "POST",
+    { timeout: 30_000 },
+  );
+  await clientPage.getByRole("button", { name: "Aceptar Cotización y Firmar Electrónicamente" }).click();
+  const approvalResponse = await approvalResponsePromise;
+  expect(approvalResponse.status()).toBe(200);
+  await expect(clientPage.getByRole("heading", { name: "¡Cotización Aprobada!" })).toBeVisible();
+  await expect(clientPage.getByText("S/. 170.00", { exact: true })).toBeVisible();
 });

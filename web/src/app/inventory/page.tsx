@@ -591,7 +591,7 @@ export default function InventoryPage() {
               {!editingItem && (
                 <div>
                   <Label htmlFor="inventory-initial-stock" className="text-muted-foreground text-xs">Stock Inicial</Label>
-                  <Input id="inventory-initial-stock" type="number" min="-1" value={form.stock} onChange={e => setForm(f => ({...f, stock: parseInt(e.target.value) }))} placeholder="-1 para ilimitado (servicios)" aria-describedby="inventory-stock-help" className="mt-1 bg-secondary border-border" />
+                  <Input id="inventory-initial-stock" type="number" min="-1" value={form.stock} onChange={e => setForm(f => ({...f, stock: Number.parseInt(e.target.value, 10) || 0 }))} placeholder="-1 para ilimitado (servicios)" aria-describedby="inventory-stock-help" className="mt-1 bg-secondary border-border" />
                   <p id="inventory-stock-help" className="text-xs text-muted-foreground mt-1">Use -1 para repuestos ilimitados como mano de obra.</p>
                 </div>
               )}

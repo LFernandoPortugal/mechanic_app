@@ -113,6 +113,9 @@ const nextProcess = spawn(process.execPath, [nextBin, "dev", "--hostname", "127.
     NEXT_PUBLIC_USE_FIREBASE_EMULATORS: "true",
     NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST: authHost,
     NEXT_PUBLIC_FIREBASE_FIRESTORE_EMULATOR_HOST: firestoreHost,
+    USE_FIREBASE_EMULATORS: "true",
+    FIREBASE_AUTH_EMULATOR_HOST: authHost,
+    FIREBASE_ADMIN_PROJECT_ID: projectId,
   },
 });
 
