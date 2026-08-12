@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AccessibleModal } from "@/components/AccessibleModal";
 import { getClientJobs } from "@/lib/clients";
 import { useAuth } from "@/contexts/AuthContext";
 import { Job } from "@/types";
@@ -288,8 +289,12 @@ export default function ClientDetailPage() {
                             }`}
                           >
                             {/* Collapsed header – always visible */}
-                            <div
-                              className="flex items-center justify-between px-5 py-4 cursor-pointer"
+                            <button
+                              type="button"
+                              aria-expanded={isExpanded}
+                              aria-controls={`client-job-details-${job.id}`}
+                              aria-label={`${isExpanded ? "Contraer" : "Expandir"} visita de ${fmtDate(date)} para ${plate}`}
+                              className="flex w-full items-center justify-between px-5 py-4 text-left"
                               onClick={() => toggleExpand(job.id)}
                             >
                               <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -321,11 +326,11 @@ export default function ClientDetailPage() {
                                   <ChevronDown className="w-4 h-4 text-muted-foreground" />
                                 )}
                               </div>
-                            </div>
+                            </button>
 
                             {/* Expanded detail */}
                             {isExpanded && (
-                              <CardContent className="pt-0 pb-5 space-y-5 border-t border-border/40">
+                              <CardContent id={`client-job-details-${job.id}`} className="pt-0 pb-5 space-y-5 border-t border-border/40">
                                 {/* Symptoms */}
                                 {job.symptoms && (
                                   <div className="mt-4">
@@ -451,6 +456,7 @@ export default function ClientDetailPage() {
                                           <button 
                                             key={i} 
                                             type="button"
+                                            aria-label={`Ampliar evidencia de ingreso ${i + 1}`}
                                             onClick={() => setActivePhotoUrl(imgUrl)}
                                             className="group relative w-20 h-20 rounded-lg overflow-hidden border border-border/60 hover:border-teal-500/50 shadow-sm transition-all duration-300 hover:scale-105 text-left focus:outline-none"
                                           >
@@ -608,23 +614,22 @@ export default function ClientDetailPage() {
 
       {/* Premium Lightbox Modal for Fullscreen Reception Images */}
       {activePhotoUrl && (
-        <div 
+        <AccessibleModal
+          labelledBy="client-evidence-title"
+          onClose={() => setActivePhotoUrl(null)}
           className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-300 animate-fade-in"
-          onClick={() => setActivePhotoUrl(null)}
         >
+          <h2 id="client-evidence-title" className="sr-only">Evidencia del vehículo ampliada</h2>
           <button 
             type="button" 
             className="absolute top-4 right-4 text-white hover:text-red-400 bg-white/10 hover:bg-white/20 p-2.5 rounded-full transition-colors duration-200 focus:outline-none"
             onClick={() => setActivePhotoUrl(null)}
-            title="Cerrar vista"
+            aria-label="Cerrar vista de evidencia"
           >
             <XCircle className="w-6 h-6" />
           </button>
           
-          <div 
-            className="relative max-w-4xl max-h-[85vh] w-full flex items-center justify-center overflow-hidden rounded-lg shadow-2xl animate-scale-in"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="relative max-w-4xl max-h-[85vh] w-full flex items-center justify-center overflow-hidden rounded-lg shadow-2xl animate-scale-in">
             <Image
               src={activePhotoUrl} 
               alt="Evidencia en pantalla completa" 
@@ -634,7 +639,7 @@ export default function ClientDetailPage() {
               className="max-w-full max-h-[85vh] object-contain rounded-lg border border-white/10"
             />
           </div>
-        </div>
+        </AccessibleModal>
       )}
     </ProtectedRoute>
   );

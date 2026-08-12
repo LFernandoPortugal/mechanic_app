@@ -146,10 +146,12 @@ export default function AdminUsersPage() {
                         {ALL_ROLES.map((role) => {
                           const meta = ROLE_META[role];
                           const isActive = (editingRoles[user.uid] || []).includes(role);
+                          const userLabel = user.displayName || user.email;
                           return (
                             <button
                               key={role}
                               type="button"
+                              aria-label={`${t(meta.labelKey)} para ${userLabel}`}
                               aria-pressed={isActive}
                               onClick={() => toggleRole(user.uid, role)}
                               className={`min-h-9 px-3 py-1.5 rounded-full text-xs font-medium border transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
@@ -166,6 +168,7 @@ export default function AdminUsersPage() {
 
                       <Button
                         size="sm"
+                        aria-label={`${t('save')} roles de ${user.displayName || user.email}`}
                         disabled={!hasChanges(user.uid) || saving === user.uid}
                         onClick={() => handleSave(user.uid)}
                         className={`w-full sm:w-auto shrink-0 transition-all ${
