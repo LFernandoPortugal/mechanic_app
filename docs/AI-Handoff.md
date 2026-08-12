@@ -2,19 +2,19 @@
 
 > Última actualización: 2026-08-11
 > Producción oficial: rama `main` en Vercel
-> Código funcional de producción verificado: `a0c7359` en `https://mechanic-app-zeta.vercel.app/`
+> Código funcional de producción verificado: `ac49ea7` en `https://mechanic-app-zeta.vercel.app/`
 
 ## Punto de reanudación rápido
 
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
-- **Producción:** `origin/main` incluye `a0c7359`; la estabilización, las rondas visuales, EmailJS, enlaces revocables, login, accesibilidad operativa y sus regresiones automáticas están desplegados en `https://mechanic-app-zeta.vercel.app/`. El HEAD puede avanzar por commits exclusivamente documentales.
-- **Rama de trabajo:** ninguna funcional de runtime pendiente; PR #12, PR #13, PR #15 y PR #17 están integradas.
+- **Producción:** `origin/main` incluye `ac49ea7`; la estabilización, las rondas visuales, EmailJS, enlaces revocables, login, accesibilidad y los smoke tests de acceso, operación, recepción y administración están desplegados en `https://mechanic-app-zeta.vercel.app/`. El HEAD puede avanzar por commits exclusivamente documentales.
+- **Rama de trabajo:** ninguna funcional de runtime pendiente; PR #19, PR #21 y PR #23 están integradas.
 - **Árbol local al cerrar:** limpio y sincronizado con `origin/main` después de integrar el checkpoint documental.
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas de la estabilización están desplegadas y fueron releídas desde el proyecto activo.
-- **Último hito:** PR #17 integrada y desplegada: 6 regresiones jsdom cubren foco, fondo `inert`, scroll, Tab/Shift+Tab, Escape, cleanup y salto al contenido sin tocar datos reales.
-- **Calidad verificada:** TypeScript, lint, 45 pruebas unitarias, 5 de integración de API, 23 pruebas de reglas, audit runtime en 0 vulnerabilidades, build de 19 páginas/5 APIs y QA visual/operativo en 390×844 y 1440×900, temas claro/oscuro.
-- **Siguiente paso recomendado:** automatizar smoke tests de routing por rol y portal público con Emulator/fixtures; después cubrir estados con datos que no aparecen en la cuenta `p1` vacía.
+- **Último hito:** PR #23 integrada y desplegada: 11 pruebas con fixtures cubren Recepción, Inventario, Usuarios, Settings y detalle del cliente; el historial y los controles de roles ganaron semántica de teclado/lector de pantalla.
+- **Calidad verificada:** TypeScript, lint, 80 pruebas unitarias, 5 de integración de API, 23 pruebas de reglas, audit runtime en 0 vulnerabilidades, build de 19 páginas/5 APIs, QA visual en 390×844 y 1440×900 (claro/oscuro) y HTTP 200 en las rutas oficiales auditadas.
+- **Siguiente paso recomendado:** evaluar un runner E2E de navegador contra Auth/Firestore Emulator para cubrir providers y navegación real sin depender de Producción; después ampliar estados de error/carga donde aporte valor.
 - **No repetir ni asumir:** EmailJS confirmó aceptación y una persona confirmó recepción/presentación correcta en un inbox controlado. No hace falta recrear las órdenes QA ya eliminadas; verificar siempre el deployment vigente antes de un nuevo cambio.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
@@ -23,7 +23,7 @@ Para retomar, leer este documento completo y luego seguir el orden obligatorio d
 
 La aplicación es un SGA multitenant en Next.js 16, Firebase Auth/Firestore y Vercel. La estabilización está integrada en `main`, desplegada en Vercel Production y acompañada por sus reglas Firestore en `mechanic-app-7d459`.
 
-- Producción sirve el código funcional de `a0c7359` en `https://mechanic-app-zeta.vercel.app/` desde `main`; la accesibilidad operativa permanece en el historial como `eb29f26`, login como `0bd69a3`, enlaces revocables como `4a21b96` y la estabilización como `c903185`.
+- Producción sirve el código funcional de `ac49ea7` en `https://mechanic-app-zeta.vercel.app/` desde `main`; los flujos operativos reproducibles permanecen en el historial como `4e3882e`, acceso/portal como `1e1b049`, accesibilidad operativa como `eb29f26`, login como `0bd69a3`, enlaces revocables como `4a21b96` y la estabilización como `c903185`.
 - Las URLs Preview son efímeras y se toman del PR activo; no reutilizar aliases de ramas ya integradas.
 - Las reglas nuevas se compilaron y publicaron únicamente como `firestore:rules`; no se desplegaron Hosting, Storage ni índices.
 - El taller tester `p1` fue reparado: conserva su cuenta Auth y ahora tiene un único perfil ADMIN y un `settings/p1` vacío/activo. No se combinaron usuarios antiguos.
@@ -289,10 +289,20 @@ La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos 
 6. La suite queda en 69 unitarias, 23 Rules y 5 integraciones API; TypeScript, lint, auditoría runtime y build de 19 páginas/5 APIs pasan. Producción respondió HTTP 200 en `/technician`, `/advisor`, `/qc` y `/advisor/payments`.
 7. Los recorridos usan fixtures locales y dobles de API. No se modificaron datos, Auth, Rules, índices, Storage, `p1` o SUPER_ADMIN y no hubo despliegue Firebase.
 
+## Flujos administrativos y de recepción reproducibles del 2026-08-11
+
+1. PR #23 se integró por squash en `main` como `ac49ea7`; CI de Preview/main y Vercel Preview/Production completaron correctamente.
+2. Recepción bloquea una orden sin firma y verifica el payload normalizado completo con actor, taller, fluidos, pertenencias y kilometraje.
+3. Inventario cubre alta, entrada auditable con costo de compra y el límite de solo lectura de ADVISOR.
+4. Usuarios conserva al menos un rol y guarda la selección exacta; Settings persiste solo campos editables y mantiene el reset tester detrás de `allowResetData` más `ELIMINAR`.
+5. El detalle del cliente valida aislamiento, resumen financiero, expansión por teclado y visor de evidencia con diálogo, Escape y restauración de foco.
+6. La suite queda en 80 unitarias, 23 Rules y 5 integraciones API; TypeScript, lint, auditoría runtime y build de 19 páginas/5 APIs pasan.
+7. Preview y Producción respondieron HTTP 200 en `/`, `/login`, `/reception`, `/inventory`, `/admin/users`, `/admin/settings` y `/clients/detail`. No se modificaron datos, Auth, Rules, índices, Storage, `p1` o SUPER_ADMIN y no hubo despliegue Firebase.
+
 ## Siguiente bloque recomendado
 
-1. Extender la cobertura de componente a Recepción, Inventario, Usuarios/Settings y detalle de cliente con el fixture compartido.
-2. Evaluar un runner E2E de navegador contra Auth/Firestore Emulator para cubrir el montaje real de providers sin depender de Producción.
+1. Evaluar un runner E2E de navegador contra Auth/Firestore Emulator para cubrir el montaje real de providers, login y navegación por rol sin depender de Producción.
+2. Añadir estados de error/carga a la cobertura de componente solo donde exista una recuperación real para la persona usuaria.
 3. Mantener `p1` como fixture de testers hasta finalizar el flujo crítico y limpiar cada orden descartable creada.
 4. No repetir despliegues de Rules ni pruebas con SUPER_ADMIN si el siguiente cambio no toca seguridad, roles o datos privilegiados.
 5. Resolver o aceptar explícitamente los avisos moderados dev-only de `npm audit` sin aplicar un downgrade automático de `firebase-tools`.
