@@ -9,7 +9,7 @@
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
 - **Producción:** `origin/main` está en `25bfa6b` e incluye el runtime `f3cac1e`; la estabilización, las rondas visuales, EmailJS, enlaces revocables, login, accesibilidad y los smoke tests de acceso, operación, recepción, administración y navegador real están desplegados en `https://mechanic-app-zeta.vercel.app/`. El HEAD puede avanzar por commits exclusivamente documentales o de pruebas.
-- **Rama de trabajo:** `codex/recovery-states` añade recuperación visible para errores transitorios de cotización, QC y pagos; debe pasar CI/Preview antes de integrarse. PR #23, PR #25, PR #27, PR #29, PR #31, PR #33 y PR #34 están integradas.
+- **Rama de trabajo:** PR #35 (`codex/recovery-states`) añade recuperación visible para errores transitorios de cotización, QC y pagos; debe pasar CI/Preview antes de integrarse. PR #23, PR #25, PR #27, PR #29, PR #31, PR #33 y PR #34 están integradas.
 - **Árbol local al cerrar:** limpio y sincronizado con `origin/main` después de integrar el checkpoint documental.
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas de la estabilización están desplegadas y fueron releídas desde el proyecto activo.
 - **Último hito:** la rama de recuperación conserva firma/selecciones, checklist, motivo de rechazo y datos de pago después de fallos transitorios; QC y Caja permiten reconectar sus listeners Firestore sin recargar toda la aplicación.
