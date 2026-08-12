@@ -8,8 +8,8 @@
 
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
-- **Producción:** `origin/main` está en `961d827` e incluye renovación controlada de sesión, idempotencia server-side para pagos/QC y detección de saldos obsoletos; CI y Vercel Production pasaron y `https://mechanic-app-zeta.vercel.app/` respondió HTTP 200 en `/`, login, Asesor, QC y Pagos.
-- **Rama de trabajo:** `codex/handoff-idempotency-production` solo registra este cierre documental; no contiene cambios runtime ni de Firebase.
+- **Producción:** el último cambio runtime es `961d827` e incluye renovación controlada de sesión, idempotencia server-side para pagos/QC y detección de saldos obsoletos; CI y Vercel Production pasaron y `https://mechanic-app-zeta.vercel.app/` respondió HTTP 200 en `/`, login, Asesor, QC y Pagos.
+- **Rama de trabajo:** PR #38 (`codex/handoff-idempotency-production`) solo registra este cierre documental; no contiene cambios runtime ni de Firebase.
 - **Árbol local al cerrar:** limpio y sincronizado con `origin/main` después de integrar el checkpoint documental.
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas de la estabilización están desplegadas y fueron releídas desde el proyecto activo.
 - **Último hito:** PR #37 se integró como `961d827`; fuerza una renovación de token ante el primer 401, guía al login si la sesión sigue inválida, evita dobles envíos en UI y garantiza que repetir el mismo pago/QC produzca una sola escritura.
@@ -23,7 +23,7 @@ Para retomar, leer este documento completo y luego seguir el orden obligatorio d
 
 La aplicación es un SGA multitenant en Next.js 16, Firebase Auth/Firestore y Vercel. La estabilización está integrada en `main`, desplegada en Vercel Production y acompañada por sus reglas Firestore en `mechanic-app-7d459`.
 
-- `origin/main` está en `961d827` y producción sirve la recuperación e idempotencia de operaciones críticas de `961d827` sobre el runtime base `f3cac1e` en `https://mechanic-app-zeta.vercel.app/`; los handoffs E2E mínimos quedan en `bf1df3f`, el E2E integral ADMIN en `0043693`, su tramo de recepción/diagnóstico en `b4c27e9`, el E2E base en `02931ea`, los flujos administrativos en `ac49ea7`, los operativos en `4e3882e`, acceso/portal en `1e1b049`, accesibilidad operativa en `eb29f26`, login en `0bd69a3`, enlaces revocables en `4a21b96` y la estabilización en `c903185`.
+- `origin/main` contiene el runtime `961d827` y producción sirve su recuperación e idempotencia de operaciones críticas sobre el runtime base `f3cac1e` en `https://mechanic-app-zeta.vercel.app/`; los handoffs E2E mínimos quedan en `bf1df3f`, el E2E integral ADMIN en `0043693`, su tramo de recepción/diagnóstico en `b4c27e9`, el E2E base en `02931ea`, los flujos administrativos en `ac49ea7`, los operativos en `4e3882e`, acceso/portal en `1e1b049`, accesibilidad operativa en `eb29f26`, login en `0bd69a3`, enlaces revocables en `4a21b96` y la estabilización en `c903185`.
 - Las URLs Preview son efímeras y se toman del PR activo; no reutilizar aliases de ramas ya integradas.
 - Las reglas nuevas se compilaron y publicaron únicamente como `firestore:rules`; no se desplegaron Hosting, Storage ni índices.
 - El taller tester `p1` fue reparado: conserva su cuenta Auth y ahora tiene un único perfil ADMIN y un `settings/p1` vacío/activo. No se combinaron usuarios antiguos.
@@ -359,6 +359,7 @@ La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos 
 5. La UI bloquea dobles clics sin esperar un rerender. QC también detecta por listener si la orden dejó de estar en `QC`, conserva lo escrito en memoria y desactiva el envío obsoleto.
 6. La suite queda en 102 unitarias, 23 Rules, 8 integraciones API y 3 E2E Chromium; TypeScript, lint, auditoría runtime y build de 19 páginas/5 APIs pasan.
 7. Producción respondió HTTP 200 en `/`, `/login`, `/advisor`, `/qc` y `/advisor/payments`. No cambiaron ni se desplegaron Rules, índices, Storage o Firebase Hosting y no se tocaron datos reales, `p1` o SUPER_ADMIN.
+8. Un job E2E duplicado falló una vez porque un toast interceptó el clic de cierre de sesión; el job paralelo del mismo SHA y el rerun pasaron. Estabilizar esa interacción del test es la primera tarea menor pendiente, sin confundirla con un fallo del flujo runtime.
 
 ## Siguiente bloque recomendado
 
