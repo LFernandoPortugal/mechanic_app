@@ -9,12 +9,12 @@
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
 - **Producción:** `origin/main` está en `6accbc3` e incluye recuperación visible para operaciones críticas además del runtime base `f3cac1e`; CI y Vercel Production pasaron y `https://mechanic-app-zeta.vercel.app/` respondió HTTP 200 en cotización, QC y pagos.
-- **Rama de trabajo:** ninguna funcional pendiente; PR #23, PR #25, PR #27, PR #29, PR #31, PR #33, PR #34 y PR #35 están integradas.
+- **Rama de trabajo:** PR #37 (`codex/idempotent-operations`) añade renovación controlada de sesión, idempotencia server-side para pagos/QC y detección de saldos obsoletos; debe pasar CI/Preview antes de integrarse.
 - **Árbol local al cerrar:** limpio y sincronizado con `origin/main` después de integrar el checkpoint documental.
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas de la estabilización están desplegadas y fueron releídas desde el proyecto activo.
-- **Último hito:** PR #35 integrada y desplegada: cotización, QC y pagos conservan sus datos después de fallos transitorios, y QC/Caja permiten reconectar los listeners Firestore sin recargar toda la aplicación.
-- **Calidad verificada:** TypeScript, lint, 94 pruebas unitarias, 5 de integración de API, 23 pruebas de reglas, 3 E2E Chromium, audit runtime en 0 vulnerabilidades, build de 19 páginas/5 APIs, QA visual en 390×844 y 1440×900 y HTTP 200 en las rutas oficiales auditadas.
-- **Siguiente paso recomendado:** cubrir sesión expirada y doble envío en operaciones críticas; mantener cualquier trabajo visual simultáneo en una rama separada y actualizarla desde `main` antes de fusionar.
+- **Último hito:** la rama idempotente fuerza una renovación de token ante el primer 401, guía al login si la sesión sigue inválida, evita dobles envíos en UI y garantiza que repetir el mismo pago/QC produzca una sola escritura.
+- **Calidad verificada:** TypeScript, lint, 102 pruebas unitarias, 8 de integración de API, 23 pruebas de reglas, 3 E2E Chromium, audit runtime en 0 vulnerabilidades, build de 19 páginas/5 APIs, QA visual en 390×844 y 1440×900 y HTTP 200 en las rutas oficiales auditadas.
+- **Siguiente paso recomendado:** validar la rama idempotente en CI/Preview y después revisar recuperación de borradores al recargar/reautenticar y los flujos secundarios aún sin E2E; mantener cualquier trabajo visual simultáneo en una rama separada.
 - **No repetir ni asumir:** EmailJS confirmó aceptación y una persona confirmó recepción/presentación correcta en un inbox controlado. No hace falta recrear las órdenes QA ya eliminadas; verificar siempre el deployment vigente antes de un nuevo cambio.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
@@ -146,8 +146,8 @@ Resultado más reciente del 2026-08-12:
 
 - TypeScript: 0 errores.
 - Lint: 0 errores, 0 warnings.
-- Unit tests: 94/94.
-- Integración de API routes con Firestore Emulator: 5/5.
+- Unit tests: 102/102.
+- Integración de API routes con Firestore Emulator: 8/8.
 - Firestore Rules tests: 23/23.
 - Build: correcto; 19/19 páginas estáticas y 5 API routes dinámicas.
 - Auditoría runtime: 0 vulnerabilidades.

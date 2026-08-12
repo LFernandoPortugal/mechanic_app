@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ClientQuoteView from "@/app/quote/view/QuoteView";
@@ -187,6 +187,31 @@ describe("public quote view", () => {
     expect(await screen.findByRole("heading", { name: "¡Cotización Aprobada!" })).toBeTruthy();
     expect(fetch).toHaveBeenCalledTimes(3);
     expect(vi.mocked(fetch).mock.calls[1][1]).toMatchObject(vi.mocked(fetch).mock.calls[2][1] as RequestInit);
+  });
+
+  it("ignores a second approval click while the first request is pending", async () => {
+    window.location.hash = "#token=fixture-secret";
+    let resolveApproval!: (value: Response) => void;
+    const pendingApproval = new Promise<Response>((resolve) => {
+      resolveApproval = resolve;
+    });
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(response(200))
+      .mockReturnValueOnce(pendingApproval);
+
+    render(<ClientQuoteView />);
+    expect(await screen.findByRole("heading", { name: "Taller Fixture - Portal del cliente" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar firma de prueba" }));
+    const approve = screen.getByRole("button", { name: "Aceptar cotización" });
+    fireEvent.click(approve);
+    fireEvent.click(approve);
+
+    expect(fetch).toHaveBeenCalledTimes(2);
+    resolveApproval(response(200, {
+      ...fixture,
+      job: { ...fixture.job, status: "Approved", approvedAmount: 250 },
+    }));
+    expect(await screen.findByRole("heading", { name: "¡Cotización Aprobada!" })).toBeTruthy();
   });
 
   it.each([

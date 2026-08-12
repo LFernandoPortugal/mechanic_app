@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { updateJob, registerPayment, type PaymentInput } from "@/lib/db";
@@ -26,6 +26,7 @@ import { getPayableTotal } from "@/lib/transactions";
 import { WorkflowQueueEmptyState } from "@/components/WorkflowQueueEmptyState";
 import { buildPublicQuoteUrl } from "@/lib/public-quote-link";
 import { issueQuoteLink, revokeQuoteLink, type IssuedQuoteLink } from "@/lib/quote-link-client";
+import { isSessionExpiredError } from "@/lib/api-errors";
 
 const payableTotal = (job: Job) => {
   try {
@@ -37,7 +38,7 @@ const payableTotal = (job: Job) => {
 
 export default function AdvisorQuoteBuilder() {
   const { t } = useLanguage();
-  const { user, workshopSettings } = useAuth();
+  const { user, workshopSettings, signOut } = useAuth();
   const { jobs, loading } = useRealtimeJobs({ statuses: ["Approval", "Approved", "Repair"] });
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [prices, setPrices] = useState<Record<string, number>>({});
@@ -50,6 +51,8 @@ export default function AdvisorQuoteBuilder() {
   const [managingQuoteLink, setManagingQuoteLink] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentType, setPaymentType] = useState<PaymentInput["method"]>("Efectivo");
+  const [paymentSubmitting, setPaymentSubmitting] = useState(false);
+  const paymentSubmittingRef = useRef(false);
   
   const router = useRouter();
 
@@ -133,7 +136,7 @@ export default function AdvisorQuoteBuilder() {
   };
 
   const handleAddPayment = async () => {
-    if (!selectedJob || !paymentAmount) return;
+    if (!selectedJob || !paymentAmount || paymentSubmittingRef.current) return;
     const amount = parseFloat(paymentAmount);
     if (isNaN(amount) || amount <= 0) return;
 
@@ -158,10 +161,13 @@ export default function AdvisorQuoteBuilder() {
       }
     }
 
+    paymentSubmittingRef.current = true;
+    setPaymentSubmitting(true);
     try {
       const result = await registerPayment(selectedJob.id, {
         amount: appliedAmount,
         method: paymentType,
+        expectedTotalPaid: paid,
       });
 
       // Update local state to reflect payment in real-time
@@ -185,7 +191,15 @@ export default function AdvisorQuoteBuilder() {
         );
       }
     } catch (e) {
-      toast.error("Error: " + e);
+      const message = e instanceof Error ? e.message : "No se pudo registrar el pago.";
+      toast.error(message);
+      if (isSessionExpiredError(e)) {
+        await signOut();
+        router.push("/login?redirect=%2Fadvisor&reason=session-expired");
+      }
+    } finally {
+      paymentSubmittingRef.current = false;
+      setPaymentSubmitting(false);
     }
   };
 
@@ -698,8 +712,8 @@ export default function AdvisorQuoteBuilder() {
                       </select>
                     </div>
                   </div>
-                   <Button onClick={handleAddPayment} className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white">
-                    Procesar Abono
+                   <Button onClick={handleAddPayment} disabled={paymentSubmitting} className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white">
+                    {paymentSubmitting ? "Procesando…" : "Procesar Abono"}
                   </Button>
                 </div>
 

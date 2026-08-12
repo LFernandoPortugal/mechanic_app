@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import PaymentsPage from "@/app/advisor/payments/page";
 import { makeJob, workshopFixture } from "../fixtures/jobs";
+import { ApiRequestError } from "@/lib/api-errors";
 
 const state = vi.hoisted(() => ({
   jobs: [] as ReturnType<typeof makeJob>[],
@@ -13,10 +14,12 @@ const state = vi.hoisted(() => ({
   retryJobs: vi.fn(),
   toastError: vi.fn(),
   toastSuccess: vi.fn(),
+  signOut: vi.fn(),
+  routerPush: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: state.routerPush }),
 }));
 
 vi.mock("@/components/ProtectedRoute", () => ({
@@ -24,7 +27,7 @@ vi.mock("@/components/ProtectedRoute", () => ({
 }));
 
 vi.mock("@/contexts/AuthContext", () => ({
-  useAuth: () => ({ workshopSettings: workshopFixture }),
+  useAuth: () => ({ workshopSettings: workshopFixture, signOut: state.signOut }),
 }));
 
 vi.mock("@/hooks/useRealtimeJobs", () => ({
@@ -65,6 +68,9 @@ beforeEach(() => {
   state.retryJobs.mockReset();
   state.toastError.mockReset();
   state.toastSuccess.mockReset();
+  state.signOut.mockReset();
+  state.signOut.mockResolvedValue(undefined);
+  state.routerPush.mockReset();
 });
 
 afterEach(() => cleanup());
@@ -89,6 +95,7 @@ describe("PaymentsPage", () => {
         amount: 60,
         method: "Efectivo",
         reference: "",
+        expectedTotalPaid: 40,
       });
     });
   });
@@ -154,6 +161,7 @@ describe("PaymentsPage", () => {
       amount: 60,
       method: "Efectivo",
       reference: "OP-RETRY-01",
+      expectedTotalPaid: 40,
     });
   });
 
@@ -165,5 +173,22 @@ describe("PaymentsPage", () => {
     expect((await screen.findByRole("alert")).textContent).toContain("No se pudieron cargar las órdenes de pago");
     await user.click(screen.getByRole("button", { name: "Reconectar" }));
     expect(state.retryJobs).toHaveBeenCalledOnce();
+  });
+
+  it("offers a safe login redirect when the refreshed session is rejected", async () => {
+    const user = userEvent.setup();
+    state.registerPayment.mockRejectedValue(new ApiRequestError("La sesión expiró.", 401));
+    render(<PaymentsPage />);
+
+    await user.click(screen.getByRole("button", { name: "Detalles de pago para QA-PAY-01" }));
+    await user.click(screen.getByRole("button", { name: "Saldo completo" }));
+    await user.click(screen.getByRole("button", { name: "Registrar Pago" }));
+
+    expect((await screen.findByRole("alert")).textContent).toContain("Tu sesión expiró");
+    await user.click(screen.getByRole("button", { name: "Iniciar sesión nuevamente" }));
+    expect(state.signOut).toHaveBeenCalledOnce();
+    expect(state.routerPush).toHaveBeenCalledWith(
+      "/login?redirect=%2Fadvisor%2Fpayments&reason=session-expired",
+    );
   });
 });

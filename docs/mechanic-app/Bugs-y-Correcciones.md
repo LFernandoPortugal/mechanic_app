@@ -470,3 +470,23 @@ Los 3 E2E pasan juntos en Chromium con los handoffs reales. No se reutiliza ADMI
 - Seis pruebas unitarias nuevas simulan fallos seguidos de éxito y verifican preservación de datos, reintento y reconexión.
 
 La validación queda en 94 unitarias, 23 Rules, 5 integraciones API y 3 E2E Chromium; TypeScript, lint y build de 19 páginas/5 APIs pasan. Todas las pruebas usan fixtures o `demo-mechanic-app`; no se tocaron `p1`, SUPER_ADMIN, Firebase real ni datos de Vercel.
+
+---
+
+## v1.21 — Sesión, idempotencia y concurrencia en operaciones críticas (2026-08-12)
+
+### DATA-013: Un reintento de red podía duplicar un pago confirmado
+
+**Riesgo**: pagos eran transaccionales, pero no idempotentes. Si Firestore confirmaba la escritura y la respuesta HTTP se perdía, repetir el mismo formulario podía crear otro abono. QC rechazaba el segundo envío por estado, aunque el usuario no podía distinguir ese conflicto de un fallo real.
+
+**Corrección y cobertura**:
+
+- Pago y QC generan claves opacas estables por contenido mientras una operación está pendiente. El cliente reutiliza la misma clave tras 401, error de red o reintento manual.
+- Pagos persisten `requestId`; la transacción devuelve el pago existente sin duplicar auditoría y rechaza con 409 una clave reutilizada con otros datos.
+- QC enlaza `requestId`, resultado y estado final a la entrada de auditoría; repetir la petición devuelve el resultado original sin volver a transicionar.
+- Caja envía `expectedTotalPaid`; si otra sesión registró un pago antes de la transacción, el servidor responde 409 y obliga a revisar el saldo en tiempo real.
+- Las acciones críticas combinan bloqueo síncrono y estado `disabled`, evitando que dos clics alcancen la API antes de que React vuelva a renderizar.
+- Ante un 401 se fuerza una sola renovación del token. Un segundo 401 se modela como error de sesión, muestra una acción de reautenticación y el login explica por qué se solicitó acceso nuevamente.
+- QC detecta mediante su listener que la orden dejó de estar pendiente, conserva lo ingresado y deshabilita las acciones obsoletas.
+
+La validación queda en 102 unitarias, 23 Rules, 8 integraciones API y 3 E2E Chromium; TypeScript, lint, auditoría runtime en 0 vulnerabilidades y build de 19 páginas/5 APIs pasan. Las integraciones comprueban una sola escritura, reutilización inválida de claves y saldo obsoleto contra Firestore Emulator. No se modificaron reglas ni datos reales.
