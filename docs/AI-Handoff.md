@@ -2,19 +2,19 @@
 
 > Última actualización: 2026-08-12
 > Producción oficial: rama `main` en Vercel
-> Código funcional de producción verificado: `961d827` en `https://mechanic-app-zeta.vercel.app/`
+> Código funcional de producción verificado: `8eab8b0` en `https://mechanic-app-zeta.vercel.app/`
 
 ## Punto de reanudación rápido
 
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
-- **Producción:** el último cambio runtime es `961d827` e incluye renovación controlada de sesión, idempotencia server-side para pagos/QC y detección de saldos obsoletos; CI y Vercel Production pasaron y `https://mechanic-app-zeta.vercel.app/` respondió HTTP 200 en `/`, login, Asesor, QC y Pagos.
-- **Rama de trabajo:** PR #39 (`codex/session-draft-recovery`) añade borradores de sesión acotados para QC/pago y evita que los toasts cubran el header; debe pasar CI/Preview antes de integrarse.
+- **Producción:** el último cambio runtime es `8eab8b0` e incluye borradores de sesión acotados para QC/pago y notificaciones que no cubren el header; CI y Vercel Production pasaron y `https://mechanic-app-zeta.vercel.app/` respondió HTTP 200 en `/`, login, QC y Pagos.
+- **Rama de trabajo:** ninguna rama funcional pendiente; al retomar, partir del `origin/main` vigente y crear una rama `codex/*` nueva.
 - **Árbol local al cerrar:** limpio y sincronizado con `origin/main` después de integrar el checkpoint documental.
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas de la estabilización están desplegadas y fueron releídas desde el proyecto activo.
-- **Último hito:** PR #37 se integró como `961d827`; fuerza una renovación de token ante el primer 401, guía al login si la sesión sigue inválida, evita dobles envíos en UI y garantiza que repetir el mismo pago/QC produzca una sola escritura.
-- **Calidad verificada:** la rama pasa TypeScript, lint, 107 pruebas unitarias, 8 de integración de API, 23 pruebas de reglas, 3 E2E Chromium, audit runtime en 0 vulnerabilidades y build de 19 páginas/5 APIs; producción conserva además QA visual en 390×844 y 1440×900 y HTTP 200 en las rutas oficiales auditadas.
-- **Siguiente paso recomendado:** validar la rama de borradores en CI/Preview y después cubrir los flujos secundarios aún sin E2E; mantener cualquier trabajo visual simultáneo en una rama separada.
+- **Último hito:** PR #39 se integró como `8eab8b0`; QC y Caja recuperan el borrador después de recargar o reautenticar en la misma pestaña, con aislamiento por usuario/taller/orden, TTL de 30 minutos y limpieza explícita.
+- **Calidad verificada:** producción pasa TypeScript, lint, 107 pruebas unitarias, 8 de integración de API, 23 pruebas de reglas, 3 E2E Chromium, audit runtime en 0 vulnerabilidades y build de 19 páginas/5 APIs; conserva además QA visual en 390×844 y 1440×900 y HTTP 200 en las rutas oficiales auditadas.
+- **Siguiente paso recomendado:** cubrir con emuladores el ciclo ADMIN de alta/edición/eliminación de usuarios para demostrar consistencia entre Auth y Firestore, directamente relacionado con el incidente histórico de perfiles duplicados; mantener cualquier trabajo visual simultáneo en una rama separada.
 - **No repetir ni asumir:** EmailJS confirmó aceptación y una persona confirmó recepción/presentación correcta en un inbox controlado. No hace falta recrear las órdenes QA ya eliminadas; verificar siempre el deployment vigente antes de un nuevo cambio.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
@@ -23,7 +23,7 @@ Para retomar, leer este documento completo y luego seguir el orden obligatorio d
 
 La aplicación es un SGA multitenant en Next.js 16, Firebase Auth/Firestore y Vercel. La estabilización está integrada en `main`, desplegada en Vercel Production y acompañada por sus reglas Firestore en `mechanic-app-7d459`.
 
-- `origin/main` contiene el runtime `961d827` y producción sirve su recuperación e idempotencia de operaciones críticas sobre el runtime base `f3cac1e` en `https://mechanic-app-zeta.vercel.app/`; los handoffs E2E mínimos quedan en `bf1df3f`, el E2E integral ADMIN en `0043693`, su tramo de recepción/diagnóstico en `b4c27e9`, el E2E base en `02931ea`, los flujos administrativos en `ac49ea7`, los operativos en `4e3882e`, acceso/portal en `1e1b049`, accesibilidad operativa en `eb29f26`, login en `0bd69a3`, enlaces revocables en `4a21b96` y la estabilización en `c903185`.
+- `origin/main` contiene el runtime `8eab8b0` y producción sirve recuperación de borradores sobre la idempotencia de `961d827` y el runtime base `f3cac1e` en `https://mechanic-app-zeta.vercel.app/`; los handoffs E2E mínimos quedan en `bf1df3f`, el E2E integral ADMIN en `0043693`, su tramo de recepción/diagnóstico en `b4c27e9`, el E2E base en `02931ea`, los flujos administrativos en `ac49ea7`, los operativos en `4e3882e`, acceso/portal en `1e1b049`, accesibilidad operativa en `eb29f26`, login en `0bd69a3`, enlaces revocables en `4a21b96` y la estabilización en `c903185`.
 - Las URLs Preview son efímeras y se toman del PR activo; no reutilizar aliases de ramas ya integradas.
 - Las reglas nuevas se compilaron y publicaron únicamente como `firestore:rules`; no se desplegaron Hosting, Storage ni índices.
 - El taller tester `p1` fue reparado: conserva su cuenta Auth y ahora tiene un único perfil ADMIN y un `settings/p1` vacío/activo. No se combinaron usuarios antiguos.
@@ -359,11 +359,21 @@ La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos 
 5. La UI bloquea dobles clics sin esperar un rerender. QC también detecta por listener si la orden dejó de estar en `QC`, conserva lo escrito en memoria y desactiva el envío obsoleto.
 6. La suite queda en 102 unitarias, 23 Rules, 8 integraciones API y 3 E2E Chromium; TypeScript, lint, auditoría runtime y build de 19 páginas/5 APIs pasan.
 7. Producción respondió HTTP 200 en `/`, `/login`, `/advisor`, `/qc` y `/advisor/payments`. No cambiaron ni se desplegaron Rules, índices, Storage o Firebase Hosting y no se tocaron datos reales, `p1` o SUPER_ADMIN.
-8. Un job E2E duplicado falló una vez porque un toast interceptó el clic de cierre de sesión; el job paralelo del mismo SHA y el rerun pasaron. Estabilizar esa interacción del test es la primera tarea menor pendiente, sin confundirla con un fallo del flujo runtime.
+8. Un job E2E duplicado falló una vez porque un toast interceptó el clic de cierre de sesión; PR #39 resolvió la superposición y las ejecuciones posteriores pasaron con clics normales.
+
+## Borradores seguros y notificaciones no bloqueantes del 2026-08-12
+
+1. PR #39 se integró por squash en `main` como `8eab8b0`; ambos CI de Preview, CI de `main` y Vercel Preview/Production completaron correctamente.
+2. QC conserva orden, checklist, notas y motivo; Caja conserva método, monto y referencia. La misma identidad los recupera al recargar o volver del login en la misma pestaña.
+3. Cada borrador queda aislado por función, taller, UID y orden en `sessionStorage`, caduca a los 30 minutos y se elimina al completar o descartar. No persiste tokens, contraseñas ni credenciales.
+4. Los valores se validan antes de restaurarse; contenido vencido, corrupto o de otra identidad no entra al formulario ni bloquea la operación principal.
+5. Los toasts `top-right` comienzan debajo del header sticky. Los E2E cambian de usuario con clics normales y pasaron localmente, en los dos CI del PR y en `main` sin repetir el bloqueo histórico.
+6. La suite queda en 107 unitarias, 23 Rules, 8 integraciones API y 3 E2E Chromium; TypeScript, lint, auditoría runtime y build de 19 páginas/5 APIs pasan.
+7. Preview no mostró errores de consola y producción respondió HTTP 200 en `/`, `/login`, `/qc` y `/advisor/payments`. No se modificaron Rules, índices, Storage, datos reales, `p1` o SUPER_ADMIN.
 
 ## Siguiente bloque recomendado
 
-1. Diseñar recuperación de borradores al recargar o reautenticar sin persistir datos sensibles innecesarios; priorizar notas/checklist de QC y el contexto de pago, con expiración y limpieza explícitas.
+1. Añadir una prueba emulada del ciclo ADMIN de alta, edición y eliminación de un usuario descartable, verificando que Auth y `users/{uid}` no se combinen ni queden huérfanos ante conflicto o borrado.
 2. Coordinar cualquier chat de Diseño mediante una rama `codex/*` distinta; verificar `origin/main`, rebase/merge no destructivo y los gates antes de integrar para evitar solapar archivos de runtime.
 3. La variante de pago completo antes de QC ya está cubierta por integración de API y QA histórico; automatizarla en navegador solo si se requiere una regresión visual/estado adicional.
 4. Mantener `p1` como fixture de testers hasta finalizar el flujo crítico y limpiar cada orden descartable creada. No repetir despliegues de Rules ni pruebas con SUPER_ADMIN si el siguiente cambio no toca seguridad, roles o datos privilegiados.
