@@ -146,7 +146,7 @@ Resultado más reciente del 2026-08-11:
 
 - TypeScript: 0 errores.
 - Lint: 0 errores, 0 warnings.
-- Unit tests: 39/39.
+- Unit tests: 58/58.
 - Integración de API routes con Firestore Emulator: 5/5.
 - Firestore Rules tests: 23/23.
 - Build: correcto; 19/19 páginas estáticas y 5 API routes dinámicas.
@@ -270,10 +270,19 @@ La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos 
 5. La suite queda en 45 unitarias, 23 Rules y 5 integraciones API; TypeScript, lint y build de 19 páginas/5 APIs también pasan.
 6. El bloque no modifica código runtime, datos, Auth, Firebase, `p1` o SUPER_ADMIN. Producción `/` y `/login` respondieron HTTP 200 tras el deployment.
 
+## Smoke automatizado de acceso y portal del 2026-08-11
+
+1. PR #19 se integró por squash en `main` como `1e1b049`; CI de Preview/main y Vercel Preview/Production completaron correctamente.
+2. `ProtectedRoute` cubre sesión ausente con destino interno, trial vencido, perfil Firestore faltante y la matriz completa de ADMIN, RECEPTION, TECHNICIAN, ADVISOR y SUPER_ADMIN.
+3. `AuthContext` usa los mismos helpers RBAC puros ejecutados por los tests, conservando el bypass global de SUPER_ADMIN y las rutas operativas documentadas.
+4. El portal público se prueba con DTOs sintéticos: token ausente, secreto solo en `X-Quote-Token`, 404 neutral, 500 con reintento, regeneración por `hashchange` y tracker desde Approved hasta Delivered.
+5. El paso vigente del tracker expone `aria-current="step"`. La suite queda en 58 unitarias, 23 Rules y 5 integraciones API; TypeScript, lint, auditoría runtime y build de 19 páginas/5 APIs pasan.
+6. Producción respondió HTTP 200 en `/`, `/login` y `/quote/view`. No se modificaron datos, Auth, Rules, índices, Storage, `p1` o SUPER_ADMIN y no hubo despliegue Firebase.
+
 ## Siguiente bloque recomendado
 
-1. Extender los smoke tests reproducibles a login/routing por rol y portal público con fixtures o Emulator, sin escribir en Producción.
-2. Auditar con datos sintéticos locales los estados no visibles en `p1` vacío: formularios de Técnico/Asesor, rechazo de QC, pagos y trackers post-aprobación.
+1. Auditar con datos sintéticos locales los estados no visibles en `p1` vacío: formularios de Técnico/Asesor, rechazo de QC, pagos y trackers post-aprobación.
+2. Convertir los recorridos estables de Técnico, Asesor, QC y pagos en pruebas de componente o integración reproducibles antes de repetir E2E destructivo.
 3. Mantener `p1` como fixture de testers hasta finalizar el flujo crítico y limpiar cada orden descartable creada.
 4. No repetir despliegues de Rules ni pruebas con SUPER_ADMIN si el siguiente cambio no toca seguridad, roles o datos privilegiados.
 5. Resolver o aceptar explícitamente los avisos moderados dev-only de `npm audit` sin aplicar un downgrade automático de `firebase-tools`.
