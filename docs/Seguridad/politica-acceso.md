@@ -1,6 +1,6 @@
 # Política de Acceso y Seguridad — SGA
 
-> Última actualización: 2026-08-11
+> Última actualización: 2026-08-12
 
 ## Principios
 
@@ -48,6 +48,13 @@
 - Tanto lectura como aprobación ocultan las cotizaciones de talleres inexistentes, deshabilitados o vencidos.
 
 El ID de la orden no concede acceso por sí solo: un token ausente, incorrecto, vencido, regenerado o revocado recibe la misma respuesta 404 que una cotización inexistente.
+
+## Emuladores y pruebas
+
+- Los E2E usan exclusivamente el proyecto demo `demo-mechanic-app`; Firebase bloquea cualquier servicio no emulado para ese identificador.
+- El SDK web conecta Auth/Firestore Emulator solo fuera de producción y con `NEXT_PUBLIC_USE_FIREBASE_EMULATORS=true`.
+- Las API server-side conectan Auth Emulator solo fuera de producción, con `USE_FIREBASE_EMULATORS=true` y un `FIREBASE_AUTH_EMULATOR_HOST` loopback con puerto explícito.
+- Una configuración emulada ausente, remota o mal formada falla cerrado. En `NODE_ENV=production`, la verificación de ID token conserva Identity Toolkit oficial aunque existan variables de emulador por error.
 
 ## Pagos
 
