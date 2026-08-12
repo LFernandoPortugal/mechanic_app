@@ -1,20 +1,20 @@
 # AI Handoff — SGA Mechanic App
 
-> Última actualización: 2026-08-11
+> Última actualización: 2026-08-12
 > Producción oficial: rama `main` en Vercel
-> Código funcional de producción verificado: `02931ea` en `https://mechanic-app-zeta.vercel.app/`
+> Código funcional de producción verificado: `b4c27e9` en `https://mechanic-app-zeta.vercel.app/`
 
 ## Punto de reanudación rápido
 
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
-- **Producción:** `origin/main` incluye `02931ea`; la estabilización, las rondas visuales, EmailJS, enlaces revocables, login, accesibilidad y los smoke tests de acceso, operación, recepción, administración y navegador real están desplegados en `https://mechanic-app-zeta.vercel.app/`. El HEAD puede avanzar por commits exclusivamente documentales.
-- **Rama de trabajo:** ninguna funcional de runtime pendiente; PR #21, PR #23 y PR #25 están integradas.
+- **Producción:** `origin/main` incluye `b4c27e9`; la estabilización, las rondas visuales, EmailJS, enlaces revocables, login, accesibilidad y los smoke tests de acceso, operación, recepción, administración y navegador real están desplegados en `https://mechanic-app-zeta.vercel.app/`. El HEAD puede avanzar por commits exclusivamente documentales.
+- **Rama de trabajo:** ninguna funcional de runtime pendiente; PR #23, PR #25 y PR #27 están integradas.
 - **Árbol local al cerrar:** limpio y sincronizado con `origin/main` después de integrar el checkpoint documental.
 - **Firebase esperado:** `mechanic-app-7d459`; las reglas de la estabilización están desplegadas y fueron releídas desde el proyecto activo.
-- **Último hito:** PR #25 integrada y desplegada: Playwright monta Next.js con Auth/Firestore Emulator y prueba login, redirect protegido, listener de perfil, navegación ADMIN, denegación RECEPTION y logout con dos fixtures locales.
-- **Calidad verificada:** TypeScript, lint, 80 pruebas unitarias, 5 de integración de API, 23 pruebas de reglas, 2 E2E Chromium, audit runtime en 0 vulnerabilidades, build de 19 páginas/5 APIs, QA visual en 390×844 y 1440×900 (claro/oscuro) y HTTP 200 en las rutas oficiales auditadas.
-- **Siguiente paso recomendado:** ampliar el E2E emulado al primer tramo de escritura real `Reception -> Diagnosis`, manteniendo el seed demo y sin depender de Producción; después cubrir estados de error/carga con recuperación visible.
+- **Último hito:** PR #27 integrada y desplegada: Playwright completa una recepción con firma, crea la orden bajo Rules, confirma el listener técnico y recorre `Reception -> Diagnosis -> Approval` con auditoría real emulada.
+- **Calidad verificada:** TypeScript, lint, 80 pruebas unitarias, 5 de integración de API, 23 pruebas de reglas, 3 E2E Chromium, audit runtime en 0 vulnerabilidades, build de 19 páginas/5 APIs, QA visual en 390×844 y 1440×900 y HTTP 200 en las rutas oficiales auditadas.
+- **Siguiente paso recomendado:** evaluar la extensión E2E emulada desde `Approval` por Asesor hasta el enlace público y aprobación del cliente, siempre que las API routes permanezcan aisladas en emuladores; después cubrir estados de error/carga con recuperación visible.
 - **No repetir ni asumir:** EmailJS confirmó aceptación y una persona confirmó recepción/presentación correcta en un inbox controlado. No hace falta recrear las órdenes QA ya eliminadas; verificar siempre el deployment vigente antes de un nuevo cambio.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
@@ -23,7 +23,7 @@ Para retomar, leer este documento completo y luego seguir el orden obligatorio d
 
 La aplicación es un SGA multitenant en Next.js 16, Firebase Auth/Firestore y Vercel. La estabilización está integrada en `main`, desplegada en Vercel Production y acompañada por sus reglas Firestore en `mechanic-app-7d459`.
 
-- Producción sirve el código funcional de `02931ea` en `https://mechanic-app-zeta.vercel.app/` desde `main`; los flujos administrativos permanecen en el historial como `ac49ea7`, los operativos como `4e3882e`, acceso/portal como `1e1b049`, accesibilidad operativa como `eb29f26`, login como `0bd69a3`, enlaces revocables como `4a21b96` y la estabilización como `c903185`.
+- Producción sirve el código funcional de `b4c27e9` en `https://mechanic-app-zeta.vercel.app/` desde `main`; el E2E base permanece como `02931ea`, los flujos administrativos como `ac49ea7`, los operativos como `4e3882e`, acceso/portal como `1e1b049`, accesibilidad operativa como `eb29f26`, login como `0bd69a3`, enlaces revocables como `4a21b96` y la estabilización como `c903185`.
 - Las URLs Preview son efímeras y se toman del PR activo; no reutilizar aliases de ramas ya integradas.
 - Las reglas nuevas se compilaron y publicaron únicamente como `firestore:rules`; no se desplegaron Hosting, Storage ni índices.
 - El taller tester `p1` fue reparado: conserva su cuenta Auth y ahora tiene un único perfil ADMIN y un `settings/p1` vacío/activo. No se combinaron usuarios antiguos.
@@ -309,9 +309,19 @@ La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos 
 6. CI instala Chromium y ejecuta 2 E2E además de 80 unitarias, 23 Rules y 5 integraciones API. TypeScript, lint, auditoría runtime y build de 19 páginas/5 APIs pasan.
 7. La revisión visual local no mostró errores de consola. Preview y Producción respondieron HTTP 200 en `/`, `/login`, `/inventory`, `/admin/users` y `/technician`. No se tocaron datos reales, Auth real, Rules, `p1`, SUPER_ADMIN ni Firebase Hosting.
 
+## Recepción y diagnóstico E2E emulados del 2026-08-12
+
+1. PR #27 se integró por squash en `main` como `b4c27e9`; CI de Preview/main y Vercel Preview/Production completaron correctamente.
+2. ADMIN completa el formulario real de Recepción, dibuja/confirma una firma y crea una orden `Reception` con actor/taller autenticados bajo Firestore Rules.
+3. La pantalla de éxito abre Técnico; el listener real muestra la orden y seleccionarla ejecuta `Reception -> Diagnosis`, asigna al actor y agrega la auditoría permitida.
+4. Técnico registra un elemento con notas y ejecuta `Diagnosis -> Approval`; la UI confirma que el vehículo queda listo para cotización.
+5. La placa cambia por reintento y los emuladores se destruyen al terminar. El recorrido solo usa `demo-mechanic-app`, `e2e-workshop` y usuarios sintéticos.
+6. CI ejecuta 3 E2E además de 80 unitarias, 23 Rules y 5 integraciones API. TypeScript, lint, auditoría runtime y build de 19 páginas/5 APIs pasan.
+7. QA local en 1440×900 y 390×844 confirmó formulario, firma, resultado y cola técnica sin overflow ni errores de consola. Producción respondió HTTP 200 en `/`, `/login`, `/reception` y `/technician`; no se tocaron Firebase real, Storage, `p1` ni SUPER_ADMIN.
+
 ## Siguiente bloque recomendado
 
-1. Ampliar el E2E emulado al tramo `Reception -> Diagnosis`, incluida una creación real validada por Rules y el cambio de rol/página.
+1. Auditar si las API routes de enlace público pueden operar íntegramente con Auth/Firestore Emulator y, de ser así, ampliar el E2E desde `Approval` por Asesor hasta aprobación del cliente.
 2. Añadir estados de error/carga a la cobertura de componente solo donde exista una recuperación real para la persona usuaria.
 3. Mantener `p1` como fixture de testers hasta finalizar el flujo crítico y limpiar cada orden descartable creada.
 4. No repetir despliegues de Rules ni pruebas con SUPER_ADMIN si el siguiente cambio no toca seguridad, roles o datos privilegiados.
