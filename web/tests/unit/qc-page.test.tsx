@@ -9,6 +9,8 @@ import { makeJob, workshopFixture } from "../fixtures/jobs";
 const state = vi.hoisted(() => ({
   jobs: [] as ReturnType<typeof makeJob>[],
   submitQualityControl: vi.fn(),
+  jobsError: null as string | null,
+  retryJobs: vi.fn(),
   toastError: vi.fn(),
   toastSuccess: vi.fn(),
 }));
@@ -22,7 +24,7 @@ vi.mock("@/components/ProtectedRoute", () => ({
 }));
 
 vi.mock("@/hooks/useRealtimeJobs", () => ({
-  useRealtimeJobs: () => ({ jobs: state.jobs, loading: false }),
+  useRealtimeJobs: () => ({ jobs: state.jobs, loading: false, error: state.jobsError, retry: state.retryJobs }),
 }));
 
 vi.mock("@/contexts/AuthContext", () => ({
@@ -61,6 +63,8 @@ beforeEach(() => {
     approvedAt: new Date("2026-08-11T12:30:00.000Z"),
   })];
   state.submitQualityControl.mockReset();
+  state.jobsError = null;
+  state.retryJobs.mockReset();
   state.toastError.mockReset();
   state.toastSuccess.mockReset();
 });
@@ -122,5 +126,58 @@ describe("QualityControlPage", () => {
         notes: "Todo conforme.",
       });
     });
+  });
+
+  it("preserves the rejection reason after a failed request and allows retry", async () => {
+    const user = userEvent.setup();
+    state.submitQualityControl
+      .mockRejectedValueOnce(new Error("Servicio temporalmente no disponible."))
+      .mockResolvedValueOnce({ status: "Repair" });
+    render(<QualityControlPage />);
+
+    await user.click(await screen.findByRole("button", { name: "Rechazar y Devolver a Taller" }));
+    const reason = screen.getByLabelText("Motivo del Rechazo / Instrucciones para el Técnico");
+    await user.type(reason, "El ruido persiste en la rueda delantera.");
+    await user.click(screen.getByRole("button", { name: "Confirmar Rechazo y Enviar a Técnico" }));
+
+    expect((await screen.findByRole("alert")).textContent).toContain("El motivo se conservó");
+    expect((reason as HTMLTextAreaElement).value).toBe("El ruido persiste en la rueda delantera.");
+    await user.click(screen.getByRole("button", { name: "Reintentar Rechazo" }));
+    await waitFor(() => expect(state.submitQualityControl).toHaveBeenCalledTimes(2));
+  });
+
+  it("keeps the completed checklist after a failed approval and allows retry", async () => {
+    const user = userEvent.setup();
+    state.submitQualityControl
+      .mockRejectedValueOnce(new Error("Servicio temporalmente no disponible."))
+      .mockResolvedValueOnce({ status: "Ready" });
+    render(<QualityControlPage />);
+
+    for (const name of [
+      "Síntomas Resueltos",
+      "Seguridad y Ajustes Mecánicos",
+      "Fluidos y Fugas",
+      "Estética y Limpieza",
+      "Prueba de Ruta Validada",
+    ]) {
+      await user.click(await screen.findByRole("switch", { name }));
+    }
+
+    await user.click(screen.getByRole("button", { name: "Aprobar y Marcar Listo para Entrega" }));
+    expect((await screen.findByRole("alert")).textContent).toContain("Tus selecciones siguen intactas");
+    expect(screen.getAllByRole("switch").every((control) => control.getAttribute("data-state") === "checked")).toBe(true);
+
+    await user.click(screen.getByRole("button", { name: "Reintentar Aprobación" }));
+    await waitFor(() => expect(state.submitQualityControl).toHaveBeenCalledTimes(2));
+  });
+
+  it("shows a reconnect action when the realtime job listener fails", async () => {
+    const user = userEvent.setup();
+    state.jobsError = "network unavailable";
+    render(<QualityControlPage />);
+
+    expect((await screen.findByRole("alert")).textContent).toContain("No se pudieron cargar las órdenes");
+    await user.click(screen.getByRole("button", { name: "Reconectar" }));
+    expect(state.retryJobs).toHaveBeenCalledOnce();
   });
 });

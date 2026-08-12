@@ -4,7 +4,7 @@
  * multiple browser tabs / users.
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { db } from "@/lib/firebase";
 import {
@@ -30,9 +30,16 @@ export function useRealtimeJobs(options: UseRealtimeJobsOptions = {}) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
 
   const prevJobsRef = useRef<Map<string, string>>(new Map());
   const isFirstLoadRef = useRef(true);
+
+  const retry = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    setRetryKey((current) => current + 1);
+  }, []);
 
   useEffect(() => {
     if (authLoading) return;
@@ -120,7 +127,7 @@ export function useRealtimeJobs(options: UseRealtimeJobsOptions = {}) {
     return () => unsubscribe();
     // Serialize options to avoid infinite re-renders
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(options.statuses), options.all, userProfile?.workshopId, authLoading]);
+  }, [JSON.stringify(options.statuses), options.all, userProfile?.workshopId, authLoading, retryKey]);
 
-  return { jobs, loading, error };
+  return { jobs, loading, error, retry };
 }
