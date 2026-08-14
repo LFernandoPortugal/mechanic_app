@@ -66,7 +66,12 @@ vi.mock("@/lib/db", () => ({
   getJobsByVehicleId: state.getJobsByVehicleId,
   getWorkshopSettings: state.getWorkshopSettings,
 }));
-vi.mock("@/lib/storage", () => ({ uploadJobImage: state.uploadJobImage }));
+vi.mock("@/lib/storage", () => ({
+  uploadJobImage: state.uploadJobImage,
+  MAX_RECEPTION_PHOTOS: 4,
+  MAX_SOURCE_IMAGE_BYTES: 15 * 1024 * 1024,
+  MAX_SIGNATURE_DATA_URL_CHARS: 150_000,
+}));
 vi.mock("sonner", () => ({
   toast: { warning: state.toastWarning, error: vi.fn(), success: vi.fn(), info: vi.fn() },
 }));
@@ -159,5 +164,15 @@ describe("Reception", () => {
       }, "reception-fixture");
     });
     expect(screen.getByText("Recepción completada")).toBeTruthy();
+  });
+
+  it("limits reception evidence to four valid photos", async () => {
+    const user = userEvent.setup();
+    render(<Reception />);
+    const files = Array.from({ length: 5 }, (_, index) =>
+      new File([`photo-${index}`], `photo-${index}.jpg`, { type: "image/jpeg" }));
+    await user.upload(screen.getByLabelText("Capturar Foto o Elegir Archivo"), files);
+    expect(screen.getAllByRole("img", { name: "Vista previa" })).toHaveLength(4);
+    expect(state.toastWarning).toHaveBeenCalledWith("Puedes adjuntar como máximo 4 fotos.");
   });
 });

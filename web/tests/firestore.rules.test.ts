@@ -381,6 +381,15 @@ describe("job workflow boundaries", () => {
         approvedAmount: 999,
       }),
     );
+
+    await assertFails(setDoc(doc(db, "jobs", "too-many-photos"), {
+      ...validJob,
+      receptionImages: Array.from({ length: 5 }, () => "data:image/jpeg;base64,photo"),
+    }));
+    await assertFails(setDoc(doc(db, "jobs", "oversized-signature"), {
+      ...validJob,
+      signatureBase64: `data:image/png;base64,${"A".repeat(150_000)}`,
+    }));
   });
 
   it("allows a technician to submit diagnosis but not skip workflow states", async () => {

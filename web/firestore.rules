@@ -96,7 +96,25 @@ service cloud.firestore {
         && request.resource.data.approvedAmount == 0
         && request.resource.data.auditLog is list
         && request.resource.data.auditLog.size() == 1
-        && request.resource.data.auditLog[0].actorId == request.auth.uid;
+        && request.resource.data.auditLog[0].actorId == request.auth.uid
+        && (!('signatureBase64' in request.resource.data)
+          || (request.resource.data.signatureBase64 is string
+            && request.resource.data.signatureBase64.size() <= 150000))
+        && (!('receptionImages' in request.resource.data)
+          || (request.resource.data.receptionImages is list
+            && request.resource.data.receptionImages.size() <= 4
+            && (request.resource.data.receptionImages.size() < 1
+              || (request.resource.data.receptionImages[0] is string
+                && request.resource.data.receptionImages[0].size() <= 180000))
+            && (request.resource.data.receptionImages.size() < 2
+              || (request.resource.data.receptionImages[1] is string
+                && request.resource.data.receptionImages[1].size() <= 180000))
+            && (request.resource.data.receptionImages.size() < 3
+              || (request.resource.data.receptionImages[2] is string
+                && request.resource.data.receptionImages[2].size() <= 180000))
+            && (request.resource.data.receptionImages.size() < 4
+              || (request.resource.data.receptionImages[3] is string
+                && request.resource.data.receptionImages[3].size() <= 180000))));
     }
 
     function isTechnicianJobUpdate() {
