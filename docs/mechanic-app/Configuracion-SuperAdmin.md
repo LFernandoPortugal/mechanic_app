@@ -1,6 +1,8 @@
 # Configuración de SUPER_ADMIN — SGA
 
-> Actualizado: 2026-08-08
+> Actualizado: 2026-08-14
+>
+> Manual operativo para usuarios humanos: [`docs/Manuales/Manual-SUPER_ADMIN.md`](../Manuales/Manual-SUPER_ADMIN.md)
 
 ## Alcance
 
@@ -25,9 +27,9 @@ Si el email ya existe en Firebase Authentication, la operación responde con con
 | `Danger On/Off` | Autoriza o revoca el borrado de datos operativos por el ADMIN del taller. |
 | `+7d / +30d` | Extiende la expiración vigente; si ya venció, cuenta desde el momento actual. Nunca acorta un trial activo. |
 | `Revocar` | Expira el acceso inmediatamente. |
-| `Borrar Datos` | Elimina jobs, inventario y movimientos del taller; requiere confirmación. |
+| `Borrar Datos` | Elimina enlaces públicos, jobs, inventario y movimientos del taller; conserva usuarios y settings. |
 | Eliminar usuario | Borra la cuenta objetivo en Firebase Authentication y su perfil Firestore. |
-| Eliminar taller | Borra primero sus cuentas Auth y después datos/perfiles/settings del taller. |
+| Eliminar taller | Borra primero sus cuentas Auth y después enlaces/datos/perfiles/settings del taller. Si Auth falla, conserva datos y deja la baja pendiente para reintentar. |
 
 La API protege la propia cuenta que ejecuta la operación y cualquier perfil SUPER_ADMIN frente al borrado.
 

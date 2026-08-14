@@ -8,6 +8,8 @@ Este vault de Obsidian contiene toda la documentación persistente del proyecto 
 - **Seguridad/** — Políticas de seguridad, reglas de acceso, auditorías
 - **Despliegue/** — SOPs de despliegue, checklists, configuración
 - **mechanic-app/** — Flujo funcional, configuración SUPER_ADMIN e historial de correcciones
+- **Manuales/** — Manuales humanos por rol, flujo completo, recuperación, operaciones destructivas y guía en inglés
+- **Diseno/** — Auditorías visuales y sistema de diseño propuesto
 - **AI-Handoff.md** — Estado corto y punto exacto de reanudación entre sesiones
 
 ## Cómo usar

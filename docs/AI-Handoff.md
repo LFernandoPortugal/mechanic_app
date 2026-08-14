@@ -2,20 +2,21 @@
 
 > Última actualización: 2026-08-14
 > Producción oficial: rama `main` en Vercel
-> Código funcional de producción verificado: `6ba3653` en `https://mechanic-app-zeta.vercel.app/`
+> Código funcional de producción verificado: `280418a` en `https://mechanic-app-zeta.vercel.app/`
 
 ## Punto de reanudación rápido
 
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
-- **Producción:** `6ba3653` incorpora el ciclo ADMIN coordinado de alta/edición/baja de personal entre Firebase Auth y Firestore; CI y Vercel Production pasaron. El smoke respondió 200 en `/`, `/login` y `/admin/users`, y 401 sin sesión en `/api/workshop/users` y `/api/admin/users`.
-- **Rama de trabajo:** ninguna rama funcional pendiente; al retomar, partir del `origin/main` vigente y crear una rama `codex/*` nueva.
-- **Árbol local al cerrar:** limpio y sincronizado con `origin/main` después de integrar el checkpoint documental.
+- **Producción:** `280418a` incorpora el restablecimiento de taller coordinado por servidor sobre el ciclo ADMIN, reconciliación global y presupuesto seguro de evidencia; GitHub/Vercel registran el deployment Production como exitoso.
+- **Rama de trabajo:** `codex/help-premium-design`, creada desde `280418a` para manuales, `/help` y rediseño visual.
+- **Estado del bloque visual:** auditoría de producción completada en 1440×900 y 390×844, claro/oscuro, para las 17 rutas pedidas. La propuesta “Precision Workshop”, paleta con ratios de contraste y mockup aislado están listos; no se migraron páginas ni se modificó runtime mientras se espera aprobación humana.
+- **Documentación nueva:** `docs/Manuales/` contiene manuales ES por audiencia, guía consolidada EN, flujo, recuperación y matriz de acciones destructivas. `docs/Diseno/Auditoria-Visual-y-Sistema-Propuesto.md` contiene la evidencia y dirección visual.
 - **Firebase esperado:** `mechanic-app-7d459`; las Rules del ciclo de usuarios se desplegaron solo después de activar la API en Vercel y fueron releídas desde el proyecto activo.
-- **Último hito:** PR #41 se integró como `6ba3653`; Gestión de Usuarios crea, edita y elimina personal por `/api/workshop/users`, bloquea duplicados/cruces de tenant/SUPER_ADMIN/autoeliminación/último ADMIN y evita bajas parciales entre Auth y Firestore.
-- **Calidad verificada:** producción pasa TypeScript, lint, 113 pruebas unitarias, 12 de integración de API, 24 pruebas de reglas, 4 E2E Chromium, audit runtime en 0 vulnerabilidades y build de 19 páginas/6 APIs; conserva además QA visual de escritorio y 390×844 sin errores de consola.
-- **Siguiente paso recomendado:** endurecer el borrado global de múltiples usuarios desde SUPER_ADMIN con la misma reanudación/idempotencia y añadir una vista de reconciliación de solo lectura que distinga cuentas Auth, perfiles `users` y talleres `settings`; mantener el trabajo visual amplio en una rama separada.
-- **No repetir ni asumir:** EmailJS confirmó aceptación y una persona confirmó recepción/presentación correcta en un inbox controlado. `p1` y SUPER_ADMIN no se usaron ni modificaron en este hito; no hace falta recrear usuarios/órdenes QA de emuladores y siempre debe verificarse el deployment vigente antes de un nuevo cambio.
+- **Último hito integrado:** PR #46 se integró como `280418a`; `/api/workshop/reset` coordina la cascada operativa y conserva usuarios/settings.
+- **Calidad verificada del runtime vigente:** 114 pruebas unitarias, 18 integraciones API, 26 Rules y 4 E2E Chromium, además de TypeScript, lint y build de 19 páginas/8 APIs.
+- **Siguiente paso:** esperar aprobación de la propuesta visual; después centralizar tokens/componentes, implementar `/help` ES/EN filtrado por roles y migrar rutas por bloques sin cambiar el flujo canónico.
+- **No repetir ni asumir:** la auditoría fue de solo lectura. No se crearon órdenes, pagos, movimientos, usuarios o enlaces; `p1`, cuentas, settings, Rules e infraestructura no se modificaron. No ejecutar pruebas destructivas fuera de `demo-mechanic-app` + emuladores.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
 
@@ -23,7 +24,7 @@ Para retomar, leer este documento completo y luego seguir el orden obligatorio d
 
 La aplicación es un SGA multitenant en Next.js 16, Firebase Auth/Firestore y Vercel. La estabilización y el ciclo coordinado de usuarios están integrados en `main`, desplegados en Vercel Production y acompañados por sus reglas Firestore en `mechanic-app-7d459`.
 
-- `origin/main` contiene `6ba3653`; producción sirve el ciclo ADMIN de personal sobre la recuperación de borradores de `8eab8b0`, la idempotencia de `961d827` y el runtime base `f3cac1e` en `https://mechanic-app-zeta.vercel.app/`. El historial anterior de E2E, flujos, portal, accesibilidad y estabilización permanece documentado en Git y en Bugs y Correcciones.
+- `origin/main` contiene `280418a`; producción sirve el reset server-side sobre el ciclo ADMIN de personal, la reconciliación global, la recuperación de borradores y la idempotencia en `https://mechanic-app-zeta.vercel.app/`. El historial anterior de E2E, flujos, portal, accesibilidad y estabilización permanece documentado en Git y en Bugs y Correcciones.
 - Las URLs Preview son efímeras y se toman del PR activo; no reutilizar aliases de ramas ya integradas.
 - Las reglas nuevas se compilaron y publicaron únicamente como `firestore:rules`; no se desplegaron Hosting, Storage ni índices.
 - El taller tester `p1` fue reparado: conserva su cuenta Auth y ahora tiene un único perfil ADMIN y un `settings/p1` vacío/activo. No se combinaron usuarios antiguos.
