@@ -2,7 +2,6 @@ import { db } from "./firebase";
 import { arrayUnion, collection, addDoc, Timestamp, doc, getDoc, getDocs, query, where, updateDoc, deleteDoc, setDoc, orderBy, runTransaction } from "firebase/firestore";
 import { Job, UserProfile, UserRole, InventoryItem, InventoryTransaction, StockMovementType, WorkshopSettings } from "@/types";
 import { calculateStockAfterMovement } from "@/lib/transactions";
-import { revokeQuoteLink } from "@/lib/quote-link-client";
 import { authenticatedJsonRequest } from "@/lib/authenticated-api";
 
 // ─── User Profile Functions (RBAC) ──────────────────────
@@ -573,44 +572,11 @@ export async function getJobsByVehicleId(workshopId: string, vehicleId: string):
 }
 
 export async function resetWorkshopData(workshopId: string): Promise<{ jobsDeleted: number; inventoryDeleted: number; transactionsDeleted: number }> {
-  try {
-    let jobsDeleted = 0;
-    let inventoryDeleted = 0;
-    let transactionsDeleted = 0;
-
-    // 1. Delete jobs
-    const jobsRef = collection(db, "jobs");
-    const jobsSnap = await getDocs(query(jobsRef, where("workshopId", "==", workshopId)));
-    for (const document of jobsSnap.docs) {
-      // Revoke the server-only public access record before deleting its job.
-      if (/^[A-Za-z0-9]{20}$/.test(document.id)) {
-        await revokeQuoteLink(document.id);
-      }
-      await deleteDoc(doc(db, "jobs", document.id));
-      jobsDeleted++;
-    }
-
-    // 2. Delete inventory
-    const invRef = collection(db, "inventory");
-    const invSnap = await getDocs(query(invRef, where("workshopId", "==", workshopId)));
-    for (const document of invSnap.docs) {
-      await deleteDoc(doc(db, "inventory", document.id));
-      inventoryDeleted++;
-    }
-
-    // 3. Delete inventory transactions
-    const txRef = collection(db, "inventory_transactions");
-    const txSnap = await getDocs(query(txRef, where("workshopId", "==", workshopId)));
-    for (const document of txSnap.docs) {
-      await deleteDoc(doc(db, "inventory_transactions", document.id));
-      transactionsDeleted++;
-    }
-
-    return { jobsDeleted, inventoryDeleted, transactionsDeleted };
-  } catch (e) {
-    console.error("Error resetting workshop data:", e);
-    throw e;
-  }
+  return authenticatedJsonRequest("/api/workshop/reset", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ workshopId, confirmation: "ELIMINAR" }),
+  });
 }
 
 export type WorkshopListItem = Partial<WorkshopSettings> & {
@@ -636,50 +602,6 @@ export async function getAllWorkshops(): Promise<WorkshopListItem[]> {
   } catch (e) {
     console.error("Error fetching all workshops:", e);
     return [];
-  }
-}
-
-export async function deleteWorkshopSettings(workshopId: string) {
-  try {
-    const docRef = doc(db, "settings", workshopId);
-    await deleteDoc(docRef);
-  } catch (e) {
-    console.error("Error deleting workshop settings:", e);
-    throw e;
-  }
-}
-
-/** Cascade deletes a workshop: removes settings, all user profiles, and operating data */
-export async function deleteWorkshopCompletely(workshopId: string): Promise<{ usersDeleted: number; jobsDeleted: number; inventoryDeleted: number; transactionsDeleted: number }> {
-  try {
-    // 1. Delete operating data (jobs, inventory, transactions)
-    const resetResult = await resetWorkshopData(workshopId);
-
-    // 2. Delete all user profiles belonging to this workshop (protecting SUPER_ADMIN)
-    const usersRef = collection(db, "users");
-    const usersSnap = await getDocs(query(usersRef, where("workshopId", "==", workshopId)));
-    let usersDeleted = 0;
-    for (const uDoc of usersSnap.docs) {
-      const uData = uDoc.data() as UserProfile;
-      if (!uData.roles?.includes('SUPER_ADMIN')) {
-        await deleteDoc(doc(db, "users", uDoc.id));
-        usersDeleted++;
-      }
-    }
-
-    // 3. Delete the settings document
-    const settingsRef = doc(db, "settings", workshopId);
-    await deleteDoc(settingsRef);
-
-    return {
-      usersDeleted,
-      jobsDeleted: resetResult.jobsDeleted,
-      inventoryDeleted: resetResult.inventoryDeleted,
-      transactionsDeleted: resetResult.transactionsDeleted
-    };
-  } catch (e) {
-    console.error("Error completely deleting workshop:", e);
-    throw e;
   }
 }
 
