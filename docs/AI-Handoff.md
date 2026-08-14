@@ -1,29 +1,29 @@
 # AI Handoff — SGA Mechanic App
 
-> Última actualización: 2026-08-12
+> Última actualización: 2026-08-14
 > Producción oficial: rama `main` en Vercel
-> Código funcional de producción verificado: `8eab8b0` en `https://mechanic-app-zeta.vercel.app/`
+> Código funcional de producción verificado: `6ba3653` en `https://mechanic-app-zeta.vercel.app/`
 
 ## Punto de reanudación rápido
 
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
-- **Producción:** el último cambio runtime es `8eab8b0` e incluye borradores de sesión acotados para QC/pago y notificaciones que no cubren el header; CI y Vercel Production pasaron y `https://mechanic-app-zeta.vercel.app/` respondió HTTP 200 en `/`, login, QC y Pagos.
+- **Producción:** `6ba3653` incorpora el ciclo ADMIN coordinado de alta/edición/baja de personal entre Firebase Auth y Firestore; CI y Vercel Production pasaron. El smoke respondió 200 en `/`, `/login` y `/admin/users`, y 401 sin sesión en `/api/workshop/users` y `/api/admin/users`.
 - **Rama de trabajo:** ninguna rama funcional pendiente; al retomar, partir del `origin/main` vigente y crear una rama `codex/*` nueva.
 - **Árbol local al cerrar:** limpio y sincronizado con `origin/main` después de integrar el checkpoint documental.
-- **Firebase esperado:** `mechanic-app-7d459`; las reglas de la estabilización están desplegadas y fueron releídas desde el proyecto activo.
-- **Último hito:** PR #39 se integró como `8eab8b0`; QC y Caja recuperan el borrador después de recargar o reautenticar en la misma pestaña, con aislamiento por usuario/taller/orden, TTL de 30 minutos y limpieza explícita.
-- **Calidad verificada:** producción pasa TypeScript, lint, 107 pruebas unitarias, 8 de integración de API, 23 pruebas de reglas, 3 E2E Chromium, audit runtime en 0 vulnerabilidades y build de 19 páginas/5 APIs; conserva además QA visual en 390×844 y 1440×900 y HTTP 200 en las rutas oficiales auditadas.
-- **Siguiente paso recomendado:** cubrir con emuladores el ciclo ADMIN de alta/edición/eliminación de usuarios para demostrar consistencia entre Auth y Firestore, directamente relacionado con el incidente histórico de perfiles duplicados; mantener cualquier trabajo visual simultáneo en una rama separada.
-- **No repetir ni asumir:** EmailJS confirmó aceptación y una persona confirmó recepción/presentación correcta en un inbox controlado. No hace falta recrear las órdenes QA ya eliminadas; verificar siempre el deployment vigente antes de un nuevo cambio.
+- **Firebase esperado:** `mechanic-app-7d459`; las Rules del ciclo de usuarios se desplegaron solo después de activar la API en Vercel y fueron releídas desde el proyecto activo.
+- **Último hito:** PR #41 se integró como `6ba3653`; Gestión de Usuarios crea, edita y elimina personal por `/api/workshop/users`, bloquea duplicados/cruces de tenant/SUPER_ADMIN/autoeliminación/último ADMIN y evita bajas parciales entre Auth y Firestore.
+- **Calidad verificada:** producción pasa TypeScript, lint, 113 pruebas unitarias, 12 de integración de API, 24 pruebas de reglas, 4 E2E Chromium, audit runtime en 0 vulnerabilidades y build de 19 páginas/6 APIs; conserva además QA visual de escritorio y 390×844 sin errores de consola.
+- **Siguiente paso recomendado:** endurecer el borrado global de múltiples usuarios desde SUPER_ADMIN con la misma reanudación/idempotencia y añadir una vista de reconciliación de solo lectura que distinga cuentas Auth, perfiles `users` y talleres `settings`; mantener el trabajo visual amplio en una rama separada.
+- **No repetir ni asumir:** EmailJS confirmó aceptación y una persona confirmó recepción/presentación correcta en un inbox controlado. `p1` y SUPER_ADMIN no se usaron ni modificaron en este hito; no hace falta recrear usuarios/órdenes QA de emuladores y siempre debe verificarse el deployment vigente antes de un nuevo cambio.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
 
 ## Estado ejecutivo
 
-La aplicación es un SGA multitenant en Next.js 16, Firebase Auth/Firestore y Vercel. La estabilización está integrada en `main`, desplegada en Vercel Production y acompañada por sus reglas Firestore en `mechanic-app-7d459`.
+La aplicación es un SGA multitenant en Next.js 16, Firebase Auth/Firestore y Vercel. La estabilización y el ciclo coordinado de usuarios están integrados en `main`, desplegados en Vercel Production y acompañados por sus reglas Firestore en `mechanic-app-7d459`.
 
-- `origin/main` contiene el runtime `8eab8b0` y producción sirve recuperación de borradores sobre la idempotencia de `961d827` y el runtime base `f3cac1e` en `https://mechanic-app-zeta.vercel.app/`; los handoffs E2E mínimos quedan en `bf1df3f`, el E2E integral ADMIN en `0043693`, su tramo de recepción/diagnóstico en `b4c27e9`, el E2E base en `02931ea`, los flujos administrativos en `ac49ea7`, los operativos en `4e3882e`, acceso/portal en `1e1b049`, accesibilidad operativa en `eb29f26`, login en `0bd69a3`, enlaces revocables en `4a21b96` y la estabilización en `c903185`.
+- `origin/main` contiene `6ba3653`; producción sirve el ciclo ADMIN de personal sobre la recuperación de borradores de `8eab8b0`, la idempotencia de `961d827` y el runtime base `f3cac1e` en `https://mechanic-app-zeta.vercel.app/`. El historial anterior de E2E, flujos, portal, accesibilidad y estabilización permanece documentado en Git y en Bugs y Correcciones.
 - Las URLs Preview son efímeras y se toman del PR activo; no reutilizar aliases de ramas ya integradas.
 - Las reglas nuevas se compilaron y publicaron únicamente como `firestore:rules`; no se desplegaron Hosting, Storage ni índices.
 - El taller tester `p1` fue reparado: conserva su cuenta Auth y ahora tiene un único perfil ADMIN y un `settings/p1` vacío/activo. No se combinaron usuarios antiguos.
@@ -45,6 +45,7 @@ La aplicación incorpora estas rutas server-side:
 - `POST /api/jobs/[id]/payments`: pagos autenticados y transaccionales.
 - `POST /api/jobs/[id]/qc`: aprobación/rechazo de QC autenticado; decide Ready/Delivered en servidor según saldo.
 - `POST/DELETE /api/admin/users`: aprovisionamiento y borrado coordinado de Firebase Auth + Firestore, exclusivo de SUPER_ADMIN.
+- `POST/PATCH/DELETE /api/workshop/users`: ciclo de personal del propio taller, exclusivo de ADMIN y coordinado entre Auth + Firestore.
 
 ## Flujo canónico
 
