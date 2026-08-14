@@ -6,7 +6,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { getAllWorkshops, getAllUsers, updateWorkshopSettings, resetWorkshopData, deleteWorkshopCompletely, updateUserRoles, getActiveJobCountByWorkshop, type WorkshopListItem } from "@/lib/db";
+import { getAllWorkshops, getAllUsers, updateWorkshopSettings, resetWorkshopData, updateUserRoles, getActiveJobCountByWorkshop, type WorkshopListItem } from "@/lib/db";
+import { authenticatedJsonRequest } from "@/lib/authenticated-api";
 import { toast } from "sonner";
 import {
   Crown, Building2, Users, Trash2, Calendar, ShieldAlert,
@@ -21,6 +22,14 @@ const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : "Error desconocido";
 
 const ROLE_OPTIONS: UserRole[] = ["ADMIN", "RECEPTION", "TECHNICIAN", "ADVISOR"];
+type ReconciledUser = UserProfile & {
+  hasAuth: boolean;
+  hasProfile: boolean;
+  hasWorkshop: boolean;
+  disabled: boolean;
+  deletionPending: boolean;
+  status: "consistent" | "auth_only" | "profile_only" | "missing_workshop";
+};
 
 function SuperAdminContent() {
   const { user, userProfile } = useAuth();
@@ -28,6 +37,7 @@ function SuperAdminContent() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loadingWorkshops, setLoadingWorkshops] = useState(true);
   const [loadingUsers, setLoadingUsers] = useState(true);
+  const [reconciledUsers, setReconciledUsers] = useState<ReconciledUser[]>([]);
   const [expandedWorkshop, setExpandedWorkshop] = useState<string | null>(null);
   const [activeJobCounts, setActiveJobCounts] = useState<Record<string, number>>({});
 
@@ -49,6 +59,7 @@ function SuperAdminContent() {
   useEffect(() => {
     loadWorkshops();
     loadUsers();
+    loadReconciliation();
   }, []);
 
   const loadWorkshops = async () => {
@@ -69,6 +80,15 @@ function SuperAdminContent() {
     const data = await getAllUsers();
     setUsers(data);
     setLoadingUsers(false);
+  };
+
+  const loadReconciliation = async () => {
+    try {
+      const result = await authenticatedJsonRequest<{ users: ReconciledUser[] }>("/api/admin/users", { method: "GET" });
+      setReconciledUsers(result.users);
+    } catch (error) {
+      toast.error("No se pudo reconciliar Authentication y Firestore: " + getErrorMessage(error));
+    }
   };
 
   const copyToClipboard = (text: string, field: string) => {
@@ -179,13 +199,13 @@ function SuperAdminContent() {
     if (!window.confirm(`¿Eliminar permanentemente el taller "${wId}" y todos sus usuarios y datos?`)) return;
     setActionLoading(`delete-workshop-${wId}`);
     try {
-      const workshopUserIds = getUsersForWorkshop(wId).map((profile) => profile.uid);
-      if (workshopUserIds.length > 0) {
-        await callAdminUsersApi("DELETE", { uids: workshopUserIds });
-      }
-      const res = await deleteWorkshopCompletely(wId);
-      toast.success(`Taller eliminado por completo. Se borraron ${workshopUserIds.length} cuentas y ${res.jobsDeleted} OTs.`);
-      loadWorkshops(); loadUsers();
+      const res = await authenticatedJsonRequest<{ deletedUsers: number; counts: Record<string, number> }>("/api/admin/workshops", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workshopId: wId }),
+      });
+      toast.success(`Taller eliminado por completo. Se borraron ${res.deletedUsers} cuentas y ${res.counts.jobs || 0} OTs.`);
+      loadWorkshops(); loadUsers(); loadReconciliation();
     } catch (err: unknown) {
       toast.error("Error: " + getErrorMessage(err));
     } finally { setActionLoading(null); }
@@ -199,6 +219,7 @@ function SuperAdminContent() {
       await callAdminUsersApi("DELETE", { uids: [uid] });
       toast.success("Cuenta eliminada de Firebase Authentication y Firestore.");
       loadUsers();
+      loadReconciliation();
     } catch (err: unknown) {
       toast.error("Error: " + getErrorMessage(err));
     } finally { setActionLoading(null); }
@@ -557,14 +578,14 @@ function SuperAdminContent() {
           <Card className="glass-panel">
             <CardHeader>
               <CardTitle className="text-lg font-bold flex items-center gap-2 text-purple-400">
-                <Users className="w-5 h-5" /> Auditoría Global de Usuarios ({users.length})
+                <Users className="w-5 h-5" /> Auditoría Auth + Firestore ({reconciledUsers.length})
               </CardTitle>
-              <CardDescription>Todos los perfiles registrados en Firestore.</CardDescription>
+              <CardDescription>Compara Firebase Authentication con los perfiles de Firestore; cualquier diferencia requiere revisión.</CardDescription>
             </CardHeader>
             <CardContent>
               {loadingUsers ? (
                 <div className="text-center py-6 text-muted-foreground text-sm">Cargando...</div>
-              ) : users.length === 0 ? (
+              ) : reconciledUsers.length === 0 ? (
                 <div className="text-center py-6 text-muted-foreground text-sm">No hay perfiles.</div>
               ) : (
                 <div className="overflow-x-auto">
@@ -579,7 +600,7 @@ function SuperAdminContent() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/30">
-                      {users.map((u) => (
+                      {reconciledUsers.map((u) => (
                         <tr key={u.uid} className="hover:bg-secondary/20 transition-colors">
                           <td className="py-3 px-4">
                             <div className="font-medium text-foreground">{u.displayName || "Sin nombre"}</div>
@@ -587,6 +608,11 @@ function SuperAdminContent() {
                           </td>
                           <td className="py-3 px-4">
                             <span className="font-mono bg-secondary/40 px-1.5 py-0.5 rounded text-[10px]">{u.workshopId}</span>
+                            {u.status !== "consistent" && (
+                              <div className="mt-1 text-[10px] font-semibold text-amber-500">
+                                {u.status === "auth_only" ? "Solo en Auth" : u.status === "profile_only" ? "Solo en Firestore" : "Taller inexistente"}
+                              </div>
+                            )}
                           </td>
                           <td className="py-3 px-4">
                             <div className="flex flex-wrap gap-1">

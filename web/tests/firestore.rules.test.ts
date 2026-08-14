@@ -244,6 +244,13 @@ describe("user privilege boundaries", () => {
     );
   });
 
+  it("requires the coordinated server API even for SUPER_ADMIN deletions", async () => {
+    const db = testEnv
+      .authenticatedContext("super", { email: "owner@example.test" })
+      .firestore();
+    await assertFails(deleteDoc(doc(db, "users", "tech-a")));
+  });
+
   it("prevents tenant A from reading tenant B profiles", async () => {
     const db = testEnv
       .authenticatedContext("admin-a", { email: "admin-a@example.test" })

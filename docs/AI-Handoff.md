@@ -372,9 +372,18 @@ La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos 
 6. La suite queda en 107 unitarias, 23 Rules, 8 integraciones API y 3 E2E Chromium; TypeScript, lint, auditoría runtime y build de 19 páginas/5 APIs pasan.
 7. Preview no mostró errores de consola y producción respondió HTTP 200 en `/`, `/login`, `/qc` y `/advisor/payments`. No se modificaron Rules, índices, Storage, datos reales, `p1` o SUPER_ADMIN.
 
+## Reconciliación global y bajas reintentables del 2026-08-14
+
+1. El panel SUPER_ADMIN obtiene un inventario server-side de Firebase Authentication, perfiles `users` y talleres `settings`; clasifica identidades consistentes, solo-Auth, solo-Firestore y asociadas a un taller inexistente.
+2. La eliminación individual es reintentable y devuelve resultado por UID. Protege al llamador y cualquier perfil `SUPER_ADMIN`; nunca combina automáticamente identidades divergentes.
+3. La baja completa de taller pasó del navegador a `DELETE /api/admin/workshops`: Auth se completa primero y la cascada de datos ocurre después. Un fallo conserva settings/datos y deja una marca pendiente para reintentar.
+4. `master-control` y `demo-workshop` están protegidos. Firestore Rules bloquea toda eliminación directa de perfiles para obligar a usar endpoints coordinados.
+5. Las pruebas destructivas usaron solo Auth/Firestore Emulator con `demo-mechanic-app`: 113 unitarias, 25 Rules y 14 integraciones pasan; TypeScript, lint y build de 19 páginas/7 APIs también pasan.
+6. Este bloque aún no afirma ni ejecuta limpieza de datos reales. La primera revisión productiva debe ser solo lectura y cada divergencia debe confirmarse antes de eliminarla.
+
 ## Siguiente bloque recomendado
 
-1. Añadir una prueba emulada del ciclo ADMIN de alta, edición y eliminación de un usuario descartable, verificando que Auth y `users/{uid}` no se combinen ni queden huérfanos ante conflicto o borrado.
+1. Revisar en producción, únicamente en modo lectura, la nueva auditoría Auth + Firestore del panel SUPER_ADMIN. No limpiar diferencias reales hasta identificar cada UID y confirmar explícitamente su destino.
 2. Coordinar cualquier chat de Diseño mediante una rama `codex/*` distinta; verificar `origin/main`, rebase/merge no destructivo y los gates antes de integrar para evitar solapar archivos de runtime.
 3. La variante de pago completo antes de QC ya está cubierta por integración de API y QA histórico; automatizarla en navegador solo si se requiere una regresión visual/estado adicional.
 4. Mantener `p1` como fixture de testers hasta finalizar el flujo crítico y limpiar cada orden descartable creada. No repetir despliegues de Rules ni pruebas con SUPER_ADMIN si el siguiente cambio no toca seguridad, roles o datos privilegiados.

@@ -249,8 +249,8 @@ service cloud.firestore {
         )
       );
 
-      // Workshop ADMIN mutations go through the coordinated Auth + Firestore API.
-      allow delete: if request.auth != null && isSuperAdmin();
+      // All deletions go through coordinated server endpoints (Auth + Firestore).
+      allow delete: if false;
     }
 
     match /jobs/{jobId} {
