@@ -347,6 +347,28 @@ describe("public quote boundary", () => {
   });
 });
 
+describe("server-side reset boundary", () => {
+  it("does not let browsers delete operating data directly", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "inventory_transactions", "reset-tx"), {
+        workshopId: "ws-a",
+        itemId: "item-a",
+        itemName: "Repuesto",
+        type: "IN",
+        quantity: 1,
+        unitPrice: 1,
+        actorId: "admin-a",
+        createdAt: Timestamp.now(),
+      });
+    });
+    const adminDb = testEnv.authenticatedContext("admin-a", { email: "admin-a@example.test" }).firestore();
+    const superDb = testEnv.authenticatedContext("super", { email: "owner@example.test" }).firestore();
+    await assertFails(deleteDoc(doc(adminDb, "jobs", "job-a")));
+    await assertFails(deleteDoc(doc(superDb, "jobs", "job-a")));
+    await assertFails(deleteDoc(doc(adminDb, "inventory_transactions", "reset-tx")));
+  });
+});
+
 describe("job workflow boundaries", () => {
   const audit = (actorId: string, action: string) => ({
     actorId,

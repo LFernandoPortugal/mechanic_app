@@ -564,3 +564,21 @@ La validación queda en 113 unitarias, 24 Rules, 12 integraciones API y 4 E2E Ch
 - La firma de recepción tiene un presupuesto independiente de 150 000 caracteres; una firma fuera de rango se rechaza antes de escribir.
 - Firestore Rules repite los límites de firma, cantidad de fotos, tipo y tamaño individual, por lo que un cliente modificado no puede saltarse el presupuesto.
 - Pruebas de componente cubren el límite de cuatro fotos y Rules rechaza listas o firmas sobredimensionadas.
+
+---
+
+## v1.26 — Restablecimiento de taller coordinado por servidor (2026-08-14)
+
+### DATA-018: El navegador coordinaba una cascada destructiva parcial
+
+**Riesgo**: “Borrar datos” recorría órdenes, revocaba enlaces y eliminaba inventario/movimientos desde el SDK web. Un cierre, pérdida de red o permiso intermedio podía dejar una limpieza parcial y obligaba a mantener borrado directo de órdenes y movimientos en Rules.
+
+**Corrección y cobertura**:
+
+- `/api/workshop/reset` verifica token, rol, tenant, vigencia, confirmación y `allowResetData` antes de modificar datos.
+- ADMIN solo puede restablecer su propio taller; SUPER_ADMIN puede indicar otro taller, pero `master-control` está protegido.
+- El servidor elimina por lotes enlaces públicos, órdenes, inventario y movimientos; conserva usuarios y settings, registra `lastResetAt` y limpia la marca pendiente al completar.
+- Un reintento sobre datos ya ausentes devuelve éxito con contadores en cero.
+- Firestore Rules bloquea el borrado directo de órdenes y movimientos. La baja individual de inventario conserva su permiso destructivo existente.
+- Se eliminaron helpers cliente obsoletos que podían intentar borrar talleres o perfiles fuera de las API coordinadas.
+- La validación queda en 114 unitarias, 26 Rules, 18 integraciones API y 4 E2E Chromium; TypeScript, lint y build de 19 páginas/8 APIs pasan.

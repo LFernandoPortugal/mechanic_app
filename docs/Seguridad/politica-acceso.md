@@ -94,6 +94,9 @@ El ID de la orden no concede acceso por sí solo: un token ausente, incorrecto, 
 - Un movimiento existente no puede reutilizarse para volver a alterar el stock y los servicios con stock ilimitado no aceptan entradas/salidas ficticias.
 - Las reglas validan tipo, cantidad, actor, tenant y la aritmética del stock.
 - Los cambios de estado de jobs requieren una transición permitida y un append de auditoría del actor autenticado.
+- El restablecimiento completo pasa por `/api/workshop/reset`; deriva el tenant del ADMIN, exige `allowResetData`, borra también enlaces públicos y conserva `settings`.
+- SUPER_ADMIN puede indicar un taller objetivo, pero `master-control` no puede restablecerse. La operación usa lotes acotados, deja una marca mientras trabaja y es segura al reintentarse.
+- Los navegadores no pueden borrar directamente órdenes ni movimientos de inventario. La baja individual de un ítem continúa limitada a ADMIN y al permiso destructivo del taller.
 
 ## Firebase Storage
 

@@ -50,8 +50,7 @@ service cloud.firestore {
 
     function isResetAllowed(workshopId) {
       let settingsPath = /databases/$(database)/documents/settings/$(workshopId);
-      return exists(settingsPath)
-        && get(settingsPath).data.allowResetData == true;
+      return exists(settingsPath) && get(settingsPath).data.allowResetData == true;
     }
 
     function changesOnly(fields) {
@@ -296,12 +295,7 @@ service cloud.firestore {
               && isAdvisorQuoteUpdate())
           ))
       );
-      allow delete: if request.auth != null && (
-        isSuperAdmin()
-        || (isAdmin()
-          && isSameWorkshop(resource.data)
-          && isResetAllowed(resource.data.workshopId))
-      );
+      allow delete: if false;
     }
 
     match /inventory/{itemId} {
@@ -350,12 +344,7 @@ service cloud.firestore {
           && isAdmin())
         );
       allow update: if false;
-      allow delete: if request.auth != null && (
-        isSuperAdmin()
-        || (isAdmin()
-          && isSameWorkshop(resource.data)
-          && isResetAllowed(resource.data.workshopId))
-      );
+      allow delete: if false;
     }
 
     // Token hashes and issuance metadata are server-only. The Admin SDK used by

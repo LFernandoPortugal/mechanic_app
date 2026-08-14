@@ -384,10 +384,11 @@ La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos 
 ## Siguiente bloque recomendado
 
 1. La auditoría productiva Auth + Firestore quedó revisada: solo existen SUPER_ADMIN y `p1`, sin huérfanos ni duplicados. Mantener futuras revisiones en modo lectura antes de cualquier limpieza.
-2. Coordinar cualquier chat de Diseño mediante una rama `codex/*` distinta; verificar `origin/main`, rebase/merge no destructivo y los gates antes de integrar para evitar solapar archivos de runtime.
-3. La variante de pago completo antes de QC ya está cubierta por integración de API y QA histórico; automatizarla en navegador solo si se requiere una regresión visual/estado adicional.
-4. Mantener `p1` como fixture de testers hasta finalizar el flujo crítico y limpiar cada orden descartable creada. No repetir despliegues de Rules ni pruebas con SUPER_ADMIN si el siguiente cambio no toca seguridad, roles o datos privilegiados.
-5. Mantener aceptados por ahora los 5 avisos moderados dev-only de `firebase-tools`; no aplicar el downgrade automático sugerido por `npm audit --force`.
+2. El restablecimiento operativo ya pasa por API server-side y es reintentable; no volver a introducir cascadas de jobs/movimientos desde el navegador.
+3. Coordinar cualquier chat de Diseño mediante una rama `codex/*` distinta; verificar `origin/main`, rebase/merge no destructivo y los gates antes de integrar para evitar solapar archivos de runtime.
+4. La variante de pago completo antes de QC ya está cubierta por integración de API y QA histórico; automatizarla en navegador solo si se requiere una regresión visual/estado adicional.
+5. Mantener `p1` como fixture de testers hasta finalizar el flujo crítico y limpiar cada orden descartable creada. No repetir despliegues de Rules ni pruebas con SUPER_ADMIN si el siguiente cambio no toca seguridad, roles o datos privilegiados.
+6. Mantener aceptados por ahora los 5 avisos moderados dev-only de `firebase-tools`; no aplicar el downgrade automático sugerido por `npm audit --force`.
 
 ## Reglas para la próxima IA
 
