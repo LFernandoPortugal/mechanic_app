@@ -8,6 +8,7 @@ import {
 } from "@firebase/rules-unit-testing";
 import {
   doc,
+  deleteDoc,
   getDoc,
   getDocs,
   setDoc,
@@ -227,6 +228,19 @@ describe("user privilege boundaries", () => {
 
     await assertFails(
       updateDoc(doc(db, "users", "tech-a"), { roles: ["ADMIN"] }),
+    );
+  });
+
+  it("requires the coordinated server API for ADMIN role changes and deletions", async () => {
+    const db = testEnv
+      .authenticatedContext("admin-a", { email: "admin-a@example.test" })
+      .firestore();
+
+    await assertFails(
+      updateDoc(doc(db, "users", "tech-a"), { roles: ["ADMIN"] }),
+    );
+    await assertFails(
+      deleteDoc(doc(db, "users", "tech-a")),
     );
   });
 

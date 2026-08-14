@@ -1,6 +1,6 @@
 # Política de Acceso y Seguridad — SGA
 
-> Última actualización: 2026-08-12
+> Última actualización: 2026-08-14
 
 ## Principios
 
@@ -23,7 +23,11 @@
 - El panel SUPER_ADMIN crea talleres y su ADMIN mediante `/api/admin/users`, coordinando Firebase Auth + `settings` + `users`.
 - Si el email ya existe en Auth, la operación devuelve conflicto y no combina identidades.
 - El borrado coordinado elimina primero las cuentas Auth objetivo y después sus perfiles Firestore.
-- Un ADMIN puede modificar nombre/roles operativos dentro de su taller, pero no tenant, UID, email ni SUPER_ADMIN.
+- Un ADMIN crea, edita y elimina personal de su propio taller mediante `/api/workshop/users`; no escribe roles ni elimina perfiles directamente desde el SDK web.
+- Alta y baja coordinan Firebase Authentication con `users`. Si el email ya existe en Auth o ya tiene perfil, la API responde conflicto y nunca fusiona identidades automáticamente.
+- Un ADMIN puede modificar nombre/roles operativos, pero no tenant, UID, email ni SUPER_ADMIN; tampoco puede eliminarse a sí mismo ni retirar/eliminar la última cuenta ADMIN del taller.
+- La baja marca primero el perfil como pendiente, elimina Auth y finalmente elimina Firestore. Si el último paso falla, una repetición segura completa la limpieza sin recrear la identidad.
+- Firestore Rules reserva cambios de roles y borrados de perfiles a operaciones server-side/SUPER_ADMIN; el propio usuario solo puede editar su nombre.
 
 ## Trials y settings
 

@@ -48,13 +48,6 @@ service cloud.firestore {
           && isWorkshopActive(resourceData.workshopId));
     }
 
-    function isValidWorkshopRoles(roles) {
-      return roles is list
-        && roles.size() > 0
-        && roles.size() <= 4
-        && roles.hasOnly(['ADMIN', 'RECEPTION', 'TECHNICIAN', 'ADVISOR']);
-    }
-
     function isResetAllowed(workshopId) {
       let settingsPath = /databases/$(database)/documents/settings/$(workshopId);
       return exists(settingsPath)
@@ -254,24 +247,10 @@ service cloud.firestore {
           && request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['displayName', 'updatedAt'])
         )
-        || (
-          isAdmin()
-          && isSameWorkshop(resource.data)
-          && request.resource.data.workshopId == resource.data.workshopId
-          && request.resource.data.uid == resource.data.uid
-          && request.resource.data.email == resource.data.email
-          && isValidWorkshopRoles(request.resource.data.roles)
-          && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['displayName', 'roles', 'updatedAt'])
-        )
       );
 
-      allow delete: if request.auth != null && (
-        isSuperAdmin()
-        || (isAdmin()
-          && isSameWorkshop(resource.data)
-          && isResetAllowed(resource.data.workshopId))
-      );
+      // Workshop ADMIN mutations go through the coordinated Auth + Firestore API.
+      allow delete: if request.auth != null && isSuperAdmin();
     }
 
     match /jobs/{jobId} {

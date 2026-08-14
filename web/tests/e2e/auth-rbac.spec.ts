@@ -48,6 +48,57 @@ test("an ADMIN returns to the protected destination and opens user management", 
   await expect(page.getByText("4 usuarios registrados")).toBeVisible();
 });
 
+test("an ADMIN creates, edits, and completely deletes workshop staff", async ({ page }, testInfo) => {
+  const email = `staff-${testInfo.retry}@e2e.example.com`;
+  await page.goto("/login?redirect=%2Fadmin%2Fusers");
+  await signIn(page, "admin.e2e@example.com");
+  await expect(page).toHaveURL(/\/admin\/users$/);
+
+  await page.locator("#new-user-name").fill("Personal E2E");
+  await page.getByLabel("Correo", { exact: true }).fill(email);
+  await page.getByLabel("Contraseña temporal").fill("TemporaryStaff123!");
+  await page.getByRole("button", { name: "Técnico para nuevo usuario" }).click();
+  await page.getByRole("button", { name: "Recepción para nuevo usuario" }).click();
+
+  const createResponsePromise = page.waitForResponse(
+    (response) => response.url().endsWith("/api/workshop/users")
+      && response.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Crear usuario" }).click();
+  expect((await createResponsePromise).status()).toBe(201);
+  await expect(page.getByText("5 usuarios registrados")).toBeVisible();
+
+  const nameInput = page.getByLabel(`Nombre de ${email}`);
+  const userCard = nameInput.locator("xpath=ancestor::*[@data-slot='card'][1]");
+  await expect(userCard.getByText(email)).toBeVisible();
+  await nameInput.fill("Personal E2E Editado");
+  await userCard.getByRole("button", { name: "Asesor para Personal E2E" }).click();
+  const updateResponsePromise = page.waitForResponse(
+    (response) => response.url().endsWith("/api/workshop/users")
+      && response.request().method() === "PATCH",
+  );
+  await userCard.getByRole("button", { name: "Guardar usuario Personal E2E" }).click();
+  expect((await updateResponsePromise).status()).toBe(200);
+  await expect(nameInput).toHaveValue("Personal E2E Editado");
+
+  page.once("dialog", (dialog) => dialog.accept());
+  const deleteResponsePromise = page.waitForResponse(
+    (response) => response.url().endsWith("/api/workshop/users")
+      && response.request().method() === "DELETE",
+  );
+  await page.getByRole("button", { name: "Eliminar a Personal E2E Editado" }).click();
+  expect((await deleteResponsePromise).status()).toBe(200);
+  await expect(page.getByText("4 usuarios registrados")).toBeVisible();
+  await expect(page.getByText(email)).toHaveCount(0);
+
+  const authResponse = await fetch(
+    "http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/projects/demo-mechanic-app/accounts:batchGet?key=e2e-api-key",
+    { headers: { Authorization: "Bearer owner" } },
+  );
+  const authUsers = await authResponse.json() as { users?: Array<{ email?: string }> };
+  expect(authUsers.users?.map((user) => user.email) || []).not.toContain(email);
+});
+
 test("a RECEPTION user is denied technician access and can sign out", async ({ page }) => {
   await page.goto("/login");
   await signIn(page, "reception.e2e@example.com");
