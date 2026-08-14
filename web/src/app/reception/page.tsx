@@ -4,7 +4,12 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createJob, getJobsByVehicleId, getWorkshopSettings } from "@/lib/db";
-import { uploadJobImage } from "@/lib/storage";
+import {
+  MAX_RECEPTION_PHOTOS,
+  MAX_SIGNATURE_DATA_URL_CHARS,
+  MAX_SOURCE_IMAGE_BYTES,
+  uploadJobImage,
+} from "@/lib/storage";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -121,6 +126,10 @@ export default function Reception() {
     }
     if (!signatureDataUrl) {
       toast.warning(t('alertSignatureRequired'));
+      return;
+    }
+    if (signatureDataUrl.length > MAX_SIGNATURE_DATA_URL_CHARS) {
+      toast.error("La firma es demasiado grande. Límpiala y vuelve a firmar.");
       return;
     }
 
@@ -512,6 +521,7 @@ export default function Reception() {
                 <Label className="block mb-2 text-muted-foreground cursor-pointer" htmlFor="reception-camera">
                   Capturar Foto o Elegir Archivo
                 </Label>
+                <p className="mb-2 text-xs text-muted-foreground">Máximo 4 fotos; se comprimen antes de guardar la orden.</p>
                 <Input 
                   id="reception-camera"
                   type="file" 
@@ -520,7 +530,25 @@ export default function Reception() {
                   multiple 
                   onChange={(e) => {
                     if (e.target.files) {
-                      setPhotos((prev) => [...prev, ...Array.from(e.target.files!)]);
+                      const selected = Array.from(e.target.files).filter((file) => {
+                        if (!file.type.startsWith("image/")) {
+                          toast.warning(`${file.name}: el archivo no es una imagen.`);
+                          return false;
+                        }
+                        if (file.size > MAX_SOURCE_IMAGE_BYTES) {
+                          toast.warning(`${file.name}: supera el límite de 15 MB.`);
+                          return false;
+                        }
+                        return true;
+                      });
+                      setPhotos((prev) => {
+                        const available = Math.max(0, MAX_RECEPTION_PHOTOS - prev.length);
+                        if (selected.length > available) {
+                          toast.warning(`Puedes adjuntar como máximo ${MAX_RECEPTION_PHOTOS} fotos.`);
+                        }
+                        return [...prev, ...selected.slice(0, available)];
+                      });
+                      e.target.value = "";
                     }
                   }}
                   className="bg-background border-border"

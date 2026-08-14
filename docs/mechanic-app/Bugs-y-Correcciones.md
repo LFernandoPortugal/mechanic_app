@@ -548,3 +548,19 @@ La validación queda en 113 unitarias, 24 Rules, 12 integraciones API y 4 E2E Ch
 - Firestore Rules ya no permite borrar perfiles directamente, ni siquiera desde la UI SUPER_ADMIN; la coordinación Auth + Firestore es obligatoria.
 - Integraciones con Auth y Firestore Emulator cubren los cuatro estados de reconciliación, baja total y reintento. La suite queda en 113 unitarias, 25 Rules y 14 integraciones; TypeScript, lint y build de 19 páginas/7 APIs pasan.
 - `master-control` se considera un tenant reservado válido aunque no tenga documento `settings`; así la cuenta única SUPER_ADMIN no aparece como falso positivo en la auditoría.
+
+---
+
+## v1.25 — Presupuesto seguro para evidencia de recepción (2026-08-14)
+
+### DATA-017: Fotos ilimitadas podían superar el documento Firestore y perder la recepción
+
+**Riesgo**: Recepción permitía seleccionar cualquier número de imágenes y solo las comprimía a un ancho fijo. Cuatro o más fotos complejas —o una imagen vertical extrema— podían acercar o superar el límite de 1 MB de Firestore y hacer fallar el alta completa al final del formulario.
+
+**Corrección y cobertura**:
+
+- La UI acepta como máximo cuatro imágenes válidas, rechaza archivos no-imagen y originales mayores de 15 MB antes de procesarlos.
+- La compresión limita ambos ejes a 800 px y reduce calidad/dimensiones de forma acotada hasta respetar un presupuesto de 180 000 caracteres por foto.
+- La firma de recepción tiene un presupuesto independiente de 150 000 caracteres; una firma fuera de rango se rechaza antes de escribir.
+- Firestore Rules repite los límites de firma, cantidad de fotos, tipo y tamaño individual, por lo que un cliente modificado no puede saltarse el presupuesto.
+- Pruebas de componente cubren el límite de cuatro fotos y Rules rechaza listas o firmas sobredimensionadas.

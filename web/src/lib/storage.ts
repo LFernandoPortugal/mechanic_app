@@ -6,8 +6,13 @@
  * Size budget per Firestore document: 1 MB
  *   • Signature  ≈ 10-50 KB
  *   • Photo (800px JPEG 60%) ≈ 50-150 KB
- *   • 1 signature + 3 photos ≈ 300-500 KB  ✅ well within limit
+ *   • The UI accepts at most four photos and each encoded photo has a hard cap.
  */
+
+export const MAX_RECEPTION_PHOTOS = 4;
+export const MAX_SOURCE_IMAGE_BYTES = 15 * 1024 * 1024;
+export const MAX_IMAGE_DATA_URL_CHARS = 180_000;
+export const MAX_SIGNATURE_DATA_URL_CHARS = 150_000;
 
 /**
  * Compress a File (from <input type="file">) → base64 data URL string.
@@ -19,6 +24,14 @@ export const compressImageToBase64 = (
   quality = 0.6
 ): Promise<string> => {
   return new Promise((resolve, reject) => {
+    if (!file.type.startsWith("image/")) {
+      reject(new Error("El archivo seleccionado no es una imagen."));
+      return;
+    }
+    if (file.size > MAX_SOURCE_IMAGE_BYTES) {
+      reject(new Error("La imagen original supera el límite de 15 MB."));
+      return;
+    }
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = (event) => {
@@ -29,10 +42,9 @@ export const compressImageToBase64 = (
         let width = img.width;
         let height = img.height;
 
-        if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
-          width = maxWidth;
-        }
+        const scale = Math.min(1, maxWidth / width, maxWidth / height);
+        width = Math.max(1, Math.round(width * scale));
+        height = Math.max(1, Math.round(height * scale));
 
         canvas.width = width;
         canvas.height = height;
@@ -44,8 +56,21 @@ export const compressImageToBase64 = (
 
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Export as JPEG base64 data URL
-        const dataUrl = canvas.toDataURL("image/jpeg", quality);
+        let currentQuality = quality;
+        let dataUrl = canvas.toDataURL("image/jpeg", currentQuality);
+        for (let attempt = 0; dataUrl.length > MAX_IMAGE_DATA_URL_CHARS && attempt < 7; attempt += 1) {
+          currentQuality = Math.max(0.35, currentQuality - 0.08);
+          if (attempt >= 3) {
+            canvas.width = Math.max(320, Math.round(canvas.width * 0.82));
+            canvas.height = Math.max(240, Math.round(canvas.height * 0.82));
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          }
+          dataUrl = canvas.toDataURL("image/jpeg", currentQuality);
+        }
+        if (dataUrl.length > MAX_IMAGE_DATA_URL_CHARS) {
+          reject(new Error("La imagen no pudo reducirse al tamaño permitido."));
+          return;
+        }
         resolve(dataUrl);
       };
       img.onerror = (e) => reject(e);
