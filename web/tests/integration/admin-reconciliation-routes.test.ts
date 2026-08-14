@@ -78,6 +78,22 @@ describe("SUPER_ADMIN reconciliation", () => {
     });
   });
 
+  it("treats the reserved master-control SUPER_ADMIN tenant as valid without settings", async () => {
+    const uid = await createAuthUser({ email: "owner@example.test", password: "temporary-1234", displayName: "Owner" });
+    await db.collection("users").doc(uid).set({
+      uid,
+      email: "owner@example.test",
+      roles: ["SUPER_ADMIN"],
+      workshopId: "master-control",
+    });
+    const response = await reconcileUsers(request("http://localhost/api/admin/users"));
+    const body = await response.json() as { users: Array<{ email: string; status: string; hasWorkshop: boolean }> };
+    expect(body.users.find((user) => user.email === "owner@example.test")).toMatchObject({
+      status: "consistent",
+      hasWorkshop: true,
+    });
+  });
+
   it("deletes a workshop identity and all tenant data, and is safe to retry", async () => {
     const uid = await createAuthUser({ email: "delete@example.test", password: "temporary-1234", displayName: "Delete" });
     await db.collection("settings").doc(workshopId).set({ workshopName: "Delete" });

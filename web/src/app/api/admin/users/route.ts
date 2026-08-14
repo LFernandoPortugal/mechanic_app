@@ -53,6 +53,7 @@ export async function GET(request: Request) {
         const authUser = authByUid.get(uid);
         const profile = profilesByUid.get(uid);
         const workshopId = typeof profile?.workshopId === "string" ? profile.workshopId : "";
+        const hasWorkshop = !workshopId || workshopId === "master-control" || workshopIds.has(workshopId);
         return {
           uid,
           email: String(profile?.email || authUser?.email || ""),
@@ -61,10 +62,10 @@ export async function GET(request: Request) {
           roles: Array.isArray(profile?.roles) ? profile.roles.filter((role): role is string => typeof role === "string") : [],
           hasAuth: Boolean(authUser),
           hasProfile: Boolean(profile),
-          hasWorkshop: !workshopId || workshopIds.has(workshopId),
+          hasWorkshop,
           disabled: Boolean(authUser?.disabled),
           deletionPending: Boolean(profile?.deletionPendingAt),
-          status: !authUser ? "profile_only" : !profile ? "auth_only" : workshopId && !workshopIds.has(workshopId) ? "missing_workshop" : "consistent",
+          status: !authUser ? "profile_only" : !profile ? "auth_only" : !hasWorkshop ? "missing_workshop" : "consistent",
         };
       }),
     });

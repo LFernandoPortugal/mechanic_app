@@ -547,3 +547,4 @@ La validación queda en 113 unitarias, 24 Rules, 12 integraciones API y 4 E2E Ch
 - Si una identidad falla, los datos y settings se conservan con marca pendiente para un reintento; `master-control`, `demo-workshop`, el llamador y cualquier perfil `SUPER_ADMIN` quedan protegidos.
 - Firestore Rules ya no permite borrar perfiles directamente, ni siquiera desde la UI SUPER_ADMIN; la coordinación Auth + Firestore es obligatoria.
 - Integraciones con Auth y Firestore Emulator cubren los cuatro estados de reconciliación, baja total y reintento. La suite queda en 113 unitarias, 25 Rules y 14 integraciones; TypeScript, lint y build de 19 páginas/7 APIs pasan.
+- `master-control` se considera un tenant reservado válido aunque no tenga documento `settings`; así la cuenta única SUPER_ADMIN no aparece como falso positivo en la auditoría.
