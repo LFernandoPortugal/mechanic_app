@@ -1,7 +1,12 @@
 import { Timestamp } from "@google-cloud/firestore";
 import { NextResponse } from "next/server";
-import { getAdminFirestore, getGoogleAccessToken } from "@/lib/firebase-admin";
+import { getAdminFirestore } from "@/lib/firebase-admin";
 import { HttpError, requireSuperAdmin } from "@/lib/server-auth";
+import {
+  createAuthUser,
+  deleteAuthUser,
+  IdentityToolkitError,
+} from "@/lib/identity-toolkit-admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,43 +20,12 @@ const RESPONSE_HEADERS = {
 const json = (body: unknown, status = 200) =>
   NextResponse.json(body, { status, headers: RESPONSE_HEADERS });
 
-interface IdentityToolkitResponse {
-  localId?: string;
-  error?: { message?: string };
-}
-
 const projectId = () =>
   process.env.FIREBASE_ADMIN_PROJECT_ID
   || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
   || "";
 
 const apiKey = () => process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "";
-
-async function identityToolkitRequest(path: string, body: unknown) {
-  const token = await getGoogleAccessToken();
-  const response = await fetch(
-    `https://identitytoolkit.googleapis.com/v1/projects/${encodeURIComponent(projectId())}/${path}?key=${encodeURIComponent(apiKey())}`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-      cache: "no-store",
-    },
-  );
-  const result = await response.json() as IdentityToolkitResponse;
-  return { response, result };
-}
-
-async function deleteAuthUser(uid: string) {
-  const { response, result } = await identityToolkitRequest("accounts:delete", { localId: uid });
-  const code = result.error?.message || "";
-  if (!response.ok && code !== "USER_NOT_FOUND") {
-    throw new Error(code || "No se pudo eliminar la cuenta de Firebase Authentication.");
-  }
-}
 
 function errorResponse(error: unknown) {
   if (error instanceof HttpError) return json({ error: error.message }, error.status);
@@ -100,21 +74,18 @@ export async function POST(request: Request) {
     const settingsRef = db.collection("settings").doc(workshopId);
     if ((await settingsRef.get()).exists) throw new HttpError(409, "El taller ya existe.");
 
-    const { response, result } = await identityToolkitRequest("accounts", {
-      email,
-      password,
-      displayName: `${workshopName} Admin`,
-      emailVerified: false,
-      disabled: false,
-    });
-    if (!response.ok || !result.localId) {
-      const code = result.error?.message || "";
-      if (code.includes("EMAIL_EXISTS")) {
+    try {
+      createdUid = await createAuthUser({
+        email,
+        password,
+        displayName: `${workshopName} Admin`,
+      });
+    } catch (error) {
+      if (error instanceof IdentityToolkitError && error.code.includes("EMAIL_EXISTS")) {
         throw new HttpError(409, "El correo ya existe en Firebase Authentication; no se combinó con el taller nuevo.");
       }
-      throw new HttpError(400, code || "No se pudo crear la cuenta de acceso.");
+      throw error;
     }
-    createdUid = result.localId;
 
     const now = Timestamp.now();
     const userRef = db.collection("users").doc(createdUid);

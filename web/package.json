@@ -9,7 +9,7 @@
     "lint": "eslint",
     "test": "vitest run tests/unit",
     "test:rules": "firebase emulators:exec --only firestore --project demo-mechanic-app \"vitest run tests/firestore.rules.test.ts\"",
-    "test:integration": "firebase emulators:exec --only firestore --project demo-mechanic-app \"vitest run tests/integration\"",
+    "test:integration": "firebase emulators:exec --only auth,firestore --project demo-mechanic-app \"vitest run tests/integration --no-file-parallelism --maxWorkers=1\"",
     "test:all": "npm run test && npm run test:rules && npm run test:integration",
     "e2e:emulators": "firebase emulators:start --only auth,firestore --project demo-mechanic-app",
     "test:e2e": "playwright test"

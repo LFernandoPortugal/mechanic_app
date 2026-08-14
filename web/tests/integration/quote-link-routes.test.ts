@@ -159,7 +159,6 @@ beforeEach(async () => {
 afterAll(async () => {
   if (!db) return;
   await deleteFixture();
-  await db.terminate();
 });
 
 describe("revocable public quote route contract", () => {
