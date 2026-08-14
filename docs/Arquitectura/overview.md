@@ -75,3 +75,9 @@ Reception → Diagnosis → Approval → Approved → Repair → QC → Ready �
 - **Build**: Compilación nativa en Vercel disparada automáticamente mediante push a la rama `main` en GitHub.
 - **API routes**: No se requiere exportación estática.
 - **Autenticación server-side**: Vercel OIDC + Google Workload Identity Federation, sin claves JSON estáticas.
+
+## API routes privilegiadas
+
+- `POST/DELETE /api/admin/users`: SUPER_ADMIN crea un taller con su primer ADMIN o elimina cuentas globales coordinando Auth y Firestore.
+- `POST/PATCH/DELETE /api/workshop/users`: un ADMIN gestiona exclusivamente el personal de su taller; impide cruces de tenant, cuentas SUPER_ADMIN, autoeliminación y pérdida del último ADMIN.
+- El navegador consulta perfiles con Firestore, pero las mutaciones que afectan identidad o roles pasan por Vercel. Firebase Authentication conserva UID/email/credencial y `users/{uid}` es la fuente operativa de nombre, roles y taller.

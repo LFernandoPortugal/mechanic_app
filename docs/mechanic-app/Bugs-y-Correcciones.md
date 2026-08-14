@@ -509,3 +509,23 @@ La validación queda en 102 unitarias, 23 Rules, 8 integraciones API y 3 E2E Chr
 - Pruebas unitarias cubren aislamiento, expiración, corrupción y restauración de ambos formularios; el E2E completo vuelve a ejecutar los cambios de usuario con clics normales, sin `force` ni ocultar overlays.
 
 La validación queda en 107 unitarias, 23 Rules, 8 integraciones API y 3 E2E Chromium; TypeScript, lint, auditoría runtime en 0 vulnerabilidades y build de 19 páginas/5 APIs pasan. Todo usa fixtures o `demo-mechanic-app`; no se modificaron Rules, Firebase real, `p1` ni SUPER_ADMIN.
+
+---
+
+## v1.23 — Ciclo ADMIN consistente entre Auth y Firestore (2026-08-14)
+
+### DATA-015: Gestionar solo el perfil podía duplicar u orfanar identidades
+
+**Riesgo**: Gestión de Usuarios solo editaba roles en Firestore. No podía crear cuentas operativas y el borrado directo permitido en ciertas condiciones podía eliminar `users/{uid}` sin borrar Firebase Authentication. Esto reproducía la clase de incidente donde un correo seguía en Auth, desaparecía del taller o reaparecía asociado a perfiles inesperados.
+
+**Corrección y cobertura**:
+
+- `/api/workshop/users` coordina alta, edición y baja del personal del taller autenticado; deriva el tenant del ADMIN y nunca acepta `workshopId` del navegador.
+- El alta crea primero Auth y luego el perfil; si Firestore falla, compensa borrando la cuenta Auth. Un correo existente en Auth o Firestore devuelve 409 y no se combina automáticamente.
+- La edición limita roles a ADMIN/RECEPTION/TECHNICIAN/ADVISOR, bloquea cruces de taller y protege SUPER_ADMIN y el último ADMIN.
+- La baja prohíbe autoeliminación, marca la operación pendiente y elimina Auth antes del perfil. `USER_NOT_FOUND` es idempotente para que un reintento termine una limpieza interrumpida.
+- Firestore Rules deja de permitir a ADMIN cambiar roles o borrar perfiles directamente; esas mutaciones pasan por la API server-side.
+- La pantalla ADMIN incorpora alta, nombre/roles editables y baja explícita, con mensajes persistentes, estados de carga, ES/EN y confirmación destructiva.
+- Integraciones con Auth + Firestore Emulator demuestran creación conjunta, rechazo de duplicados, aislamiento de tenant, protección del último ADMIN y eliminación conjunta. El E2E verifica POST/PATCH/DELETE desde la UI y confirma al final que no queda la cuenta en Auth.
+
+La validación queda en 113 unitarias, 24 Rules, 12 integraciones API y 4 E2E Chromium; TypeScript, lint y build de 19 páginas/6 APIs pasan. La revisión visual local cubrió escritorio y 390×844 sin errores de consola. Todo usa `demo-mechanic-app`; no se modificaron `p1`, SUPER_ADMIN, Firebase real ni datos de Vercel durante las pruebas.

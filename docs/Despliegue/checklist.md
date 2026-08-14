@@ -35,7 +35,7 @@ npm.cmd run build
 - [x] TypeScript sin errores.
 - [x] Lint sin errores; warnings revisados/aceptados.
 - [x] Unit tests, integración de API routes y Firestore Emulator Rules tests pasan.
-- [x] E2E de login, redirect, RBAC y el flujo completo `Reception -> Diagnosis -> Approval -> Approved -> Repair -> QC -> Ready -> Delivered` pasa contra Auth/Firestore Emulator con proyecto `demo-mechanic-app`; cambia sesión entre RECEPTION, TECHNICIAN y ADVISOR e incluye firma, enlace público, rechazo/reintento de QC y pago autenticado, nunca Producción.
+- [x] E2E de login, redirect, RBAC, ciclo ADMIN de personal y flujo completo `Reception -> Diagnosis -> Approval -> Approved -> Repair -> QC -> Ready -> Delivered` pasa contra Auth/Firestore Emulator con proyecto `demo-mechanic-app`; crea/edita/elimina una cuenta en Auth + Firestore, cambia sesión entre RECEPTION, TECHNICIAN y ADVISOR e incluye firma, enlace público, rechazo/reintento de QC y pago autenticado, nunca Producción.
 - [x] Build Next.js completo pasa. Next.js genera `.next`, no `out/`.
 
 ## Preview Vercel
@@ -50,12 +50,15 @@ npm.cmd run build
 - [x] Probar pago autenticado descartable antes de producción.
 - [x] Probar QC autenticado: pago previo no debe omitir checklist; pass debe ir a Ready/Delivered según saldo y fail debe volver a Repair.
 - [x] Probar creación/borrado de taller descartable con SUPER_ADMIN antes de producción.
+- [x] Probar con emuladores que un ADMIN crea, edita y elimina personal en Auth + Firestore; correo repetido, cruce de tenant, autoeliminación y pérdida del último ADMIN deben rechazarse.
 
 ## Firebase
 
 Solo si cambiaron reglas/índices, desde `web/` y después de confirmar proyecto:
 
 > Compatibilidad de esta estabilización: `main` anterior todavía ejecuta QC directamente desde el cliente. Primero debe estar listo en Vercel el código con `/api/jobs/[id]/qc`; inmediatamente después se despliegan las reglas que niegan esa escritura directa.
+
+> Compatibilidad del ciclo de usuarios: antes de publicar Rules que niegan al ADMIN editar/eliminar `users` directamente, confirmar que Vercel ya sirve `/api/workshop/users`. Después desplegar únicamente `firestore:rules`.
 
 ```powershell
 firebase use
