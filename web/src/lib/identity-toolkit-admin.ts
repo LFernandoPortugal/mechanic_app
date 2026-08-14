@@ -13,6 +13,12 @@ interface IdentityToolkitResponse {
   localId?: string;
   users?: IdentityToolkitUser[];
   error?: { message?: string };
+  nextPageToken?: string;
+}
+
+export interface AuthUserInventory {
+  users: Array<Required<Pick<IdentityToolkitUser, "localId">> & IdentityToolkitUser>;
+  truncated: boolean;
 }
 
 export class IdentityToolkitError extends Error {
@@ -135,4 +141,28 @@ export async function deleteAuthUser(uid: string) {
     if (error instanceof IdentityToolkitError && error.code.includes("USER_NOT_FOUND")) return;
     throw error;
   }
+}
+
+export async function listAuthUsers(maxUsers = 1000): Promise<AuthUserInventory> {
+  const users: AuthUserInventory["users"] = [];
+  let nextPageToken: string | undefined;
+  do {
+    const endpoint = new URL(getIdentityToolkitAdminEndpoint("lookup"));
+    endpoint.pathname = endpoint.pathname.replace("accounts:lookup", "accounts:batchGet");
+    endpoint.searchParams.set("maxResults", String(Math.min(1000, maxUsers - users.length)));
+    if (nextPageToken) endpoint.searchParams.set("nextPageToken", nextPageToken);
+    const emulator = process.env.NODE_ENV !== "production" && process.env.USE_FIREBASE_EMULATORS === "true";
+    const token = emulator ? null : await getGoogleAccessToken();
+    const response = await fetch(endpoint, {
+      headers: { Authorization: emulator ? "Bearer owner" : `Bearer ${token}` },
+      cache: "no-store",
+    });
+    const result = await response.json() as IdentityToolkitResponse;
+    if (!response.ok) throw new IdentityToolkitError(result.error?.message || "IDENTITY_TOOLKIT_ERROR", response.status);
+    for (const candidate of result.users || []) {
+      if (candidate.localId) users.push({ ...candidate, localId: candidate.localId });
+    }
+    nextPageToken = result.nextPageToken;
+  } while (nextPageToken && users.length < maxUsers);
+  return { users, truncated: Boolean(nextPageToken) };
 }

@@ -6,6 +6,7 @@ import {
   createAuthUser,
   deleteAuthUser,
   IdentityToolkitError,
+  listAuthUsers,
 } from "@/lib/identity-toolkit-admin";
 
 export const runtime = "nodejs";
@@ -31,6 +32,45 @@ function errorResponse(error: unknown) {
   if (error instanceof HttpError) return json({ error: error.message }, error.status);
   console.error("Admin user operation failed:", error);
   return json({ error: "No se pudo completar la operación de usuarios." }, 500);
+}
+
+export async function GET(request: Request) {
+  try {
+    await requireSuperAdmin(request);
+    const db = getAdminFirestore();
+    const [authInventory, profilesSnapshot, settingsSnapshot] = await Promise.all([
+      listAuthUsers(),
+      db.collection("users").get(),
+      db.collection("settings").get(),
+    ]);
+    const authByUid = new Map(authInventory.users.map((entry) => [entry.localId, entry]));
+    const profilesByUid = new Map(profilesSnapshot.docs.map((entry) => [entry.id, entry.data()]));
+    const workshopIds = new Set(settingsSnapshot.docs.map((entry) => entry.id));
+    const uids = [...new Set([...authByUid.keys(), ...profilesByUid.keys()])].sort();
+    return json({
+      truncated: authInventory.truncated,
+      users: uids.map((uid) => {
+        const authUser = authByUid.get(uid);
+        const profile = profilesByUid.get(uid);
+        const workshopId = typeof profile?.workshopId === "string" ? profile.workshopId : "";
+        return {
+          uid,
+          email: String(profile?.email || authUser?.email || ""),
+          displayName: String(profile?.displayName || authUser?.displayName || ""),
+          workshopId,
+          roles: Array.isArray(profile?.roles) ? profile.roles.filter((role): role is string => typeof role === "string") : [],
+          hasAuth: Boolean(authUser),
+          hasProfile: Boolean(profile),
+          hasWorkshop: !workshopId || workshopIds.has(workshopId),
+          disabled: Boolean(authUser?.disabled),
+          deletionPending: Boolean(profile?.deletionPendingAt),
+          status: !authUser ? "profile_only" : !profile ? "auth_only" : workshopId && !workshopIds.has(workshopId) ? "missing_workshop" : "consistent",
+        };
+      }),
+    });
+  } catch (error) {
+    return errorResponse(error);
+  }
 }
 
 export async function POST(request: Request) {
@@ -166,12 +206,27 @@ export async function DELETE(request: Request) {
       throw new HttpError(400, "No se puede eliminar una cuenta SUPER_ADMIN.");
     }
 
-    for (const uid of uids) await deleteAuthUser(uid);
-
-    const batch = db.batch();
-    profiles.forEach((profile) => batch.delete(profile.ref));
-    await batch.commit();
-    return json({ ok: true, deleted: uids.length });
+    const results = [];
+    for (const profile of profiles) {
+      const uid = profile.id;
+      try {
+        if (profile.exists) await profile.ref.set({ deletionPendingAt: Timestamp.now() }, { merge: true });
+        await deleteAuthUser(uid);
+        if (profile.exists) await profile.ref.delete();
+        results.push({ uid, ok: true });
+      } catch (operationError) {
+        console.error(`Unable to delete user ${uid}:`, operationError);
+        results.push({ uid, ok: false });
+      }
+    }
+    const failed = results.filter((result) => !result.ok);
+    return json({
+      ok: failed.length === 0,
+      deleted: results.length - failed.length,
+      failed: failed.map((result) => result.uid),
+      results,
+      ...(failed.length ? { error: "Algunas cuentas no pudieron eliminarse; puedes reintentar la operación." } : {}),
+    }, failed.length ? 207 : 200);
   } catch (error) {
     if (error instanceof SyntaxError) return json({ error: "JSON inválido." }, 400);
     return errorResponse(error);

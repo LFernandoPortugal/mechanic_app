@@ -529,3 +529,21 @@ La validación queda en 107 unitarias, 23 Rules, 8 integraciones API y 3 E2E Chr
 - Integraciones con Auth + Firestore Emulator demuestran creación conjunta, rechazo de duplicados, aislamiento de tenant, protección del último ADMIN y eliminación conjunta. El E2E verifica POST/PATCH/DELETE desde la UI y confirma al final que no queda la cuenta en Auth.
 
 La validación queda en 113 unitarias, 24 Rules, 12 integraciones API y 4 E2E Chromium; TypeScript, lint y build de 19 páginas/6 APIs pasan. La revisión visual local cubrió escritorio y 390×844 sin errores de consola. Todo usa `demo-mechanic-app`; no se modificaron `p1`, SUPER_ADMIN, Firebase real ni datos de Vercel durante las pruebas.
+
+---
+
+## v1.24 — Reconciliación global y bajas reintentables (2026-08-14)
+
+### DATA-016: El panel global no distinguía Auth de Firestore y una baja podía quedar a medias
+
+**Riesgo**: SUPER_ADMIN contaba únicamente documentos `users`. Una identidad existente solo en Firebase Authentication era invisible; una baja total coordinada por el navegador podía borrar el perfil o el taller sin confirmar que todos sus accesos Auth hubieran desaparecido.
+
+**Corrección y cobertura**:
+
+- `GET /api/admin/users` construye un inventario sanitizado y solo-lectura de Auth, perfiles y talleres, con estados `consistent`, `auth_only`, `profile_only` y `missing_workshop`.
+- La auditoría global muestra esas diferencias sin exponer contraseñas, tokens ni secretos.
+- Las bajas de usuarios marcan el perfil como pendiente, consideran idempotente `USER_NOT_FOUND`, informan resultados por UID y permiten terminar un intento interrumpido.
+- `DELETE /api/admin/workshops` mueve la cascada al servidor: primero elimina todas las identidades del taller y únicamente después elimina enlaces públicos, órdenes, inventario, movimientos, perfiles y settings.
+- Si una identidad falla, los datos y settings se conservan con marca pendiente para un reintento; `master-control`, `demo-workshop`, el llamador y cualquier perfil `SUPER_ADMIN` quedan protegidos.
+- Firestore Rules ya no permite borrar perfiles directamente, ni siquiera desde la UI SUPER_ADMIN; la coordinación Auth + Firestore es obligatoria.
+- Integraciones con Auth y Firestore Emulator cubren los cuatro estados de reconciliación, baja total y reintento. La suite queda en 113 unitarias, 25 Rules y 14 integraciones; TypeScript, lint y build de 19 páginas/7 APIs pasan.
