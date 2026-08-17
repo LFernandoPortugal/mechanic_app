@@ -48,73 +48,75 @@
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.75rem;
   /* ── Light Theme — SGA Branded Palette (Emerald + Amber) ─── */
-  --background: oklch(0.98 0.006 160);       /* Blanco con tinte verde muy sutil */
-  --foreground: oklch(0.15 0.015 160);       /* Casi negro con tinte verde */
+  --background: #f5f7fb;
+  --foreground: #13213c;
   --card: oklch(1 0 0);                      /* Blanco puro para cards */
   --card-foreground: oklch(0.15 0.015 160);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.15 0.015 160);
-  --primary: oklch(0.42 0.15 160);           /* Emerald oscuro — botones principales */
-  --primary-foreground: oklch(0.99 0 0);     /* Blanco puro */
-  --secondary: oklch(0.92 0.045 160);        /* Verde muy claro */
-  --secondary-foreground: oklch(0.28 0.09 160); /* Verde oscuro */
-  --muted: oklch(0.94 0.018 160);            /* Fondo de elementos apagados */
-  --muted-foreground: oklch(0.46 0.035 160); /* Texto de apoyo — gris verdoso */
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --secondary: #e9effb;
+  --secondary-foreground: #1e3a68;
+  --muted: #eef2f8;
+  --muted-foreground: #5d6b82;
   --accent: oklch(0.78 0.16 55);             /* Naranja/ámbar para highlights */
   --accent-foreground: oklch(0.18 0.06 55);  /* Texto oscuro sobre accent */
   --destructive: oklch(0.55 0.22 28);        /* Rojo */
-  --border: oklch(0.88 0.022 160);           /* Borde con tinte verde sutil */
-  --input: oklch(0.95 0.012 160);            /* Input background */
-  --ring: oklch(0.42 0.15 160);              /* Focus ring = primary */
+  --border: #dce3ef;
+  --input: #ffffff;
+  --ring: #2563eb;
   --chart-1: oklch(0.52 0.20 160);           /* Emerald vibrante */
   --chart-2: oklch(0.58 0.19 220);           /* Azul */
   --chart-3: oklch(0.68 0.19 55);            /* Naranja */
   --chart-4: oklch(0.55 0.22 305);           /* Violeta */
   --chart-5: oklch(0.62 0.21 15);            /* Rojo-naranja */
-  --sidebar: oklch(0.96 0.018 160);          /* Sidebar fondo */
-  --sidebar-foreground: oklch(0.20 0.05 160);
-  --sidebar-primary: oklch(0.42 0.15 160);
+  --sidebar: #eef3fb;
+  --sidebar-foreground: #1d2b45;
+  --sidebar-primary: #2563eb;
   --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.90 0.04 160);
-  --sidebar-accent-foreground: oklch(0.28 0.09 160);
-  --sidebar-border: oklch(0.88 0.022 160);
-  --sidebar-ring: oklch(0.42 0.15 160);
+  --sidebar-accent: #dfe9fa;
+  --sidebar-accent-foreground: #16376d;
+  --sidebar-border: #d5deec;
+  --sidebar-ring: #2563eb;
+  --success: #16845b;
 }
 
 .dark {
-  --background: oklch(0.12 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.15 0 0);
+  --background: #08111f;
+  --foreground: #eef4ff;
+  --card: #101d30;
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.15 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.75 0.25 140);
-  --primary-foreground: oklch(0.12 0 0);
-  --secondary: oklch(0.269 0 0);
+  --primary: #6ea8ff;
+  --primary-foreground: #071221;
+  --secondary: #182944;
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
+  --muted: #17263b;
+  --muted-foreground: #a6b4c9;
   --accent: oklch(0.65 0.25 40);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.75 0.25 140);
+  --border: #263751;
+  --input: #111f33;
+  --ring: #6ea8ff;
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
+  --sidebar: #0c1829;
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.75 0.25 140);
+  --sidebar-primary: #6ea8ff;
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.75 0.25 140);
+  --sidebar-accent: #172943;
+  --sidebar-accent-foreground: #e8f1ff;
+  --sidebar-border: #21334c;
+  --sidebar-ring: #6ea8ff;
+  --success: #49c997;
 }
 /* ── Touch ripple animation ───────────────────────────────── */
 @keyframes touch-ripple {
@@ -126,6 +128,32 @@
 }
 
 @layer utilities {
+  .app-card { @apply rounded-2xl border border-border bg-card text-card-foreground shadow-[0_8px_28px_rgba(31,47,79,0.07)]; }
+  .dark .app-card { box-shadow: 0 12px 34px rgba(0,0,0,.24); }
+  .page-title { @apply text-2xl font-bold tracking-[-0.025em] sm:text-3xl; }
+  .section-title { @apply text-lg font-semibold tracking-[-0.015em]; }
+  .eyebrow { @apply mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-primary; }
+  .metric-card { @apply rounded-2xl border border-border bg-card p-4 shadow-[0_6px_20px_rgba(31,47,79,0.06)] sm:p-5; }
+  .app-button-primary, .app-button-secondary { @apply inline-flex min-h-11 items-center rounded-xl px-4 text-sm font-semibold transition-colors; }
+  .app-button-primary { @apply bg-primary text-primary-foreground hover:brightness-95; }
+  .app-button-secondary { @apply border border-border bg-card text-foreground hover:bg-muted; }
+  .tool-button { @apply inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50; }
+  .theme-switch { @apply flex rounded-xl border border-border bg-muted p-1; }
+  .theme-switch button { @apply flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground; }
+  .theme-switch button[aria-pressed="true"] { @apply bg-card text-primary shadow-sm; }
+  .brand-mark { @apply flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm; }
+  .sidebar-link { @apply flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium text-sidebar-foreground/75 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground; }
+  .sidebar-link-active { @apply bg-sidebar-accent text-sidebar-accent-foreground; box-shadow: inset 3px 0 var(--sidebar-primary); }
+  .dark .sidebar-link { color: #b8c6db; }
+  .dark .sidebar-link:hover { color: #eef4ff; background: #172943; }
+  .dark .sidebar-link-active { color: #eef4ff; background: #172943; }
+  .dark .sidebar-link:disabled { color: #71819a; }
+  .mobile-nav-link { @apply flex min-h-14 flex-col items-center justify-center gap-1 text-[10px] font-semibold text-muted-foreground; }
+  .workflow-step { @apply flex min-h-20 items-center gap-3 rounded-xl border border-border bg-muted/55 p-3; }
+  .workflow-index { @apply flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-xs font-bold text-primary; }
+  .status-dot { @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-xl; }
+  .status-warning { @apply bg-amber-500/15 text-amber-700 dark:text-amber-300; }
+  .text-success { color: var(--success); }
   /* Glass panel — light mode base */
   .glass-panel {
     @apply bg-white/95 backdrop-blur-md border border-border shadow-sm transition-all duration-200;

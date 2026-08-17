@@ -48,6 +48,28 @@ test("an ADMIN returns to the protected destination and opens user management", 
   await expect(page.getByText("4 usuarios registrados")).toBeVisible();
 });
 
+test("the ADMIN dashboard supports both themes and mobile navigation", async ({ page }, testInfo) => {
+  await page.goto("/login?redirect=%2F");
+  await signIn(page, "admin.e2e@example.com");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("heading", { name: "Resumen operativo" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Main navigation" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "El taller aún no tiene órdenes" })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("dashboard-light-desktop.png"), fullPage: true });
+
+  await page.getByRole("button", { name: "Tema: dark" }).click();
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  await page.screenshot({ path: testInfo.outputPath("dashboard-dark-desktop.png"), fullPage: true });
+  await page.getByRole("button", { name: "Tema: light" }).click();
+  await expect(page.locator("html")).not.toHaveClass(/dark/);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByRole("navigation", { name: "Mobile navigation" })).toBeVisible();
+  await page.getByRole("button", { name: "Más" }).click();
+  await expect(page.getByRole("dialog", { name: "Más" })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("dashboard-light-mobile.png"), fullPage: true });
+});
+
 test("an ADMIN creates, edits, and completely deletes workshop staff", async ({ page }, testInfo) => {
   const email = `staff-${testInfo.retry}@e2e.example.com`;
   await page.goto("/login?redirect=%2Fadmin%2Fusers");

@@ -1,48 +1,50 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 type Theme = "dark" | "light";
+export type ThemePreference = Theme | "system";
 
 interface ThemeContextType {
   theme: Theme;
+  preference: ThemePreference;
+  setTheme: (theme: ThemePreference) => void;
   toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
-  const initialized = useRef(false);
+  const [preference, setPreference] = useState<ThemePreference>("system");
+  const [theme, setResolvedTheme] = useState<Theme>("light");
 
   useEffect(() => {
-    // Check local storage or system preference on mount
-    const savedTheme = localStorage.getItem("app-theme") as Theme | null;
-    const preferredTheme = savedTheme
-      || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
-    const frame = window.requestAnimationFrame(() => {
-      initialized.current = true;
-      window.document.documentElement.classList.toggle("dark", preferredTheme === "dark");
-      setTheme(preferredTheme);
+    const saved = localStorage.getItem("app-theme") as ThemePreference | null;
+    const frame = requestAnimationFrame(() => {
+      if (saved === "light" || saved === "dark" || saved === "system") setPreference(saved);
     });
-    return () => window.cancelAnimationFrame(frame);
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {
-    if (!initialized.current) return;
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const apply = () => {
+      const resolved: Theme = preference === "system" ? (media.matches ? "dark" : "light") : preference;
+      setResolvedTheme(resolved);
+      const root = document.documentElement;
+      root.classList.toggle("dark", resolved === "dark");
+      root.dataset.theme = resolved;
+    };
+    apply(); media.addEventListener("change", apply);
+    localStorage.setItem("app-theme", preference);
+    return () => media.removeEventListener("change", apply);
+  }, [preference]);
 
-    // Apply and persist theme only after the saved preference has been read.
-    const root = window.document.documentElement;
-    root.classList.toggle("dark", theme === "dark");
-    localStorage.setItem("app-theme", theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme(prev => prev === "dark" ? "light" : "dark");
-  };
+  const setTheme = (value: ThemePreference) => setPreference(value);
+  const toggleTheme = () => setPreference(theme === "dark" ? "light" : "dark");
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, preference, setTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

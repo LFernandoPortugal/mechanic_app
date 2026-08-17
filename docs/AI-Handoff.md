@@ -382,6 +382,15 @@ La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos 
 5. Las pruebas destructivas usaron solo Auth/Firestore Emulator con `demo-mechanic-app`: 113 unitarias, 25 Rules y 14 integraciones pasan; TypeScript, lint y build de 19 páginas/7 APIs también pasan.
 6. Este bloque aún no afirma ni ejecuta limpieza de datos reales. La primera revisión productiva debe ser solo lectura y cada divergencia debe confirmarse antes de eliminarla.
 
+## Experimento visual Phase 1 del 2026-08-17
+
+1. La rama `codex/help-premium-design` contiene un primer prototipo funcional del brief azul: tokens semánticos claros/oscuros, preferencia `light/dark/system`, shell ADMIN, sidebar de escritorio, navegación inferior móvil y header compacto.
+2. `/` conserva su ruta y presenta el nuevo dashboard solamente a ADMIN; los demás roles mantienen el inicio anterior. No cambiaron endpoints, modelos, Rules, infraestructura ni el workflow.
+3. El dashboard deriva seis KPI, órdenes que requieren atención y pagos exclusivamente de campos existentes. El componente reutilizable `OrderWorkflow` mantiene exactamente `Reception -> Diagnosis -> Approval -> Approved -> Repair -> QC -> Ready -> Delivered`.
+4. Ayuda se muestra deshabilitada como “Próximamente”; esta fase no implementa `/help` ni migra Reception, Advisor, Technician o Super Admin, de acuerdo con el alcance aprobado para el experimento.
+5. TypeScript, lint y build pasan. Los 5 E2E pasan contra Auth/Firestore Emulator y `demo-mechanic-app`, incluido el nuevo control de temas y navegación móvil. La suite unitaria quedó en 115/117 por dos timeouts no deterministas en pruebas antiguas de inventario y recepción; `dashboard.test.ts` sí pasa.
+6. No se desplegó, no se abrió PR y no se tocaron producción, Firebase real, `p1` ni SUPER_ADMIN. Antes de ampliar el rediseño, el usuario debe revisar y aprobar esta dirección visual.
+
 ## Siguiente bloque recomendado
 
 1. La auditoría productiva Auth + Firestore quedó revisada: solo existen SUPER_ADMIN y `p1`, sin huérfanos ni duplicados. Mantener futuras revisiones en modo lectura antes de cualquier limpieza.

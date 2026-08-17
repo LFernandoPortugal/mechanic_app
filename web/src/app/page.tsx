@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ROLE_BADGE_CLASSES, ROLE_ROUTE_MAP, ROLE_META } from '@/types';
 import { ClipboardList, Wrench, DollarSign, BarChart3, ShieldCheck, Package, ArrowRight, Settings, Users2, Crown } from 'lucide-react';
 import { useRealtimeJobs } from '@/hooks/useRealtimeJobs';
+import { AdminDashboard } from '@/components/dashboard/AdminDashboard';
 
 interface NavCard {
   href: string;
@@ -122,6 +123,11 @@ const allCards: NavCard[] = [
 ];
 
 export default function Home() {
+  const { hasRole } = useAuth();
+  return hasRole('ADMIN') ? <AdminDashboard /> : <LegacyHome />;
+}
+
+function LegacyHome() {
   const { t } = useLanguage();
   const { user, userProfile, workshopSettings, hasAnyRole, hasRole, loading } = useAuth();
   

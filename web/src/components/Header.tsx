@@ -4,7 +4,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Sun, Moon, Globe, LogOut, Users, Crown } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ROLE_BADGE_CLASSES, ROLE_META } from "@/types";
 import Link from "next/link";
 
@@ -13,6 +13,7 @@ export function Header() {
   const { lang, setLanguage, t } = useLanguage();
   const { user, userProfile, signOut, hasRole } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleSignOut = async () => {
     await signOut();
@@ -27,6 +28,8 @@ export function Header() {
     : null;
 
   const roleMeta = primaryRole ? ROLE_META[primaryRole] : null;
+
+  if (pathname === "/" && hasRole("ADMIN")) return null;
 
   return (
     <header className="w-full sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
