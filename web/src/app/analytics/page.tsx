@@ -1,19 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { getAllJobs } from "@/lib/db";
 import { Job } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/contexts/AuthContext";
 import { toDate } from "@/lib/dates";
-import { Activity, CircleDollarSign, Wrench, Users, TrendingUp, Calendar, ArrowLeft } from "lucide-react";
+import { Activity, CircleDollarSign, Wrench, Users, TrendingUp, Calendar } from "lucide-react";
 
 export default function OwnerAnalytics() {
-  const router = useRouter();
   const { userProfile, loading: authLoading, workshopSettings } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
@@ -105,9 +102,9 @@ export default function OwnerAnalytics() {
   if (loading) {
     return (
       <ProtectedRoute allowedRoles={['ADMIN']}>
-        <div className="min-h-screen page-bg text-foreground p-6 flex items-center justify-center font-sans">
+        <div className="flex min-h-[50vh] items-center justify-center text-foreground">
           <div className="flex flex-col items-center gap-3">
-            <span className="animate-spin text-emerald-400 text-3xl">⏳</span>
+            <span className="h-8 w-8 animate-spin rounded-full border-2 border-primary/25 border-t-primary" />
             <p className="text-muted-foreground text-sm">Cargando analíticas del taller...</p>
           </div>
         </div>
@@ -117,40 +114,27 @@ export default function OwnerAnalytics() {
 
   return (
     <ProtectedRoute allowedRoles={['ADMIN']}>
-      <div className="min-h-screen page-bg px-4 md:px-8 py-8 max-w-7xl mx-auto space-y-8 pb-20 font-sans">
+      <div className="mx-auto max-w-7xl space-y-8 pb-20">
         <header className="mb-8 flex justify-between items-center flex-wrap gap-4">
           <div className="flex items-center gap-3">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="group gap-1.5 rounded-full border border-border bg-card/45 px-3.5 py-1.5 text-xs text-muted-foreground transition-all duration-300 hover:border-emerald-500/50 hover:bg-emerald-950/20 hover:text-emerald-400"
-              onClick={() => router.push("/")}
-            >
-              <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
-              Inicio
-            </Button>
             <div>
-              <h1 className="text-3xl font-extrabold text-foreground mb-1 tracking-tight">
-                📊 Rendimiento del Taller
-              </h1>
+              <h1 className="page-title">Rendimiento del taller</h1>
               <p className="text-muted-foreground text-xs">Estadísticas en vivo e indicadores de facturación del taller.</p>
             </div>
           </div>
-          <Badge variant="outline" className="border-emerald-500/50 text-emerald-400 text-xs px-3 py-1 bg-emerald-950/20 font-mono gap-1.5 flex items-center ml-12 sm:ml-0">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            LIVE DATA
+          <Badge variant="outline" className="border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary">
+            Datos en tiempo real
           </Badge>
         </header>
 
         {/* Quick Metrics */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <Card className="glass-panel border-l-4 border-l-emerald-500 hover:shadow-[0_0_20px_rgba(16,185,129,0.1)] transition-all">
+          <Card className="metric-card border-l-4 border-l-primary">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-muted-foreground font-medium text-xs uppercase tracking-wider">Facturación Total</span>
-                <div className="p-2 bg-emerald-500/10 rounded-lg">
-                  <CircleDollarSign className="w-5 h-5 text-emerald-400" />
+                <div className="rounded-lg bg-primary/10 p-2">
+                  <CircleDollarSign className="w-5 h-5 text-primary" />
                 </div>
               </div>
               <div className="text-3xl font-black tracking-tight text-foreground font-mono">
@@ -160,12 +144,12 @@ export default function OwnerAnalytics() {
             </CardContent>
           </Card>
 
-          <Card className="glass-panel border-l-4 border-l-blue-500 hover:shadow-[0_0_20px_rgba(59,130,246,0.1)] transition-all">
+          <Card className="metric-card border-l-4 border-l-primary">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-muted-foreground font-medium text-xs uppercase tracking-wider">Vehículos Activos</span>
-                <div className="p-2 bg-blue-500/10 rounded-lg">
-                  <Wrench className="w-5 h-5 text-blue-400" />
+                <div className="rounded-lg bg-primary/10 p-2">
+                  <Wrench className="w-5 h-5 text-primary" />
                 </div>
               </div>
               <div className="text-3xl font-black tracking-tight text-foreground font-mono">
@@ -175,12 +159,12 @@ export default function OwnerAnalytics() {
             </CardContent>
           </Card>
 
-          <Card className="glass-panel border-l-4 border-l-amber-500 hover:shadow-[0_0_20px_rgba(245,158,11,0.1)] transition-all">
+          <Card className="metric-card border-l-4 border-l-warning">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-muted-foreground font-medium text-xs uppercase tracking-wider">Tasa de Aprobación</span>
-                <div className="p-2 bg-amber-500/10 rounded-lg">
-                  <Activity className="w-5 h-5 text-amber-400" />
+                <div className="rounded-lg bg-warning/10 p-2">
+                  <Activity className="w-5 h-5 text-warning" />
                 </div>
               </div>
               <div className="text-3xl font-black tracking-tight text-foreground font-mono">
@@ -190,12 +174,12 @@ export default function OwnerAnalytics() {
             </CardContent>
           </Card>
           
-          <Card className="glass-panel border-l-4 border-l-purple-500 hover:shadow-[0_0_20px_rgba(168,85,247,0.1)] transition-all">
+          <Card className="metric-card border-l-4 border-l-primary">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-muted-foreground font-medium text-xs uppercase tracking-wider">Total Histórico</span>
-                <div className="p-2 bg-purple-500/10 rounded-lg">
-                  <Users className="w-5 h-5 text-purple-400" />
+                <div className="rounded-lg bg-primary/10 p-2">
+                  <Users className="w-5 h-5 text-primary" />
                 </div>
               </div>
               <div className="text-3xl font-black tracking-tight text-foreground font-mono">
@@ -210,10 +194,10 @@ export default function OwnerAnalytics() {
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
           
           {/* Neon Gradient Revenue Chart (7/12 width = 58%) */}
-          <Card className="glass-panel xl:col-span-7 flex flex-col justify-between">
+          <Card className="app-card xl:col-span-7 flex flex-col justify-between">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-emerald-400" />
+                <TrendingUp className="w-5 h-5 text-primary" />
                 Ingresos de los Últimos 7 Días
               </CardTitle>
               <CardDescription>Cobros y abonos realizados esta semana</CardDescription>
@@ -224,8 +208,8 @@ export default function OwnerAnalytics() {
                 <svg className="w-full h-full overflow-visible" viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="none">
                   <defs>
                     <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.4" />
-                      <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
+                      <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.28" />
+                      <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
                     </linearGradient>
                   </defs>
                   
@@ -238,7 +222,7 @@ export default function OwnerAnalytics() {
                   <path d={areaPath} fill="url(#chartGradient)" />
 
                   {/* Glowing Line */}
-                  <path d={linePath} fill="none" stroke="#10b981" strokeWidth="3.5" strokeLinecap="round" className="drop-shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
+                  <path d={linePath} fill="none" stroke="var(--primary)" strokeWidth="3.5" strokeLinecap="round" />
 
                   {/* Interactive Nodes */}
                   {points.map((p, i) => (
@@ -247,10 +231,10 @@ export default function OwnerAnalytics() {
                         cx={p.x} 
                         cy={p.y} 
                         r="5.5" 
-                        fill="#10b981" 
+                        fill="var(--primary)"
                         stroke="#ffffff" 
                         strokeWidth="2" 
-                        className="transition-all duration-200 group-hover/node:r-7 group-hover/node:fill-emerald-400 drop-shadow-[0_0_4px_rgba(0,0,0,0.3)]"
+                        className="transition-all duration-200 group-hover/node:r-7"
                       />
                       {/* Floating tooltip on hover */}
                       <g className="opacity-0 group-hover/node:opacity-100 transition-opacity duration-200 pointer-events-none">
@@ -279,10 +263,10 @@ export default function OwnerAnalytics() {
           </Card>
 
           {/* Job Pipeline Breakdown (5/12 width = 42%) */}
-          <Card className="glass-panel xl:col-span-5">
+          <Card className="app-card xl:col-span-5">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-blue-400" />
+                <Calendar className="w-5 h-5 text-primary" />
                 Pipeline por Estados
               </CardTitle>
               <CardDescription>Distribución de autos por etapa</CardDescription>
@@ -290,14 +274,14 @@ export default function OwnerAnalytics() {
             <CardContent>
               <div className="space-y-4">
                 {[
-                  { status: 'Reception', color: 'bg-zinc-500', label: 'Recepción' },
-                  { status: 'Diagnosis', color: 'bg-orange-500', label: 'Diagnóstico' },
-                  { status: 'Approval', color: 'bg-blue-500', label: 'En Cotización' },
-                  { status: 'Repair', color: 'bg-violet-500', label: 'En Reparación' },
-                  { status: 'QC', color: 'bg-cyan-500', label: 'Control de Calidad' },
-                  { status: 'Ready', color: 'bg-amber-500', label: 'Listo p/ Entrega' },
-                  { status: 'Approved', color: 'bg-emerald-500', label: 'Cotización Aprobada' },
-                  { status: 'Delivered', color: 'bg-green-500', label: 'Entregados' }
+                  { status: 'Reception', color: 'bg-primary/35', label: 'Recepción' },
+                  { status: 'Diagnosis', color: 'bg-primary/50', label: 'Diagnóstico' },
+                  { status: 'Approval', color: 'bg-warning', label: 'En Cotización' },
+                  { status: 'Repair', color: 'bg-primary/70', label: 'En Reparación' },
+                  { status: 'QC', color: 'bg-primary/85', label: 'Control de Calidad' },
+                  { status: 'Ready', color: 'bg-warning', label: 'Listo para entrega' },
+                  { status: 'Approved', color: 'bg-success', label: 'Cotización aprobada' },
+                  { status: 'Delivered', color: 'bg-success', label: 'Entregados' }
                 ].map(tier => {
                   const count = statusCounts[tier.status] || 0;
                   const percent = jobs.length > 0 ? (count / jobs.length) * 100 : 0;
@@ -322,7 +306,7 @@ export default function OwnerAnalytics() {
         </div>
 
         {/* Recent Activity */}
-        <Card className="glass-panel">
+        <Card className="app-card">
           <CardHeader>
             <CardTitle className="text-lg">Últimas Órdenes y Movimientos</CardTitle>
             <CardDescription>Actividad operativa reciente registrada en el sistema</CardDescription>
@@ -339,7 +323,7 @@ export default function OwnerAnalytics() {
                     <p className="text-xs text-muted-foreground mt-0.5 font-light">
                       Presupuesto: <strong className="font-mono text-foreground">{workshopSettings?.currencySymbol || "$"}{job.totalEstimate?.toFixed(2) || '0.00'}</strong> 
                       {" · "} 
-                      Aprobado: <strong className="font-mono text-emerald-400">{workshopSettings?.currencySymbol || "$"}{job.approvedAmount?.toFixed(2) || '0.00'}</strong>
+                      Aprobado: <strong className="font-mono text-success">{workshopSettings?.currencySymbol || "$"}{job.approvedAmount?.toFixed(2) || '0.00'}</strong>
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -348,13 +332,12 @@ export default function OwnerAnalytics() {
                     </span>
                     <Badge className={`
                       text-[10px] font-bold px-2.5 py-0.5 rounded-full border
-                      ${job.status === 'Approved' ? 'bg-emerald-950/40 text-emerald-400 border-emerald-500/20' : ''}
-                      ${job.status === 'Ready' ? 'bg-amber-950/40 text-amber-400 border-amber-500/20 animate-pulse' : ''}
-                      ${job.status === 'Approval' ? 'bg-blue-950/40 text-blue-400 border-blue-500/20' : ''}
-                      ${job.status === 'Repair' ? 'bg-purple-950/40 text-purple-400 border-purple-500/20' : ''}
-                      ${job.status === 'Diagnosis' ? 'bg-orange-950/40 text-orange-400 border-orange-500/20' : ''}
-                      ${job.status === 'Reception' ? 'bg-zinc-900/60 dark:bg-black/40 text-muted-foreground border-border/40' : ''}
-                      ${job.status === 'Delivered' ? 'bg-green-950/40 text-green-400 border-green-500/20' : ''}
+                      ${job.status === 'Approved' ? 'bg-success/10 text-success border-success/25' : ''}
+                      ${job.status === 'Ready' ? 'bg-warning/10 text-warning border-warning/25' : ''}
+                      ${job.status === 'Approval' ? 'bg-warning/10 text-warning border-warning/25' : ''}
+                      ${job.status === 'Repair' || job.status === 'Diagnosis' || job.status === 'QC' ? 'bg-primary/10 text-primary border-primary/25' : ''}
+                      ${job.status === 'Reception' ? 'bg-secondary text-muted-foreground border-border' : ''}
+                      ${job.status === 'Delivered' ? 'bg-success/10 text-success border-success/25' : ''}
                     `}>
                       {job.status === 'Reception' ? 'Recepción' :
                        job.status === 'Diagnosis' ? 'Diagnóstico' :

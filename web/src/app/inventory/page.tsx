@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AccessibleModal } from "@/components/AccessibleModal";
@@ -22,7 +21,7 @@ import { toast } from "sonner";
 import { toDate } from "@/lib/dates";
 import {
   Package, Plus, Pencil, Trash2, ArrowDownCircle, ArrowUpCircle,
-  AlertTriangle, Search, X, History, ArrowLeft
+  AlertTriangle, Search, X, History
 } from "lucide-react";
 
 const CATEGORIES: InventoryCategory[] = [
@@ -32,19 +31,7 @@ const CATEGORIES: InventoryCategory[] = [
 
 const UNITS = ['pcs', 'litros', 'metros', 'pares', 'kits', 'unidad', 'galones'];
 
-const CATEGORY_COLORS: Record<string, string> = {
-  Frenos: 'bg-red-500/20 text-red-400 border-red-500/40',
-  Motor: 'bg-orange-500/20 text-orange-400 border-orange-500/40',
-  Transmisión: 'bg-amber-500/20 text-amber-400 border-amber-500/40',
-  Suspensión: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/40',
-  Eléctrico: 'bg-blue-500/20 text-blue-400 border-blue-500/40',
-  Filtros: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40',
-  Aceites: 'bg-teal-500/20 text-teal-400 border-teal-500/40',
-  Llantas: 'bg-zinc-500/20 text-zinc-300 border-zinc-500/40',
-  Carrocería: 'bg-purple-500/20 text-purple-400 border-purple-500/40',
-  'Mano de Obra': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40',
-  Otro: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/40',
-};
+const CATEGORY_STYLE = 'border-primary/25 bg-primary/10 text-primary';
 
 const emptyForm = (): Partial<InventoryItem> => ({
   sku: '', name: '', category: 'Frenos', unitPrice: 0, costPrice: 0,
@@ -52,7 +39,6 @@ const emptyForm = (): Partial<InventoryItem> => ({
 });
 
 export default function InventoryPage() {
-  const router = useRouter();
   const { user, userProfile, workshopSettings, hasRole, loading: authLoading } = useAuth();
   const isAdmin = hasRole('ADMIN');
   const canDeleteInventory = isAdmin && workshopSettings?.allowResetData === true;
@@ -228,35 +214,25 @@ export default function InventoryPage() {
     month: 'short',
     hour: '2-digit',
     minute: '2-digit',
-  }) || '—';
+  }) || '-';
 
   return (
     <ProtectedRoute allowedRoles={['ADMIN', 'ADVISOR']}>
-      <div className="min-h-screen page-bg text-foreground px-4 md:px-8 py-6">
+      <div className="text-foreground">
         <div className="max-w-7xl mx-auto">
           
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div className="flex items-center gap-3">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="group gap-1.5 rounded-full border border-border bg-card/45 px-3.5 py-1.5 text-xs text-muted-foreground transition-all duration-300 hover:border-emerald-500/50 hover:bg-emerald-950/20 hover:text-emerald-400"
-                onClick={() => router.push("/")}
-              >
-                <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
-                Inicio
-              </Button>
               <div>
-                <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">
+                <h1 className="page-title">
                   Inventario
                 </h1>
                 <p className="text-muted-foreground text-xs mt-0.5">Control de stock de repuestos y servicios del taller.</p>
               </div>
             </div>
             {isAdmin && (
-              <Button onClick={openAdd} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold gap-2 self-start sm:self-center ml-12 sm:ml-0">
+              <Button onClick={openAdd} className="gap-2 self-start bg-primary font-bold text-primary-foreground hover:brightness-95 sm:self-center">
                 <Plus className="w-4 h-4" /> Agregar Repuesto
               </Button>
             )}
@@ -265,12 +241,12 @@ export default function InventoryPage() {
           {/* KPI bar */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
             {[
-              { label: 'Total Items', value: items.length, color: 'text-emerald-400' },
-              { label: 'Stock Bajo', value: lowStock, color: lowStock > 0 ? 'text-red-400' : 'text-emerald-400', icon: lowStock > 0 ? <AlertTriangle className="w-3.5 h-3.5" /> : null },
+              { label: 'Total Items', value: items.length, color: 'text-primary' },
+              { label: 'Stock Bajo', value: lowStock, color: lowStock > 0 ? 'text-destructive' : 'text-success', icon: lowStock > 0 ? <AlertTriangle className="w-3.5 h-3.5" /> : null },
               { label: 'Categorías', value: new Set(items.map(i => i.category)).size, color: 'text-blue-400' },
               { label: 'Valor Inventario', value: formatMoney(items.reduce((acc, i) => acc + (i.stock > 0 ? i.stock * (i.costPrice ?? i.unitPrice) : 0), 0)), color: 'text-amber-400' },
             ].map(k => (
-              <Card key={k.label} className="glass-panel">
+              <Card key={k.label} className="metric-card">
                 <CardContent className="p-4">
                   <p className="text-muted-foreground text-xs mb-1">{k.label}</p>
                   <div className={`text-2xl font-bold flex items-center gap-1.5 ${k.color}`}>
@@ -332,14 +308,14 @@ export default function InventoryPage() {
                 const isLow = item.stock >= 0 && item.stock <= item.minStock;
                 const isUnlimited = item.stock === -1;
                 return (
-                  <Card key={item.id} className="glass-panel overflow-hidden py-0">
+                  <Card key={item.id} className="app-card overflow-hidden py-0">
                     <CardContent className="space-y-4 p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="font-mono text-[11px] text-muted-foreground break-all">{item.sku}</p>
                           <h3 className="mt-1 font-semibold text-foreground break-words">{item.name}</h3>
                         </div>
-                        <span className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-xs font-medium ${CATEGORY_COLORS[item.category] || CATEGORY_COLORS['Otro']}`}>
+                        <span className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-xs font-medium ${CATEGORY_STYLE}`}>
                           {item.category}
                         </span>
                       </div>
@@ -351,11 +327,11 @@ export default function InventoryPage() {
                       <div className="grid grid-cols-2 gap-3 rounded-lg border border-border/40 bg-secondary/30 p-3 text-xs">
                         <div>
                           <p className="text-muted-foreground">Precio de venta</p>
-                          <p className="mt-0.5 font-mono font-semibold text-emerald-500">{formatMoney(item.unitPrice)}</p>
+                          <p className="mt-0.5 font-mono font-semibold text-primary">{formatMoney(item.unitPrice)}</p>
                         </div>
                         <div>
                           <p className="text-muted-foreground">Costo</p>
-                          <p className="mt-0.5 font-mono font-semibold">{item.costPrice ? formatMoney(item.costPrice) : '—'}</p>
+                          <p className="mt-0.5 font-mono font-semibold">{item.costPrice ? formatMoney(item.costPrice) : '-'}</p>
                         </div>
                         <div>
                           <p className="text-muted-foreground">Stock</p>
@@ -366,7 +342,7 @@ export default function InventoryPage() {
                         </div>
                         <div className="min-w-0">
                           <p className="text-muted-foreground">Proveedor</p>
-                          <p className="mt-0.5 truncate font-semibold" title={item.supplier || undefined}>{item.supplier || '—'}</p>
+                          <p className="mt-0.5 truncate font-semibold" title={item.supplier || undefined}>{item.supplier || '-'}</p>
                         </div>
                       </div>
 
@@ -376,7 +352,7 @@ export default function InventoryPage() {
                             type="button"
                             size="sm"
                             variant="outline"
-                            className="border-emerald-500/30 text-emerald-500"
+                            className="border-primary/30 text-primary"
                             onClick={() => { setMovementItem(item); setMovType('IN'); }}
                             disabled={isUnlimited}
                           >
@@ -442,12 +418,12 @@ export default function InventoryPage() {
                           {item.description && <div className="text-xs text-muted-foreground truncate max-w-[200px]">{item.description}</div>}
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${CATEGORY_COLORS[item.category] || CATEGORY_COLORS['Otro']}`}>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${CATEGORY_STYLE}`}>
                             {item.category}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right font-mono font-medium">{formatMoney(item.unitPrice)}</td>
-                        <td className="px-4 py-3 text-right font-mono text-muted-foreground text-xs">{item.costPrice ? formatMoney(item.costPrice) : '—'}</td>
+                        <td className="px-4 py-3 text-right font-mono text-muted-foreground text-xs">{item.costPrice ? formatMoney(item.costPrice) : '-'}</td>
                         <td className="px-4 py-3 text-center">
                           {isUnlimited ? (
                             <span className="text-emerald-400 text-xs font-medium">∞</span>
@@ -461,7 +437,7 @@ export default function InventoryPage() {
                             </div>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-center text-xs text-muted-foreground">{item.supplier || '—'}</td>
+                        <td className="px-4 py-3 text-center text-xs text-muted-foreground">{item.supplier || '-'}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-center gap-1">
                             {isAdmin && (
@@ -471,7 +447,7 @@ export default function InventoryPage() {
                                   title="Entrada de stock"
                                   aria-label={`Entrada de stock para ${item.name}`}
                                   onClick={() => { setMovementItem(item); setMovType('IN'); }}
-                                  className="p-1.5 rounded hover:bg-emerald-500/10 text-emerald-400 transition-colors"
+                                  className="rounded p-1.5 text-primary transition-colors hover:bg-primary/10"
                                   disabled={item.stock === -1}
                                 >
                                   <ArrowDownCircle className="w-4 h-4" />
@@ -532,10 +508,10 @@ export default function InventoryPage() {
       {/* ── Add / Edit Modal ────────────────────────────────── */}
       {showForm && (
         <AccessibleModal labelledBy="inventory-form-title" onClose={() => setShowForm(false)} className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
-          <Card className="glass-panel w-full max-w-2xl max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] overflow-y-auto border-emerald-500/30">
+          <Card className="app-card w-full max-w-2xl max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] overflow-y-auto">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
-                <CardTitle id="inventory-form-title" className="text-emerald-400">{editingItem ? 'Editar Repuesto' : 'Agregar Repuesto'}</CardTitle>
+                <CardTitle id="inventory-form-title">{editingItem ? 'Editar Repuesto' : 'Agregar Repuesto'}</CardTitle>
                 <button type="button" onClick={() => setShowForm(false)} aria-label="Cerrar formulario">
                   <X className="w-5 h-5 text-muted-foreground hover:text-foreground" />
                 </button>
@@ -602,7 +578,7 @@ export default function InventoryPage() {
               </div>
 
               <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row">
-                <Button onClick={handleSave} disabled={saving} className="w-full sm:flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold">
+                <Button onClick={handleSave} disabled={saving} className="w-full bg-primary font-bold text-primary-foreground hover:brightness-95 sm:flex-1">
                   {saving ? 'Guardando...' : editingItem ? 'Guardar Cambios' : 'Agregar al Inventario'}
                 </Button>
                 <Button onClick={() => setShowForm(false)} variant="outline" className="w-full sm:w-auto border-border">Cancelar</Button>
@@ -615,7 +591,7 @@ export default function InventoryPage() {
       {/* ── Stock Movement Modal ─────────────────────────────── */}
       {movementItem && (
         <AccessibleModal labelledBy="inventory-movement-title" onClose={() => setMovementItem(null)} className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
-          <Card className="glass-panel w-full max-w-md max-h-[calc(100dvh-1rem)] overflow-y-auto border-emerald-500/30">
+          <Card className="app-card w-full max-w-md max-h-[calc(100dvh-1rem)] overflow-y-auto">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -688,7 +664,7 @@ export default function InventoryPage() {
       {/* ── History Drawer ───────────────────────────────────── */}
       {historyItem && (
         <AccessibleModal labelledBy="inventory-history-title" onClose={() => setHistoryItem(null)} className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <Card className="glass-panel w-full max-w-lg max-h-[80vh] flex flex-col border-blue-500/30">
+          <Card className="app-card w-full max-w-lg max-h-[80vh] flex flex-col">
             <CardHeader className="pb-4 shrink-0">
               <div className="flex items-center justify-between">
                 <div>

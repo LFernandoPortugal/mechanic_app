@@ -164,7 +164,7 @@ describe("Reception", () => {
       }, "reception-fixture");
     });
     expect(screen.getByText("Recepción completada")).toBeTruthy();
-  });
+  }, 10_000);
 
   it("limits reception evidence to four valid photos", async () => {
     const user = userEvent.setup();

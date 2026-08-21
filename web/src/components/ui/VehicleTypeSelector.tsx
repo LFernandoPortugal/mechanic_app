@@ -48,7 +48,7 @@ export default function VehicleTypeSelector({
                 disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
               } ${
                 isSelected
-                  ? "border-violet-500/80 bg-violet-950/20 text-violet-400 dark:bg-violet-950/30 shadow-[0_0_15px_rgba(139,92,246,0.15)] ring-1 ring-violet-500/50"
+                  ? "border-primary/70 bg-primary/10 text-primary ring-1 ring-primary/40"
                   : "border-border/60 bg-card/45 hover:border-violet-500/40 hover:bg-violet-950/5 hover:text-violet-400/90 hover:-translate-y-0.5"
               }`}
             >

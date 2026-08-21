@@ -248,14 +248,14 @@ function SuperAdminContent() {
   };
 
   return (
-    <div className="min-h-screen page-bg text-foreground px-4 md:px-8 py-6">
+    <div className="mx-auto max-w-7xl space-y-8 pb-20 text-foreground">
         <div className="max-w-7xl mx-auto space-y-8 animate-fade-in">
 
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-red-100 dark:bg-red-950/30 rounded-xl border border-red-500/30">
-                <Crown className="w-8 h-8 text-red-500 dark:text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,0.3)] animate-pulse" />
+                <Crown className="h-8 w-8 text-primary" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-red-500 dark:text-red-400">Panel del Creador</h1>
@@ -270,9 +270,9 @@ function SuperAdminContent() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
             {/* ── Create Workshop + Admin ── */}
-            <Card className="glass-panel lg:col-span-1">
+            <Card className="app-card lg:col-span-1">
               <CardHeader>
-                <CardTitle className="text-lg font-bold flex items-center gap-2 text-violet-400">
+                <CardTitle className="flex items-center gap-2 text-lg font-bold text-primary">
                   <UserPlus className="w-5 h-5" /> Nuevo Taller + Admin
                 </CardTitle>
                 <CardDescription>
@@ -351,7 +351,7 @@ function SuperAdminContent() {
                           onClick={() => setTrialDays(d)}
                           className={`flex-1 py-1.5 rounded-md text-xs font-medium border transition-colors ${
                             trialDays === d
-                              ? "bg-violet-600 text-white border-violet-500"
+                              ? "border-primary bg-primary text-primary-foreground"
                               : "border-border text-muted-foreground hover:text-foreground"
                           }`}
                         >
@@ -377,19 +377,19 @@ function SuperAdminContent() {
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs font-mono text-foreground truncate">{newEmail}</span>
                         <button type="button" onClick={() => copyToClipboard(newEmail, "email")} className="text-muted-foreground hover:text-foreground shrink-0">
-                          {copiedField === "email" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                          {copiedField === "email" ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
                         </button>
                       </div>
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs font-mono text-foreground">{"•".repeat(newPassword.length)}</span>
                         <button type="button" onClick={() => copyToClipboard(newPassword, "pass")} className="text-muted-foreground hover:text-foreground shrink-0">
-                          {copiedField === "pass" ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                          {copiedField === "pass" ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
                         </button>
                       </div>
                     </div>
                   )}
 
-                  <Button type="submit" disabled={creating} className="w-full bg-violet-600 hover:bg-violet-500 text-white font-medium">
+                  <Button type="submit" disabled={creating} className="w-full font-medium">
                     {creating ? "Creando..." : "Crear Taller y Cuenta"}
                   </Button>
                 </form>
@@ -397,7 +397,7 @@ function SuperAdminContent() {
             </Card>
 
             {/* ── Workshops List ── */}
-            <Card className="glass-panel lg:col-span-2">
+            <Card className="app-card lg:col-span-2">
               <CardHeader>
                 <CardTitle className="text-lg font-bold flex items-center gap-2 text-red-400">
                   <Building2 className="w-5 h-5" /> Talleres ({workshops.length})
@@ -430,7 +430,7 @@ function SuperAdminContent() {
                                 isExpired
                                   ? "bg-red-950/20 text-red-400 border-red-500/30"
                                   : expiration
-                                    ? "bg-emerald-950/20 text-emerald-400 border-emerald-500/30"
+                                    ? "bg-success/10 text-success border-success/25"
                                     : "bg-blue-950/20 text-blue-400 border-blue-500/30"
                               }`}>
                                 <Calendar className="w-3 h-3" />
@@ -443,7 +443,7 @@ function SuperAdminContent() {
                               </span>
                               {/* Active jobs badge */}
                               {(activeJobCounts[ws.id] ?? 0) > 0 && (
-                                <span className="text-[10px] px-2 py-0.5 rounded-full border bg-violet-950/20 text-violet-400 border-violet-500/30 flex items-center gap-1">
+                                <span className="flex items-center gap-1 rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-[10px] text-primary">
                                   {activeJobCounts[ws.id]} OT activa{(activeJobCounts[ws.id] ?? 0) !== 1 ? 's' : ''}
                                 </span>
                               )}
@@ -458,7 +458,7 @@ function SuperAdminContent() {
                               <span>·</span>
                               <button
                                 onClick={() => setExpandedWorkshop(isExpanded ? null : ws.id)}
-                                className="flex items-center gap-1 text-violet-400 hover:text-violet-300 transition-colors"
+                                className="flex items-center gap-1 text-primary transition-colors hover:text-primary/80"
                               >
                                 <Users className="w-3 h-3" />
                                 {wsUsers.length} usuario{wsUsers.length !== 1 ? "s" : ""}
@@ -476,13 +476,13 @@ function SuperAdminContent() {
                               Danger {ws.allowResetData ? "Off" : "On"}
                             </Button>
                             <Button size="xs" variant="outline"
-                              className="text-[10px] h-7 px-2 border-border text-muted-foreground hover:text-emerald-400"
+                              className="h-7 border-border px-2 text-[10px] text-muted-foreground hover:text-primary"
                               onClick={() => extendTrial(ws.id, 7)}
                               disabled={actionLoading !== null}>
                               +7d
                             </Button>
                             <Button size="xs" variant="outline"
-                              className="text-[10px] h-7 px-2 border-border text-muted-foreground hover:text-emerald-400"
+                              className="h-7 border-border px-2 text-[10px] text-muted-foreground hover:text-primary"
                               onClick={() => extendTrial(ws.id, 30)}
                               disabled={actionLoading !== null}>
                               +30d
@@ -541,7 +541,7 @@ function SuperAdminContent() {
                                             className={`text-[10px] px-2 py-0.5 rounded-[4px] border font-semibold transition-colors ${
                                               hasRole
                                                 ? role === "ADMIN"
-                                                  ? "bg-purple-950/30 text-purple-400 border-purple-500/30"
+                                                  ? "bg-primary/10 text-primary border-primary/25"
                                                   : "bg-blue-950/20 text-blue-400 border-blue-500/20"
                                                 : "bg-secondary/30 text-muted-foreground/50 border-border/30 hover:text-muted-foreground"
                                             }`}
@@ -575,9 +575,9 @@ function SuperAdminContent() {
           </div>
 
           {/* ── All Users Audit ── */}
-          <Card className="glass-panel">
+          <Card className="app-card">
             <CardHeader>
-              <CardTitle className="text-lg font-bold flex items-center gap-2 text-purple-400">
+              <CardTitle className="flex items-center gap-2 text-lg font-bold text-primary">
                 <Users className="w-5 h-5" /> Auditoría Auth + Firestore ({reconciledUsers.length})
               </CardTitle>
               <CardDescription>Compara Firebase Authentication con los perfiles de Firestore; cualquier diferencia requiere revisión.</CardDescription>
@@ -619,7 +619,7 @@ function SuperAdminContent() {
                               {u.roles && u.roles.map((r) => (
                                 <span key={r} className={`px-1.5 py-0.5 rounded-[4px] text-[9px] border font-semibold ${
                                   r === "SUPER_ADMIN" ? "bg-red-950/20 text-red-400 border-red-500/20"
-                                  : r === "ADMIN" ? "bg-purple-950/20 text-purple-400 border-purple-500/20"
+                                  : r === "ADMIN" ? "bg-primary/10 text-primary border-primary/25"
                                   : "bg-secondary/40 text-muted-foreground border-border"
                                 }`}>{r}</span>
                               ))}

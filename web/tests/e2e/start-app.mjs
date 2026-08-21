@@ -74,6 +74,12 @@ const seededUsers = [
     displayName: "Asesor E2E",
     roles: ["ADVISOR"],
   },
+  {
+    email: "super-admin.e2e@example.com",
+    displayName: "Super Admin E2E",
+    roles: ["SUPER_ADMIN"],
+    workshopId: "super-admin-e2e",
+  },
 ];
 
 const authUsers = [];
@@ -95,6 +101,10 @@ await firestore.doc(`settings/${workshopId}`).set({
   taxName: "IGV",
   disabled: false,
 });
+await firestore.doc("settings/super-admin-e2e").set({
+  workshopName: "Administración global E2E",
+  disabled: false,
+});
 
 for (const { seededUser, authUser } of authUsers) {
   const now = new Date();
@@ -103,7 +113,7 @@ for (const { seededUser, authUser } of authUsers) {
     email: seededUser.email,
     displayName: seededUser.displayName,
     roles: seededUser.roles,
-    workshopId,
+    workshopId: seededUser.workshopId || workshopId,
     createdAt: now,
     updatedAt: now,
   });

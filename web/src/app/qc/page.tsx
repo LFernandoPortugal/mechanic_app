@@ -20,7 +20,6 @@ import {
   Wrench,
   Search,
   MessageSquare,
-  ArrowLeft,
   Loader2,
   AlertTriangle,
   RefreshCw,
@@ -286,24 +285,14 @@ export default function QualityControlPage() {
 
   return (
     <ProtectedRoute allowedRoles={["ADMIN", "ADVISOR", "TECHNICIAN"]}>
-      <div className="min-h-screen page-bg text-foreground px-4 md:px-8 py-6">
+      <div className="text-foreground">
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Header */}
           <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-3">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="group gap-1.5 rounded-full border border-border bg-card/45 px-3.5 py-1.5 text-xs text-muted-foreground transition-all duration-300 hover:border-pink-500/50 hover:bg-pink-950/20 hover:text-pink-400"
-                onClick={() => router.push("/")}
-              >
-                <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
-                Inicio
-              </Button>
               <div>
-                <h1 className="text-2xl font-bold text-pink-400 flex items-center gap-2.5">
-                  <ShieldCheck className="w-6 h-6 text-pink-400 drop-shadow-[0_0_8px_rgba(244,63,94,0.3)] animate-pulse" />
+                <h1 className="page-title flex items-center gap-2.5">
+                  <ShieldCheck className="size-6 text-primary" />
                   Control de Calidad (QC)
                 </h1>
                 <p className="text-muted-foreground text-xs mt-0.5">
@@ -312,9 +301,8 @@ export default function QualityControlPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 ml-12 sm:ml-0">
-              <Badge variant="outline" className="border-pink-500/50 text-pink-400 text-xs py-1 px-3 gap-1.5 bg-pink-950/20 backdrop-blur-md">
-                <span className="w-2 h-2 bg-pink-500 rounded-full animate-ping" />
+            <div className="flex items-center gap-3">
+              <Badge variant="outline" className="gap-1.5 border-primary/40 bg-primary/10 px-3 py-1 text-xs text-primary">
                 Auditoría Activa
               </Badge>
             </div>
@@ -324,7 +312,7 @@ export default function QualityControlPage() {
             {/* Left Column: Job Selection Sidebar */}
             <div className="lg:col-span-4 space-y-6">
               {/* Search Box */}
-              <Card className="glass-panel border-pink-500/10">
+              <Card className="app-card">
                 <CardContent className="p-4">
                   <div className="relative">
                     <Label htmlFor="qc-search" className="sr-only">Buscar órdenes para control de calidad</Label>
@@ -341,14 +329,14 @@ export default function QualityControlPage() {
               </Card>
 
               {/* Pending List */}
-              <Card className="glass-panel border-pink-500/15 overflow-hidden">
-                <CardHeader className="bg-pink-950/15 border-b border-pink-500/10 py-3">
+              <Card className="app-card overflow-hidden">
+                <CardHeader className="border-b border-border bg-muted/45 py-3">
                   <div className="flex justify-between items-center">
-                    <CardTitle className="text-sm font-bold text-pink-300 uppercase tracking-wider flex items-center gap-2">
-                      <ListTodo className="w-4 h-4 text-pink-400" />
+                    <CardTitle className="flex items-center gap-2 text-sm font-bold">
+                      <ListTodo className="size-4 text-primary" />
                       Pendientes de Aprobación
                     </CardTitle>
-                    <Badge variant="secondary" className="bg-pink-500/20 text-pink-300 font-bold border-none">
+                    <Badge variant="secondary" className="border-none bg-primary/10 font-bold text-primary">
                       {qcPendingJobs.length}
                     </Badge>
                   </div>
@@ -356,7 +344,7 @@ export default function QualityControlPage() {
                 <CardContent className="p-2 max-h-[350px] overflow-y-auto space-y-1 divide-y divide-border/20">
                   {loading ? (
                     <div className="flex flex-col items-center justify-center py-10 gap-2">
-                      <Loader2 className="w-6 h-6 animate-spin text-pink-400" />
+                      <Loader2 className="size-6 animate-spin text-primary" />
                       <p className="text-xs text-muted-foreground">Cargando órdenes...</p>
                     </div>
                   ) : jobsError ? (
@@ -380,21 +368,21 @@ export default function QualityControlPage() {
                       <button
                         key={job.id}
                         onClick={() => setSelectedJobId(job.id)}
-                        className={`w-full text-left p-3 rounded-lg transition-all duration-200 flex items-center justify-between border ${
+                        className={`queue-item flex items-center justify-between ${
                           selectedJobId === job.id
-                            ? "bg-pink-950/30 border-pink-500/40 text-foreground shadow-[0_0_15px_rgba(244,63,94,0.06)]"
-                            : "border-transparent text-muted-foreground hover:bg-zinc-800/40 hover:text-foreground"
+                            ? "queue-item-active text-foreground"
+                            : "text-muted-foreground"
                         }`}
                       >
                         <div className="min-w-0 flex-1">
                           <p className="font-bold text-sm text-foreground flex items-center gap-1.5">
-                            <VehicleIcon type={job.vehicleType} className={`w-4 h-4 shrink-0 ${selectedJobId === job.id ? 'text-pink-400' : 'text-muted-foreground'}`} />
+                            <VehicleIcon type={job.vehicleType} className={`size-4 shrink-0 ${selectedJobId === job.id ? 'text-primary' : 'text-muted-foreground'}`} />
                             {job.vehicleId}
                           </p>
                           <p className="text-xs truncate mt-0.5">{job.clientId}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 border-pink-500/30 text-pink-400 bg-pink-950/10">
+                          <Badge variant="outline" className="border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
                             Pendiente QC
                           </Badge>
                           <ChevronRight className="w-4 h-4 opacity-50 shrink-0" />
@@ -406,9 +394,9 @@ export default function QualityControlPage() {
               </Card>
 
               {/* History List */}
-              <Card className="glass-panel border-pink-500/10">
+              <Card className="app-card">
                 <CardHeader className="py-3.5 border-b border-border/40">
-                  <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <CardTitle className="text-xs font-semibold text-muted-foreground">
                     Historial Reciente de QC
                   </CardTitle>
                 </CardHeader>
@@ -419,7 +407,7 @@ export default function QualityControlPage() {
                     recentQcJobs.map((job) => (
                       <div
                         key={job.id}
-                        className="flex items-center justify-between p-2.5 bg-zinc-950/20 rounded-lg border border-border/30 text-xs"
+                        className="flex items-center justify-between rounded-lg border border-border bg-muted/35 p-2.5 text-xs"
                       >
                         <div className="min-w-0 flex items-center gap-2">
                           <VehicleIcon type={job.vehicleType} className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -452,14 +440,13 @@ export default function QualityControlPage() {
                   {/* Glowing Stepper Guidance */}
                   <WorkflowStepper currentStatus={selectedJob.status} />
 
-                  <Card className="glass-panel border-pink-500/20 overflow-hidden relative">
-                    <div className="h-1 bg-gradient-to-r from-pink-500 via-rose-500 to-purple-500" />
+                  <Card className="app-card relative overflow-hidden border-t-4 border-t-primary">
                   
                   {/* Rejection Overlay Sub-View */}
                   {isRejecting ? (
                     <CardContent className="p-6 space-y-6">
                       <div className="flex items-center gap-3 text-rose-400 border-b border-rose-500/20 pb-4">
-                        <Undo2 className="w-6 h-6 animate-pulse" />
+                        <Undo2 className="size-6" />
                         <div>
                           <h2 className="text-lg font-bold">Rechazar Control de Calidad</h2>
                           <p className="text-xs text-muted-foreground">La orden volverá al técnico para corregir los problemas indicados.</p>
@@ -545,7 +532,7 @@ export default function QualityControlPage() {
                             </CardDescription>
                           </div>
                           
-                          <Badge variant="outline" className="w-fit border-pink-500/40 text-pink-400 bg-pink-950/20 text-xs px-2.5 py-1 font-semibold">
+                          <Badge variant="outline" className="w-fit border-primary/40 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
                             CÓDIGO: {selectedJob.id.substring(0, 8).toUpperCase()}
                           </Badge>
                         </div>
@@ -563,7 +550,7 @@ export default function QualityControlPage() {
                         {/* Reported Symptoms */}
                         {selectedJob.symptoms && (
                           <div className="bg-zinc-950/40 border border-border/50 rounded-xl p-4 space-y-1.5">
-                            <h4 className="text-xs font-bold text-pink-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <h4 className="flex items-center gap-1.5 text-xs font-bold text-primary">
                               <MessageSquare className="w-3.5 h-3.5" />
                               Motivo de Entrada / Queja del Cliente
                             </h4>
@@ -585,7 +572,7 @@ export default function QualityControlPage() {
                               .map((item) => (
                                 <div
                                   key={item.id}
-                                  className="flex items-center gap-2 p-2.5 bg-zinc-950/20 rounded-lg border border-border/40 text-xs"
+                                  className="flex items-center gap-2 rounded-lg border border-border bg-muted/35 p-2.5 text-xs"
                                 >
                                   <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                                   <span className="text-foreground font-medium truncate">{item.name}</span>
@@ -627,14 +614,14 @@ export default function QualityControlPage() {
 
                         {/* Interactive QC Checklist */}
                         <div className="space-y-4 border-t border-border/40 pt-5">
-                          <h4 className="text-xs font-bold text-pink-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <h4 className="flex items-center gap-1.5 text-xs font-bold text-primary">
                             <ListTodo className="w-3.5 h-3.5" />
                             Checklist de Control de Calidad (Auditoría)
                           </h4>
 
                           <div className="space-y-3">
                             {/* Check 1 */}
-                            <div className="flex items-center justify-between p-3.5 bg-zinc-950/20 border border-border/30 rounded-xl transition-all hover:border-pink-500/30">
+                            <div className="flex items-center justify-between rounded-xl border border-border bg-muted/35 p-3.5 transition-colors hover:border-primary/30">
                               <div className="space-y-0.5 pr-4">
                                 <Label htmlFor="qc-symptoms-resolved" className="text-sm font-semibold text-foreground cursor-pointer flex items-center gap-1.5">
                                   Síntomas Resueltos
@@ -651,7 +638,7 @@ export default function QualityControlPage() {
                             </div>
 
                             {/* Check 2 */}
-                            <div className="flex items-center justify-between p-3.5 bg-zinc-950/20 border border-border/30 rounded-xl transition-all hover:border-pink-500/30">
+                            <div className="flex items-center justify-between rounded-xl border border-border bg-muted/35 p-3.5 transition-colors hover:border-primary/30">
                               <div className="space-y-0.5 pr-4">
                                 <Label htmlFor="qc-torque-verified" className="text-sm font-semibold text-foreground cursor-pointer">
                                   Seguridad y Ajustes Mecánicos
@@ -668,7 +655,7 @@ export default function QualityControlPage() {
                             </div>
 
                             {/* Check 3 */}
-                            <div className="flex items-center justify-between p-3.5 bg-zinc-950/20 border border-border/30 rounded-xl transition-all hover:border-pink-500/30">
+                            <div className="flex items-center justify-between rounded-xl border border-border bg-muted/35 p-3.5 transition-colors hover:border-primary/30">
                               <div className="space-y-0.5 pr-4">
                                 <Label htmlFor="qc-fluids-checked" className="text-sm font-semibold text-foreground cursor-pointer">
                                   Fluidos y Fugas
@@ -685,7 +672,7 @@ export default function QualityControlPage() {
                             </div>
 
                             {/* Check 4 */}
-                            <div className="flex items-center justify-between p-3.5 bg-zinc-950/20 border border-border/30 rounded-xl transition-all hover:border-pink-500/30">
+                            <div className="flex items-center justify-between rounded-xl border border-border bg-muted/35 p-3.5 transition-colors hover:border-primary/30">
                               <div className="space-y-0.5 pr-4">
                                 <Label htmlFor="qc-cleanliness-checked" className="text-sm font-semibold text-foreground cursor-pointer">
                                   Estética y Limpieza
@@ -702,7 +689,7 @@ export default function QualityControlPage() {
                             </div>
 
                             {/* Check 5 */}
-                            <div className="flex items-center justify-between p-3.5 bg-zinc-950/20 border border-border/30 rounded-xl transition-all hover:border-pink-500/30">
+                            <div className="flex items-center justify-between rounded-xl border border-border bg-muted/35 p-3.5 transition-colors hover:border-primary/30">
                               <div className="space-y-0.5 pr-4">
                                 <Label htmlFor="qc-road-test-verified" className="text-sm font-semibold text-foreground cursor-pointer">
                                   Prueba de Ruta Validada
@@ -789,7 +776,7 @@ export default function QualityControlPage() {
                   </Card>
                 </div>
               ) : (
-                <div className="h-[500px] flex flex-col items-center justify-center bg-secondary/30 dark:bg-zinc-950/20 border border-border/60 border-dashed rounded-xl p-8 text-center text-muted-foreground gap-4">
+                <div className="detail-placeholder h-[500px] flex-col gap-4">
                   <div className="w-16 h-16 rounded-2xl bg-zinc-900 flex items-center justify-center border border-border">
                     <ShieldCheck className="w-8 h-8 text-muted-foreground" />
                   </div>

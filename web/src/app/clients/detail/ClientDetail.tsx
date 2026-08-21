@@ -163,14 +163,14 @@ export default function ClientDetailPage() {
 
   return (
     <ProtectedRoute allowedRoles={["ADMIN", "ADVISOR", "RECEPTION"]}>
-      <div className="min-h-screen page-bg text-foreground px-4 md:px-8 py-6 flex justify-center">
+      <div className="flex justify-center text-foreground">
         <div className="w-full max-w-5xl space-y-6">
           {/* ── Back Button ────────────────────────────────── */}
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            className="group self-start gap-1.5 rounded-full border border-border bg-card/45 px-3.5 py-1.5 text-xs text-muted-foreground transition-all duration-300 hover:border-cyan-500/50 hover:bg-cyan-950/20 hover:text-cyan-400"
+            className="app-button-secondary self-start gap-1.5"
             onClick={() => router.push("/clients")}
           >
             <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
@@ -179,19 +179,18 @@ export default function ClientDetailPage() {
 
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
-              <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+              <Loader2 className="size-8 animate-spin text-primary" />
               <p className="text-muted-foreground text-sm">Cargando historial del cliente...</p>
             </div>
           ) : (
             <>
               {/* ── Client Header Card ───────────────────────── */}
-              <Card className="glass-panel border-cyan-500/30 overflow-hidden">
-                <div className="h-1 bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500" />
+              <Card className="app-card overflow-hidden border-t-4 border-t-primary">
                 <CardContent className="pt-6">
                   <div className="flex flex-col md:flex-row md:items-center gap-5">
                     {/* Avatar */}
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/30 to-teal-500/30 border border-cyan-500/30 flex items-center justify-center shrink-0">
-                      <span className="text-3xl font-bold text-cyan-300">
+                    <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10">
+                      <span className="text-3xl font-bold text-primary">
                         {clientName.charAt(0).toUpperCase()}
                       </span>
                     </div>
@@ -202,18 +201,18 @@ export default function ClientDetailPage() {
                       <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-2 text-sm text-muted-foreground">
                         {clientPhone && (
                           <span className="flex items-center gap-1.5">
-                            <Phone className="w-4 h-4 text-cyan-400" />
+                            <Phone className="size-4 text-primary" />
                             {clientPhone}
                           </span>
                         )}
                         {clientEmail && (
                           <span className="flex items-center gap-1.5">
-                            <Mail className="w-4 h-4 text-cyan-400" />
+                            <Mail className="size-4 text-primary" />
                             {clientEmail}
                           </span>
                         )}
                         <span className="flex items-center gap-1.5">
-                          <Car className="w-4 h-4 text-cyan-400" />
+                          <Car className="size-4 text-primary" />
                           {vehicles.size} vehículo{vehicles.size !== 1 ? "s" : ""}
                         </span>
                       </div>
@@ -224,28 +223,28 @@ export default function ClientDetailPage() {
 
               {/* ── Summary Stats ────────────────────────────── */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card className="glass-panel">
+                <Card className="metric-card">
                   <CardContent className="py-4 flex flex-col items-center text-center gap-1">
-                    <Hash className="w-5 h-5 text-cyan-400 mb-1" />
+                    <Hash className="mb-1 size-5 text-primary" />
                     <p className="text-xl font-bold text-foreground">{jobs.length}</p>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Visitas</p>
                   </CardContent>
                 </Card>
-                <Card className="glass-panel">
+                <Card className="metric-card">
                   <CardContent className="py-4 flex flex-col items-center text-center gap-1">
                     <DollarSign className="w-5 h-5 text-emerald-400 mb-1" />
                     <p className="text-xl font-bold text-emerald-400">{fmtCurrency(totalSpent)}</p>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total gastado</p>
                   </CardContent>
                 </Card>
-                <Card className="glass-panel">
+                <Card className="metric-card">
                   <CardContent className="py-4 flex flex-col items-center text-center gap-1">
                     <TrendingUp className="w-5 h-5 text-teal-400 mb-1" />
                     <p className="text-xl font-bold text-teal-400">{fmtCurrency(avgTicket)}</p>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Ticket promedio</p>
                   </CardContent>
                 </Card>
-                <Card className="glass-panel">
+                <Card className="metric-card">
                   <CardContent className="py-4 flex flex-col items-center text-center gap-1">
                     <CreditCard className="w-5 h-5 text-blue-400 mb-1" />
                     <p className="text-xl font-bold text-blue-400">{fmtCurrency(totalPaid)}</p>
@@ -259,8 +258,8 @@ export default function ClientDetailPage() {
                 <div key={plate} className="space-y-3">
                   {/* Vehicle header */}
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-cyan-500/15 border border-cyan-500/25 flex items-center justify-center">
-                      <Car className="w-4 h-4 text-cyan-400" />
+                    <div className="flex size-9 items-center justify-center rounded-lg border border-primary/25 bg-primary/10">
+                      <Car className="size-4 text-primary" />
                     </div>
                     <div>
                       <h2 className="text-lg font-semibold text-foreground">Vehículo: {plate}</h2>
@@ -271,7 +270,7 @@ export default function ClientDetailPage() {
                   </div>
 
                   {/* Timeline */}
-                  <div className="relative border-l-2 border-cyan-500/20 ml-4 pl-6 space-y-4">
+                  <div className="relative ml-4 space-y-4 border-l-2 border-primary/20 pl-6">
                     {vehicleJobs.map((job) => {
                       const date = jobDate(job);
                       const isExpanded = expandedJobs.has(job.id);
@@ -281,11 +280,11 @@ export default function ClientDetailPage() {
                       return (
                         <div key={job.id} className="relative">
                           {/* Timeline dot */}
-                          <div className="absolute -left-[31px] top-4 w-4 h-4 rounded-full bg-cyan-500 border-2 border-background shadow-[0_0_10px_rgba(6,182,212,0.4)]" />
+                          <div className="absolute -left-[31px] top-4 size-4 rounded-full border-2 border-background bg-primary" />
 
                           <Card
-                            className={`glass-panel transition-all duration-200 ${
-                              isExpanded ? "border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.06)]" : ""
+                            className={`app-card transition-colors ${
+                              isExpanded ? "border-primary/40" : ""
                             }`}
                           >
                             {/* Collapsed header – always visible */}
@@ -600,7 +599,7 @@ export default function ClientDetailPage() {
 
               {/* ── No jobs fallback ─────────────────────────── */}
               {jobs.length === 0 && (
-                <Card className="glass-panel">
+                <Card className="app-card">
                   <CardContent className="flex flex-col items-center justify-center py-16 gap-3">
                     <ClipboardList className="w-12 h-12 text-muted-foreground/40" />
                     <p className="text-muted-foreground">No se encontraron visitas para este cliente.</p>

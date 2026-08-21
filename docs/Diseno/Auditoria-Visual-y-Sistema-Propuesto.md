@@ -269,3 +269,9 @@ La página tendrá búsqueda local, índice, workflow, preguntas frecuentes y en
 - Ninguna acción destructiva se parece visualmente a una acción rutinaria.
 - Movimiento reducido se respeta.
 - Gates locales, CI y Vercel Preview pasan antes de proponer merge.
+
+## Estado de implementación — 2026-08-21
+
+La dirección Precision Blue se migró progresivamente a todas las rutas enumeradas en esta auditoría. El resultado centraliza jerarquía de superficies, navegación responsive, métricas, formularios, tablas/tarjetas, estados del workflow y acciones destructivas. El vidrio decorativo heredado quedó neutralizado en favor de superficies sólidas; verde se reserva principalmente para éxito, ámbar para advertencia y rojo para error o destrucción.
+
+La validación automatizada genera una matriz visual desktop 1440×1000 y móvil 390×844 en claro y oscuro para las rutas autenticadas, más estados públicos de login, cotización inválida, trial expirado y vistas SUPER_ADMIN. Las capturas sólo se toman después de que la autenticación, el shell y el tema hayan terminado de hidratar. Esta implementación permanece en una rama Preview y requiere revisión humana antes de cualquier merge.

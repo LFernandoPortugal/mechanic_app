@@ -98,8 +98,8 @@ function LoginForm() {
     <div className="min-h-screen page-bg flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8 animate-fade-in">
         <div className="text-center">
-          <div className="mx-auto w-16 h-16 bg-emerald-100 dark:bg-emerald-950/50 rounded-full flex items-center justify-center border border-emerald-500/30 mb-4 shadow-[0_0_15px_rgba(52,211,153,0.1)]">
-            <Lock className="w-8 h-8 text-emerald-500 dark:text-emerald-400" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10">
+            <Lock className="h-8 w-8 text-primary" />
           </div>
           <h2 className="text-3xl font-extrabold text-foreground">
             {t('loginTitle')}
@@ -109,7 +109,7 @@ function LoginForm() {
           </p>
         </div>
 
-        <Card className="glass-panel">
+        <Card className="app-card">
           <CardContent className="pt-6">
             <form onSubmit={handleLogin} className="space-y-4">
               {sessionExpired && !error && (
@@ -154,7 +154,7 @@ function LoginForm() {
 
               <Button 
                 type="submit" 
-                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white h-12 mt-6 font-semibold"
+                className="mt-6 h-12 w-full font-semibold"
                 disabled={loading}
               >
                 {loading ? t('processing') : t('loginButton')}

@@ -160,7 +160,7 @@ export default function ClientQuoteView() {
   if (loading) {
     return (
       <div className="min-h-screen page-bg p-6 flex items-center justify-center">
-        <div className="glass-panel w-full max-w-sm rounded-2xl border border-border/50 p-8 text-center shadow-xl">
+        <div className="app-card w-full max-w-sm rounded-2xl p-8 text-center">
           <Loader2 className="mx-auto h-9 w-9 animate-spin text-amber-500" />
           <p className="mt-4 font-semibold text-foreground">{t('loadingQuote')}</p>
           <p className="mt-1 text-sm text-muted-foreground">{t('loadingQuoteDesc')}</p>
@@ -172,7 +172,7 @@ export default function ClientQuoteView() {
   if (loadError === "server") {
     return (
       <div className="min-h-screen page-bg flex items-center justify-center p-4">
-        <div className="glass-panel w-full max-w-md rounded-2xl border border-red-500/25 p-7 text-center shadow-xl">
+        <div className="app-card w-full max-w-md rounded-2xl border-destructive/30 p-7 text-center">
           <AlertTriangle className="w-12 h-12 text-red-400 mx-auto" />
           <h1 className="mt-4 text-2xl font-bold text-foreground">{t('quoteLoadError')}</h1>
           <p className="mt-2 text-sm text-muted-foreground">{t('quoteLoadErrorDesc')}</p>
@@ -218,16 +218,16 @@ export default function ClientQuoteView() {
       <div className="min-h-screen page-bg flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-md space-y-5">
           {/* Header card */}
-          <div className="glass-panel rounded-2xl border border-emerald-500/30 p-6 text-center">
+          <div className="app-card rounded-2xl border-success/30 p-6 text-center">
             <div className="flex items-center justify-center mb-3">
-              <div className="p-4 rounded-full bg-emerald-950/40 border border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-                <CheckCircle className="w-12 h-12 text-emerald-400 drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+              <div className="rounded-full border border-success/30 bg-success/10 p-4">
+                <CheckCircle className="h-12 w-12 text-success" />
               </div>
             </div>
             {settings?.logoUrl && (
               <Image src={settings.logoUrl} alt="Logo" width={240} height={80} unoptimized className="w-auto h-12 mx-auto mb-3 object-contain rounded" />
             )}
-            <h1 className="text-2xl font-bold text-emerald-400">
+            <h1 className="text-2xl font-bold text-success">
               {isDelivered ? '¡Vehículo Entregado!' : '¡Cotización Aprobada!'}
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
@@ -238,14 +238,14 @@ export default function ClientQuoteView() {
             </p>
             <div className="mt-4 bg-black/30 rounded-xl p-3 border border-border/40">
               <span className="text-muted-foreground text-xs block mb-0.5">Monto autorizado</span>
-              <span className="text-3xl font-mono font-bold text-emerald-400">
+              <span className="font-mono text-3xl font-bold text-success">
                 {currencySymbol}{job.approvedAmount?.toFixed(2) ?? '—'}
               </span>
             </div>
           </div>
 
           {/* Progress tracker */}
-          <div className="glass-panel rounded-2xl border border-border/40 p-5">
+          <div className="app-card rounded-2xl p-5">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5" /> Estado de tu vehículo
             </p>
@@ -264,7 +264,7 @@ export default function ClientQuoteView() {
                       : trackIdx > idx
                         ? 'border-emerald-500/30 bg-emerald-950/20'
                         : trackIdx === idx
-                          ? 'border-violet-500/40 bg-violet-950/20'
+                          ? 'border-primary/35 bg-primary/10'
                           : 'border-border/20 bg-secondary/10 opacity-40'
                   }`}
                   >
@@ -272,14 +272,14 @@ export default function ClientQuoteView() {
                       trackIdx > idx || isDelivered
                         ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-500/40'
                         : trackIdx === idx
-                          ? 'bg-violet-950/40 text-violet-400 border border-violet-500/40 shadow-[0_0_10px_rgba(139,92,246,0.3)]'
+                          ? 'border border-primary/30 bg-primary/10 text-primary'
                           : 'bg-secondary/40 text-muted-foreground/40 border border-border/20'
                     }`}>
                       <Icon className="w-4 h-4" />
                     </div>
                     <div>
                       <p className={`text-sm font-semibold ${
-                        trackIdx > idx || isDelivered ? 'text-emerald-400' : trackIdx === idx ? 'text-violet-400' : 'text-muted-foreground/40'
+                        trackIdx > idx || isDelivered ? 'text-success' : trackIdx === idx ? 'text-primary' : 'text-muted-foreground/40'
                       }`}>{step.label}
                         {(trackIdx > idx || isDelivered) && <span className="ml-1 text-xs">✓</span>}
                         {trackIdx === idx && !isDelivered && <span className="ml-1 text-xs animate-pulse">⟳</span>}
@@ -293,7 +293,7 @@ export default function ClientQuoteView() {
           </div>
 
           {/* Vehicle info */}
-          <div className="glass-panel rounded-xl border border-border/30 px-4 py-3 flex items-center justify-between text-xs text-muted-foreground">
+          <div className="app-card flex items-center justify-between rounded-xl px-4 py-3 text-xs text-muted-foreground">
             <span>Vehículo: <span className="text-foreground font-mono font-medium">{job.vehicleId}</span></span>
           </div>
         </div>
@@ -316,7 +316,7 @@ export default function ClientQuoteView() {
           </div>
         </header>
 
-        <Card className="glass-panel">
+        <Card className="app-card">
           <CardHeader>
             <div>
               <CardTitle className="text-xl">{t('repairDetails')}</CardTitle>
@@ -393,7 +393,7 @@ export default function ClientQuoteView() {
                 </div>
                 <div className="text-right">
                   <p className="text-muted-foreground text-sm mb-1">{t('totalToPay')}</p>
-                  <p className="text-4xl font-mono text-amber-500 font-bold drop-shadow-[0_0_10px_rgba(245,158,11,0.4)]">
+                  <p className="font-mono text-4xl font-bold text-warning">
                     {formatMoney(calculateTotalToPay())}
                   </p>
                 </div>
@@ -402,7 +402,7 @@ export default function ClientQuoteView() {
           </CardContent>
         </Card>
 
-        <Card className="glass-panel">
+        <Card className="app-card">
           <CardHeader>
             <CardTitle className="text-xl">Firma de aprobaci&oacute;n</CardTitle>
             <CardDescription>
@@ -429,7 +429,7 @@ export default function ClientQuoteView() {
 
         <Button 
           size="lg" 
-          className="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold h-14 shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all mt-6 disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none"
+          className="mt-6 h-14 w-full bg-warning font-bold text-warning-foreground hover:bg-warning/90 disabled:cursor-not-allowed disabled:opacity-45"
           onClick={handleAcceptQuote}
           disabled={!approvalSignature || submitting}
         >

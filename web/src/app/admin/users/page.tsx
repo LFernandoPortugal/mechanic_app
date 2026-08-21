@@ -148,7 +148,7 @@ export default function AdminUsersPage() {
     return (
       <ProtectedRoute allowedRoles={["ADMIN"]}>
         <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500" />
+          <div className="size-12 animate-spin rounded-full border-2 border-border border-t-primary" />
         </div>
       </ProtectedRoute>
     );
@@ -156,15 +156,15 @@ export default function AdminUsersPage() {
 
   return (
     <ProtectedRoute allowedRoles={["ADMIN"]}>
-      <div className="min-h-screen page-bg text-foreground px-4 md:px-8 py-6">
+      <div className="text-foreground">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-purple-100 dark:bg-purple-950/30 rounded-xl border border-purple-500/30">
-                <ShieldCheck className="w-6 h-6 text-purple-500 dark:text-purple-400" />
+              <div className="rounded-xl border border-primary/25 bg-primary/10 p-3">
+                <ShieldCheck className="size-6 text-primary" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-purple-500 dark:text-purple-400">{t("userManagement")}</h1>
+                <h1 className="page-title">{t("userManagement")}</h1>
                 <p className="text-muted-foreground text-sm">{users.length} {t("registeredUsers")}</p>
               </div>
             </div>
@@ -174,7 +174,7 @@ export default function AdminUsersPage() {
             </Button>
           </div>
 
-          <Card className="glass-panel">
+          <Card className="app-card">
             <CardContent className="p-5">
               <div className="mb-5">
                 <h2 className="font-semibold text-lg">{t("addStaff")}</h2>
@@ -212,7 +212,7 @@ export default function AdminUsersPage() {
                       </button>
                     );
                   })}
-                  <Button type="submit" disabled={creating} className="ml-auto bg-purple-600 hover:bg-purple-500 text-white">
+                  <Button type="submit" disabled={creating} className="ml-auto bg-primary text-primary-foreground hover:brightness-95">
                     <Plus className="w-4 h-4 mr-1" />{creating ? t("creatingUser") : t("createUser")}
                   </Button>
                 </div>
@@ -223,11 +223,11 @@ export default function AdminUsersPage() {
           {operationError && <div role="alert" className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-300">{operationError}</div>}
 
           {users.length === 0 ? (
-            <Card className="glass-panel"><CardContent className="py-12 text-center text-muted-foreground">{t("noUsersRegistered")}</CardContent></Card>
+            <Card className="app-card"><CardContent className="py-12 text-center text-muted-foreground">{t("noUsersRegistered")}</CardContent></Card>
           ) : (
             <div className="space-y-4">
               {users.map((managedUser) => (
-                <Card key={managedUser.uid} className="glass-panel">
+                <Card key={managedUser.uid} className="app-card">
                   <CardContent className="p-4 sm:p-5 space-y-4">
                     <div className="grid gap-4 lg:grid-cols-[minmax(220px,1fr)_auto] lg:items-end">
                       <div className="space-y-2">
@@ -261,7 +261,7 @@ export default function AdminUsersPage() {
                       </Button>
                       <Button type="button" size="sm" disabled={!hasChanges(managedUser.uid) || saving === managedUser.uid}
                         aria-label={`${t("saveUser")} ${managedUser.displayName || managedUser.email}`} onClick={() => handleSave(managedUser.uid)}
-                        className="bg-purple-600 hover:bg-purple-500 text-white">
+                        className="bg-primary text-primary-foreground hover:brightness-95">
                         {saved === managedUser.uid ? <CheckCircle2 className="w-4 h-4 mr-1" /> : <Save className="w-4 h-4 mr-1" />}
                         {saving === managedUser.uid ? t("savingUser") : t("save")}
                       </Button>
