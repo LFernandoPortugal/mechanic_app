@@ -159,6 +159,14 @@
   .mobile-nav-link { @apply flex min-h-14 flex-col items-center justify-center gap-1 text-[10px] font-semibold text-muted-foreground; }
   .workflow-step { @apply flex min-h-20 items-center gap-3 rounded-xl border border-border bg-muted/55 p-3; }
   .workflow-index { @apply flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-xs font-bold text-primary; }
+  .workbench-layout { @apply grid w-full grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8; }
+  .workbench-queue { @apply flex min-w-0 flex-col lg:col-span-3; }
+  .workbench-detail { @apply min-w-0 lg:col-span-9; }
+  .queue-list { @apply max-h-[22rem] space-y-2 overflow-y-auto pr-1 lg:sticky lg:top-24 lg:max-h-[calc(100dvh-13rem)]; }
+  .queue-item { @apply w-full rounded-xl border border-border bg-card p-3 text-left transition-colors hover:border-primary/35 hover:bg-primary/5; }
+  .queue-item-active { @apply border-primary bg-primary/10; box-shadow: inset 3px 0 var(--primary); }
+  .detail-placeholder { @apply flex min-h-72 items-center justify-center rounded-2xl border border-dashed border-border bg-muted/35 p-8 text-center text-sm text-muted-foreground; }
+  .form-surface { @apply rounded-xl border border-border bg-muted/45 p-4; }
   .status-dot { @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-xl; }
   .status-warning { @apply bg-amber-500/15 text-amber-700 dark:text-amber-300; }
   .text-success { color: var(--success); }
