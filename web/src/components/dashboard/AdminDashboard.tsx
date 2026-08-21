@@ -6,7 +6,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeJobs } from "@/hooks/useRealtimeJobs";
 import { getAttentionOrders, getDashboardMetrics, getStageCounts } from "@/lib/dashboard";
-import { AppShell } from "@/components/shell/AppShell";
 import { OrderWorkflow } from "./OrderWorkflow";
 
 const copy = {
@@ -29,7 +28,7 @@ export function AdminDashboard() {
   const reasons = { approval:c.approvalReason, technician:c.technicianReason, qc:c.qcReason, payment:c.paymentReason };
   const attention = getAttentionOrders(jobs);
 
-  return <AppShell>
+  return <>
     <div className="space-y-6">
       <div><p className="eyebrow">{workshopSettings?.workshopName || "SGA"}</p><h1 className="page-title">{c.hello}</h1><p className="mt-1 text-sm text-muted-foreground sm:text-base">{c.subtitle}</p></div>
       {error ? <div role="alert" className="app-card flex flex-wrap items-center justify-between gap-4 border-destructive/30 p-5"><div><strong>{c.error}</strong><p className="text-sm text-muted-foreground">{error}</p></div><button className="app-button-secondary" onClick={retry}>{c.retry}</button></div> : loading ? <DashboardSkeleton /> : jobs.length === 0 ? <div className="app-card py-14 text-center"><ClipboardPlus className="mx-auto mb-4 text-primary" size={32}/><h2 className="section-title">{c.empty}</h2><p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{c.emptyDesc}</p><Link className="app-button-primary mt-5 inline-flex" href="/reception">{c.newOrder}</Link></div> : <>
@@ -41,7 +40,7 @@ export function AdminDashboard() {
         </div>
       </>}
     </div>
-  </AppShell>;
+  </>;
 }
 
 function DashboardSkeleton(){ return <div aria-label="Loading" className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">{Array.from({length:6},(_,i)=><div key={i} className="metric-card h-32 animate-pulse bg-muted"/>)}</div> }

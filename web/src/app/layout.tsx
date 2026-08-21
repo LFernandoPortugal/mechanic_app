@@ -4,7 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { Header } from "@/components/Header";
+import { AppFrame } from "@/components/shell/AppFrame";
 import { MouseEffects } from "@/components/MouseEffects";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { SkipLink } from "@/components/SkipLink";
@@ -50,10 +50,7 @@ export default function RootLayout({
               <ScrollToTop />
               <MouseEffects />
               <SkipLink />
-              <Header />
-              <main id="main-content" tabIndex={-1}>
-                {children}
-              </main>
+              <AppFrame>{children}</AppFrame>
               <Toaster
                 richColors
                 position="top-right"

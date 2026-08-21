@@ -26,6 +26,7 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-warning: var(--warning);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -82,6 +83,7 @@
   --sidebar-border: #d5deec;
   --sidebar-ring: #2563eb;
   --success: #16845b;
+  --warning: #a15c00;
 }
 
 .dark {
@@ -117,6 +119,7 @@
   --sidebar-border: #21334c;
   --sidebar-ring: #6ea8ff;
   --success: #49c997;
+  --warning: #f3b34c;
 }
 /* ── Touch ripple animation ───────────────────────────────── */
 @keyframes touch-ripple {
@@ -215,5 +218,14 @@
   :where(a, button, input, select, textarea, [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 3px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

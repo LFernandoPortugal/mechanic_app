@@ -1,11 +1,7 @@
 import type { Job } from "@/types";
+import { ORDER_STAGES, type OrderStage } from "@/lib/workflow";
 
-export const ORDER_STAGES = [
-  "Reception", "Diagnosis", "Approval", "Approved",
-  "Repair", "QC", "Ready", "Delivered",
-] as const;
-
-export type OrderStage = (typeof ORDER_STAGES)[number];
+export { ORDER_STAGES, type OrderStage } from "@/lib/workflow";
 
 export function paidTotal(job: Job) {
   return (job.payments ?? []).reduce((sum, payment) => sum + payment.amount, 0);

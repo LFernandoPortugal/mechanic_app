@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createJob, getJobsByVehicleId, getWorkshopSettings } from "@/lib/db";
@@ -19,7 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { SignatureCanvas } from "@/components/SignatureCanvas";
-import { ArrowLeft, Wand2, Fuel } from "lucide-react";
+import { CircleHelp, Wand2, Fuel } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Job, VehicleType } from "@/types";
@@ -28,7 +29,7 @@ import VehicleTypeSelector from "@/components/ui/VehicleTypeSelector";
 import { toDate } from "@/lib/dates";
 
 export default function Reception() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { user, userProfile } = useAuth();
   
   const [vehicle, setVehicle] = useState<{ vin: string; make: string; model: string; plate: string; color: string; type: VehicleType }>({ vin: "", make: "", model: "", plate: "", color: "", type: "auto" });
@@ -210,15 +211,15 @@ export default function Reception() {
 
   if (createdJobId) {
     return (
-      <div className="min-h-screen page-bg flex items-center justify-center p-4">
-        <Card className="glass-panel text-center max-w-md w-full p-8 border-emerald-500/50">
-          <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Wand2 className="w-8 h-8 text-emerald-500 dark:text-emerald-400" />
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Card className="app-card w-full max-w-md p-8 text-center">
+          <div className="mx-auto mb-6 flex size-16 items-center justify-center rounded-2xl bg-primary/10">
+            <Wand2 className="size-8 text-primary" />
           </div>
-          <h2 className="text-2xl font-bold text-emerald-500 dark:text-emerald-400 mb-2">{t('receptionComplete')}</h2>
+          <h2 className="mb-2 text-2xl font-bold">{t('receptionComplete')}</h2>
           <p className="text-muted-foreground mb-8">{t('vehicleQueued').replace('{id}', createdJobId)}</p>
           <div className="space-y-3">
-             <Button onClick={() => router.push('/technician')} className="w-full bg-emerald-600 hover:bg-emerald-700 h-12 text-lg text-white">
+             <Button onClick={() => router.push('/technician')} className="h-12 w-full bg-primary text-primary-foreground hover:brightness-95">
                 {t('goToTechnician')}
              </Button>
              <Button onClick={() => { setCreatedJobId(null); setVehicle({ vin: "", make: "", model: "", plate: "", color: "", type: "auto" }); setClient({ name: "", phone: "", email: "" }); setSignatureDataUrl(null); setOdometer(""); setFuelLevel(50); setPhotos([]); }} variant="outline" className="w-full border-border text-muted-foreground h-10">
@@ -232,32 +233,24 @@ export default function Reception() {
 
   return (
     <ProtectedRoute allowedRoles={['ADMIN', 'RECEPTION']}>
-      <div className="min-h-screen page-bg text-foreground px-4 md:px-8 py-6 flex justify-center">
+      <div className="flex justify-center text-foreground">
         <div className="w-full max-w-4xl space-y-6">
           <div className="space-y-4">
-            <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="group gap-1.5 rounded-full border border-border bg-card/45 px-3.5 py-1.5 text-xs text-muted-foreground transition-all duration-300 hover:border-emerald-500/50 hover:bg-emerald-950/20 hover:text-emerald-400"
-                  onClick={() => router.push("/")}
-                >
-                  <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
-                  Inicio
-                </Button>
+            <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+              <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h1 className="text-2xl font-bold text-emerald-500 dark:text-emerald-400">{t('vehicleReception')}</h1>
+                  <p className="eyebrow">01 · Reception</p>
+                  <h1 className="page-title">{t('vehicleReception')}</h1>
                   <p className="text-muted-foreground text-xs">{t('transferOfResponsibility')}</p>
                 </div>
+                <Link href="/help#reception" className="tool-button sm:hidden" aria-label={lang === "es" ? "Ayuda" : "Help"}><CircleHelp size={18}/></Link>
               </div>
-              {demoMode && (
+              <div className="flex items-center gap-2"><Link href="/help#reception" className="app-button-secondary hidden gap-2 sm:inline-flex"><CircleHelp size={17}/>{lang === "es" ? "Ayuda" : "Help"}</Link>{demoMode && (
                 <Button type="button" onClick={handleAutoFill} variant="outline" className="text-amber-500 dark:text-amber-400 border-amber-500/50 hover:bg-amber-50 dark:hover:bg-amber-950/30 self-start sm:self-center ml-10 sm:ml-0">
                   <Wand2 className="w-4 h-4 mr-2" />
                   {t('demoAutoFill')}
                 </Button>
-              )}
+              )}</div>
             </header>
 
             {/* Glowing Stepper Guidance */}
@@ -266,7 +259,7 @@ export default function Reception() {
 
           <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-6">
             {/* Vehicle Details */}
-            <Card className="glass-panel">
+            <Card className="app-card">
               <CardHeader>
                 <CardTitle className="text-lg">{t('vehicleDetails')}</CardTitle>
               </CardHeader>
@@ -307,9 +300,9 @@ export default function Reception() {
                     type="button"
                     variant="outline"
                     onClick={handleLoadPreviousInfo}
-                    className="w-full border-purple-500/45 text-purple-400 hover:bg-purple-950/20 gap-1.5 h-10 font-semibold transition-all mt-2"
+                    className="mt-2 h-10 w-full gap-1.5 border-primary/40 text-primary hover:bg-primary/5"
                   >
-                    <Wand2 className="w-4 h-4 animate-pulse text-purple-400" />
+                    <Wand2 className="size-4 text-primary" />
                     Auto-completar datos de {pastJobs[0].clientId}
                   </Button>
                 )}
@@ -324,7 +317,7 @@ export default function Reception() {
             </Card>
 
             {/* Client Info */}
-            <Card className="glass-panel">
+            <Card className="app-card">
               <CardHeader>
                 <CardTitle className="text-lg">{t('clientInfo')}</CardTitle>
               </CardHeader>
@@ -347,7 +340,7 @@ export default function Reception() {
             </Card>
 
             {/* Vehicle Condition - Odometer + Fuel */}
-            <Card className="glass-panel">
+            <Card className="app-card">
               <CardHeader>
                 <CardTitle className="text-lg">{t('vehicleCondition')}</CardTitle>
               </CardHeader>
@@ -405,12 +398,12 @@ export default function Reception() {
                           strokeDasharray="251.2" 
                           strokeDashoffset={251.2 - (251.2 * fuelLevel) / 100}
                           strokeLinecap="round"
-                          className="transition-all duration-300 drop-shadow-[0_0_4px_currentColor]" 
+                          className="transition-colors duration-200"
                         />
                       </svg>
                       {/* Centered Gauge display */}
                       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                        <Fuel className={`w-5 h-5 mb-1 ${fuelLevel <= 15 ? 'text-red-500 animate-pulse' : fuelLevel <= 40 ? 'text-amber-500' : 'text-emerald-400'}`} />
+                        <Fuel className={`mb-1 size-5 ${fuelLevel <= 15 ? 'text-destructive' : fuelLevel <= 40 ? 'text-warning' : 'text-success'}`} />
                         <span className="text-2xl font-black font-mono tracking-tighter text-foreground">
                           {fuelLevel}%
                         </span>
@@ -425,7 +418,7 @@ export default function Reception() {
             </Card>
 
             {/* Symptoms / Reason for Entry */}
-            <Card className="glass-panel border-l-4 border-l-amber-500">
+            <Card className="app-card border-l-4 border-l-amber-500">
               <CardHeader>
                 <CardTitle id="reception-symptoms-label" className="text-lg">{t('symptomsLabel') || "Motivo de Ingreso / Síntomas Reportados *"}</CardTitle>
                 <CardDescription id="reception-symptoms-description">
@@ -448,14 +441,14 @@ export default function Reception() {
 
             {/* Clinical History Timeline */}
             {vehicle.plate.trim().length >= 3 && (
-              <Card className="glass-panel border-l-4 border-l-purple-500 transition-all">
+              <Card className="app-card border-l-4 border-l-primary transition-all">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <span>{t('vehicleHistory')}</span>
-                      {loadingHistory && <span className="animate-spin text-purple-400">⏳</span>}
+                      {loadingHistory && <span className="animate-spin text-primary">⏳</span>}
                     </span>
-                    <Badge variant="outline" className="text-purple-400 border-purple-500/50 bg-purple-950/20 font-mono">
+                    <Badge variant="outline" className="border-primary/40 bg-primary/10 font-mono text-primary">
                       {vehicle.plate}
                     </Badge>
                   </CardTitle>
@@ -471,30 +464,30 @@ export default function Reception() {
                   ) : pastJobs.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-2 italic">{t('noPreviousRepairs')}</p>
                   ) : (
-                    <div className="relative border-l-2 border-purple-500/30 ml-3 pl-5 py-2 space-y-6">
+                    <div className="relative ml-3 space-y-6 border-l-2 border-primary/25 py-2 pl-5">
                       {pastJobs.map((job) => {
                         const date = toDate(job.createdAt)?.toLocaleDateString() || "N/A";
                         return (
                           <div key={job.id} className="relative">
                             {/* Dot */}
-                            <div className="absolute -left-[27px] top-1.5 w-3.5 h-3.5 rounded-full bg-purple-500 border border-background shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
+                            <div className="absolute -left-[27px] top-1.5 size-3.5 rounded-full border border-background bg-primary" />
                             
                             <div className="space-y-1">
                               <div className="flex items-center justify-between gap-2">
                                 <span className="font-semibold text-sm text-foreground">{date}</span>
-                                <Badge className="bg-purple-950/40 text-purple-400 border-purple-500/30 text-xs">
+                                <Badge className="border-primary/30 bg-primary/10 text-xs text-primary">
                                   {t(`status${job.status}`) || job.status}
                                 </Badge>
                               </div>
                               {job.symptoms && (
                                 <p className="text-sm text-muted-foreground bg-zinc-950/30 dark:bg-black/20 p-2 rounded border border-border/40 mt-1 italic">
-                                  <strong className="text-xs text-purple-400 not-italic block uppercase tracking-wider mb-0.5">Motivo:</strong>
+                                  <strong className="mb-0.5 block text-xs font-semibold text-primary">Motivo:</strong>
                                   &ldquo;{job.symptoms}&rdquo;
                                 </p>
                               )}
                               {job.inspectionItems && job.inspectionItems.length > 0 && (
                                 <div className="text-xs text-muted-foreground mt-2">
-                                  <strong className="text-purple-400/80">Componentes: </strong>
+                                  <strong className="text-primary">Componentes: </strong>
                                   {job.inspectionItems.map(item => `${item.name} (${item.status})`).join(", ")}
                                 </div>
                               )}
@@ -509,7 +502,7 @@ export default function Reception() {
             )}
 
             {/* Existing Damages (Photos) */}
-            <Card className="glass-panel">
+            <Card className="app-card">
               <CardHeader>
                 <CardTitle className="text-lg flex justify-between items-center">
                   Evidencia Visual (Daños Previos)
@@ -575,7 +568,7 @@ export default function Reception() {
             </Card>
 
             {/* Fluid Audit */}
-            <Card className="glass-panel border-l-4 border-l-emerald-500">
+            <Card className="app-card border-l-4 border-l-primary">
               <CardHeader>
                 <CardTitle className="text-lg flex justify-between items-center">
                   {t('fluidAudit')}
@@ -617,7 +610,7 @@ export default function Reception() {
             </Card>
 
             {/* Valuables */}
-            <Card className="glass-panel">
+            <Card className="app-card">
               <CardHeader>
                 <CardTitle className="text-lg">{t('valuablesCheck')}</CardTitle>
               </CardHeader>
@@ -642,7 +635,7 @@ export default function Reception() {
             </Card>
 
             {/* Liability Transfer — Real Signature Canvas */}
-            <Card className="glass-panel border-t-4 border-t-blue-500">
+            <Card className="app-card border-t-4 border-t-primary">
               <CardHeader>
                 <CardTitle className="text-lg">{t('liabilityTransfer')}</CardTitle>
                 <CardDescription>
@@ -662,7 +655,7 @@ export default function Reception() {
             <Button 
               type="submit" 
               size="lg" 
-              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-14 shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all"
+              className="h-14 w-full bg-primary font-bold text-primary-foreground hover:brightness-95"
               disabled={submitting}
             >
               {submitting ? t('submitting') : t('registerAndBegin')}

@@ -1,6 +1,6 @@
 # AI Handoff — SGA Mechanic App
 
-> Última actualización: 2026-08-14
+> Última actualización: 2026-08-21
 > Producción oficial: rama `main` en Vercel
 > Código funcional de producción verificado: `280418a` en `https://mechanic-app-zeta.vercel.app/`
 
@@ -10,13 +10,13 @@
 
 - **Producción:** `280418a` incorpora el restablecimiento de taller coordinado por servidor sobre el ciclo ADMIN, reconciliación global y presupuesto seguro de evidencia; GitHub/Vercel registran el deployment Production como exitoso.
 - **Rama de trabajo:** `codex/help-premium-design`, creada desde `280418a` para manuales, `/help` y rediseño visual.
-- **Estado del bloque visual:** auditoría de producción completada en 1440×900 y 390×844, claro/oscuro, para las 17 rutas pedidas. La propuesta “Precision Workshop”, paleta con ratios de contraste y mockup aislado están listos; no se migraron páginas ni se modificó runtime mientras se espera aprobación humana.
+- **Estado del bloque visual:** la dirección Precision Blue fue aprobada. Ya existe un shell global por rol, tokens claro/oscuro, workflow canónico de 8 etapas, `/help` ES/EN y Recepción como primera ruta migrada. El dashboard ADMIN previo se integró al shell. Las demás rutas conservan contenido legacy dentro del shell y todavía deben migrarse por componentes antes de solicitar preview final.
 - **Documentación nueva:** `docs/Manuales/` contiene manuales ES por audiencia, guía consolidada EN, flujo, recuperación y matriz de acciones destructivas. `docs/Diseno/Auditoria-Visual-y-Sistema-Propuesto.md` contiene la evidencia y dirección visual.
 - **Firebase esperado:** `mechanic-app-7d459`; las Rules del ciclo de usuarios se desplegaron solo después de activar la API en Vercel y fueron releídas desde el proyecto activo.
 - **Último hito integrado:** PR #46 se integró como `280418a`; `/api/workshop/reset` coordina la cascada operativa y conserva usuarios/settings.
-- **Calidad verificada del runtime vigente:** 114 pruebas unitarias, 18 integraciones API, 26 Rules y 4 E2E Chromium, además de TypeScript, lint y build de 19 páginas/8 APIs.
-- **Siguiente paso:** esperar aprobación de la propuesta visual; después centralizar tokens/componentes, implementar `/help` ES/EN filtrado por roles y migrar rutas por bloques sin cambiar el flujo canónico.
-- **No repetir ni asumir:** la auditoría fue de solo lectura. No se crearon órdenes, pagos, movimientos, usuarios o enlaces; `p1`, cuentas, settings, Rules e infraestructura no se modificaron. No ejecutar pruebas destructivas fuera de `demo-mechanic-app` + emuladores.
+- **Calidad verificada en esta rama:** 120 pruebas unitarias, 18 integraciones API, 26 Rules y 5 E2E Chromium contra `demo-mechanic-app`, además de TypeScript, lint y build de 20 páginas/8 APIs. E2E cubre shell claro/oscuro, navegación móvil y acceso ADMIN a `/help`.
+- **Siguiente paso:** revisar visualmente este primer bloque y migrar progresivamente Técnico, Asesor, QC, Pagos, Inventario, Clientes, ADMIN y SUPER_ADMIN con los mismos componentes/tokens. Después repetir desktop/móvil claro/oscuro, abrir PR y esperar CI + Vercel Preview; no fusionar ni desplegar antes de revisión humana.
+- **No repetir ni asumir:** este bloque no modificó producción, `p1`, SUPER_ADMIN, Rules ni infraestructura. Las operaciones E2E destructivas se limitaron a cuentas y órdenes descartables del proyecto `demo-mechanic-app` en emuladores. No ejecutar pruebas destructivas fuera de ese entorno.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
 

@@ -1,12 +1,7 @@
 "use client";
 
 import { Check, ChevronRight } from "lucide-react";
-import { ORDER_STAGES, type OrderStage } from "@/lib/dashboard";
-
-const labels = {
-  es: { Reception: "Recepción", Diagnosis: "Diagnóstico", Approval: "Aprobación", Approved: "Aprobado", Repair: "Reparación", QC: "Control QC", Ready: "Listo", Delivered: "Entregado" },
-  en: { Reception: "Reception", Diagnosis: "Diagnosis", Approval: "Approval", Approved: "Approved", Repair: "Repair", QC: "Quality check", Ready: "Ready", Delivered: "Delivered" },
-} as const;
+import { ORDER_STAGES, WORKFLOW_COPY, type OrderStage } from "@/lib/workflow";
 
 export function OrderWorkflow({ counts, lang = "es" }: { counts: Record<OrderStage, number>; lang?: "es" | "en" }) {
   return (
@@ -20,7 +15,7 @@ export function OrderWorkflow({ counts, lang = "es" }: { counts: Record<OrderSta
           <li key={stage} className="relative">
             <div className="workflow-step">
               <span className="workflow-index" aria-hidden="true">{index === ORDER_STAGES.length - 1 ? <Check size={14} /> : index + 1}</span>
-              <span className="min-w-0"><span className="block truncate text-xs font-semibold">{labels[lang][stage]}</span><strong className="mt-1 block text-xl tabular-nums">{counts[stage]}</strong></span>
+              <span className="min-w-0"><span className="block truncate text-xs font-semibold">{WORKFLOW_COPY[lang][stage].label}</span><strong className="mt-1 block text-xl tabular-nums">{counts[stage]}</strong></span>
             </div>
             {index < ORDER_STAGES.length - 1 && <ChevronRight className="absolute -right-3 top-7 z-10 hidden text-primary/40 xl:block" size={18} aria-hidden="true" />}
           </li>

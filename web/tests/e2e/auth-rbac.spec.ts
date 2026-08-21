@@ -42,7 +42,7 @@ test("an ADMIN returns to the protected destination and opens user management", 
   await expect(page).toHaveURL(/\/inventory$/);
   await expect(page.getByRole("heading", { name: "Inventario" })).toBeVisible();
 
-  await page.getByRole("link", { name: "Gestión de Usuarios" }).click();
+  await page.getByRole("link", { name: "Empleados" }).click();
   await expect(page).toHaveURL(/\/admin\/users$/);
   await expect(page.getByRole("heading", { name: "Gestión de Usuarios" })).toBeVisible();
   await expect(page.getByText("4 usuarios registrados")).toBeVisible();
@@ -53,7 +53,7 @@ test("the ADMIN dashboard supports both themes and mobile navigation", async ({ 
   await signIn(page, "admin.e2e@example.com");
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole("heading", { name: "Resumen operativo" })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Main navigation" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Navegación principal" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "El taller aún no tiene órdenes" })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("dashboard-light-desktop.png"), fullPage: true });
 
@@ -64,9 +64,13 @@ test("the ADMIN dashboard supports both themes and mobile navigation", async ({ 
   await expect(page.locator("html")).not.toHaveClass(/dark/);
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.getByRole("navigation", { name: "Mobile navigation" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Navegación móvil" })).toBeVisible();
   await page.getByRole("button", { name: "Más" }).click();
   await expect(page.getByRole("dialog", { name: "Más" })).toBeVisible();
+  await page.getByRole("dialog", { name: "Más" }).getByRole("link", { name: "Ayuda" }).click();
+  await expect(page).toHaveURL(/\/help$/, { timeout: 20_000 });
+  await expect(page.getByRole("heading", { name: "Trabaja con claridad en cada etapa" })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("heading", { name: "Operaciones destructivas" })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("dashboard-light-mobile.png"), fullPage: true });
 });
 
