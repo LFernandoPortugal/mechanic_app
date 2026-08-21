@@ -147,6 +147,11 @@
   .brand-mark { @apply flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm; }
   .sidebar-link { @apply flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium text-sidebar-foreground/75 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground; }
   .sidebar-link-active { @apply bg-sidebar-accent text-sidebar-accent-foreground; box-shadow: inset 3px 0 var(--sidebar-primary); }
+  .nav-group[open] > summary { @apply bg-sidebar-accent/55 text-sidebar-accent-foreground; }
+  .nav-group-chevron { @apply transition-transform; }
+  .nav-group[open] .nav-group-chevron { @apply rotate-180; }
+  .nav-group-items { @apply mt-1 space-y-1 border-l border-sidebar-border pl-3; }
+  .nav-group-items .sidebar-link { @apply min-h-10; }
   .dark .sidebar-link { color: #b8c6db; }
   .dark .sidebar-link:hover { color: #eef4ff; background: #172943; }
   .dark .sidebar-link-active { color: #eef4ff; background: #172943; }
