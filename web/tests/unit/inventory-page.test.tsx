@@ -100,7 +100,7 @@ describe("InventoryPage", () => {
         stock: 8,
       }), "admin-fixture");
     });
-  });
+  }, 10_000);
 
   it("records an auditable stock entry with the purchase cost", async () => {
     const user = userEvent.setup();

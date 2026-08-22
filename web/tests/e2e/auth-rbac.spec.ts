@@ -34,6 +34,32 @@ async function drawAndConfirmSignature(page: Page) {
   await expect(page.getByText("Firma confirmada")).toBeVisible();
 }
 
+async function waitForVisualReady(page: Page, theme: "light" | "dark") {
+  await page.locator(".animate-spin").first().waitFor({ state: "detached", timeout: 20_000 }).catch(() => {});
+  if (await page.locator("html").getAttribute("data-theme") !== theme) {
+    await page.getByRole("button", { name: `Tema: ${theme}` }).click();
+  }
+  await expect(page.locator("html")).toHaveAttribute("data-theme", theme, { timeout: 20_000 });
+  await page.waitForTimeout(150);
+}
+
+test("the public entry presents the product and redirects to login", async ({ page }, testInfo) => {
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole("heading", { name: "Del ingreso a la entrega, cada orden bajo control." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Iniciar Sesión" })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Flujo operativo" })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("login-industrial-light-desktop.png"), fullPage: true });
+
+  await page.getByRole("button", { name: "Cambiar tema" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.screenshot({ path: testInfo.outputPath("login-industrial-dark-desktop.png"), fullPage: true });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByLabel("Correo Electrónico")).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("login-industrial-dark-mobile.png"), fullPage: true });
+});
+
 test("an ADMIN returns to the protected destination and opens user management", async ({ page }) => {
   await page.goto("/inventory");
   await expect(page).toHaveURL(/\/login\?redirect=%2Finventory$/);
@@ -42,10 +68,100 @@ test("an ADMIN returns to the protected destination and opens user management", 
   await expect(page).toHaveURL(/\/inventory$/);
   await expect(page.getByRole("heading", { name: "Inventario" })).toBeVisible();
 
-  await page.getByRole("link", { name: "Gestión de Usuarios" }).click();
+  await page.getByRole("link", { name: "Empleados" }).click();
   await expect(page).toHaveURL(/\/admin\/users$/);
   await expect(page.getByRole("heading", { name: "Gestión de Usuarios" })).toBeVisible();
   await expect(page.getByText("4 usuarios registrados")).toBeVisible();
+});
+
+test("the ADMIN dashboard supports both themes and mobile navigation", async ({ page }, testInfo) => {
+  await page.goto("/login?redirect=%2F");
+  await signIn(page, "admin.e2e@example.com");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("heading", { name: "Resumen operativo" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Navegación principal" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "El taller aún no tiene órdenes" })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("dashboard-light-desktop.png"), fullPage: true });
+
+  await page.getByRole("button", { name: "Tema: dark" }).click();
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  await page.screenshot({ path: testInfo.outputPath("dashboard-dark-desktop.png"), fullPage: true });
+  await page.getByRole("button", { name: "Tema: light" }).click();
+  await expect(page.locator("html")).not.toHaveClass(/dark/);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByRole("navigation", { name: "Navegación móvil" })).toBeVisible();
+  await page.getByRole("button", { name: "Más" }).click();
+  await expect(page.getByRole("dialog", { name: "Más" })).toBeVisible();
+  await page.getByRole("dialog", { name: "Más" }).getByRole("link", { name: "Ayuda" }).click();
+  await expect(page).toHaveURL(/\/help$/, { timeout: 20_000 });
+  await expect(page.getByRole("heading", { name: "Trabaja con claridad en cada etapa" })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("heading", { name: "Operaciones destructivas" })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("dashboard-light-mobile.png"), fullPage: true });
+});
+
+test("the complete route set renders in desktop and mobile across both themes", async ({ page }, testInfo) => {
+  test.setTimeout(600_000);
+  const adminRoutes = [
+    ["home", "/"],
+    ["reception", "/reception"],
+    ["technician", "/technician"],
+    ["advisor", "/advisor"],
+    ["qc", "/qc"],
+    ["payments", "/advisor/payments"],
+    ["inventory", "/inventory"],
+    ["clients", "/clients"],
+    ["client-detail", "/clients/detail"],
+    ["employees", "/admin/users"],
+    ["settings", "/admin/settings"],
+    ["analytics", "/analytics"],
+    ["help", "/help"],
+  ] as const;
+
+  await page.goto("/login?redirect=%2F");
+  await signIn(page, "admin.e2e@example.com");
+  await expect(page).toHaveURL(/\/$/);
+
+  for (const [name, route] of adminRoutes) {
+    for (const theme of ["light", "dark"] as const) {
+      await page.setViewportSize({ width: 1440, height: 1000 });
+      await page.evaluate((value) => localStorage.setItem("app-theme", value), theme);
+      await page.goto(route, { waitUntil: "domcontentloaded" });
+      await expect(page.getByRole("navigation", { name: "Navegación principal" })).toBeVisible({ timeout: 20_000 });
+      await waitForVisualReady(page, theme);
+      await page.screenshot({ path: testInfo.outputPath(`${name}-${theme}-desktop.png`), fullPage: true });
+
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await expect(page.getByRole("navigation", { name: "Navegación móvil" })).toBeVisible({ timeout: 20_000 });
+      await waitForVisualReady(page, theme);
+      await page.screenshot({ path: testInfo.outputPath(`${name}-${theme}-mobile.png`), fullPage: true });
+    }
+  }
+
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.getByRole("button", { name: "Cerrar Sesión" }).click();
+  await page.goto("/login");
+  await page.screenshot({ path: testInfo.outputPath("login-light-mobile.png"), fullPage: true });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.screenshot({ path: testInfo.outputPath("login-light-desktop.png"), fullPage: true });
+
+  await page.goto("/quote/view");
+  await expect(page.getByRole("heading", { name: "Cotización no Encontrada" })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("quote-invalid-light-desktop.png"), fullPage: true });
+
+  await page.goto("/expired");
+  await page.screenshot({ path: testInfo.outputPath("expired-light-mobile.png"), fullPage: true });
+});
+
+test("the SUPER_ADMIN workspace renders on desktop and mobile", async ({ page }, testInfo) => {
+  await page.goto("/login?redirect=%2Fsuper-admin");
+  await signIn(page, "super-admin.e2e@example.com");
+  await expect(page).toHaveURL(/\/super-admin$/, { timeout: 20_000 });
+  await expect(page.getByRole("heading", { name: "Panel del Creador" })).toBeVisible({ timeout: 20_000 });
+  await page.screenshot({ path: testInfo.outputPath("super-admin-light-desktop.png"), fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: testInfo.outputPath("super-admin-light-mobile.png"), fullPage: true });
 });
 
 test("an ADMIN creates, edits, and completely deletes workshop staff", async ({ page }, testInfo) => {

@@ -2,9 +2,9 @@
 
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Sun, Moon, Globe, LogOut, Users, Crown } from "lucide-react";
+import { Sun, Moon, Globe, LogOut, Users, Crown, Cog } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ROLE_BADGE_CLASSES, ROLE_META } from "@/types";
 import Link from "next/link";
 
@@ -13,6 +13,7 @@ export function Header() {
   const { lang, setLanguage, t } = useLanguage();
   const { user, userProfile, signOut, hasRole } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleSignOut = async () => {
     await signOut();
@@ -28,15 +29,17 @@ export function Header() {
 
   const roleMeta = primaryRole ? ROLE_META[primaryRole] : null;
 
+  if (pathname === "/" && hasRole("ADMIN")) return null;
+
   return (
     <header className="w-full sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-8 flex items-center justify-between h-14">
         {/* Brand */}
         <Link
           href="/"
-          className="text-lg sm:text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-600 drop-shadow-[0_0_10px_rgba(52,211,153,0.3)] flex items-center gap-1.5 sm:gap-2 shrink-0"
+          className="flex shrink-0 items-center gap-1.5 text-lg font-bold tracking-tight text-foreground sm:gap-2 sm:text-xl"
         >
-          <span className="text-emerald-400">⚙</span> SGA
+          <Cog className="text-primary" size={18} aria-hidden="true" /> SGA
         </Link>
 
         {/* Right controls */}
@@ -45,7 +48,7 @@ export function Header() {
           {user && hasRole('SUPER_ADMIN') && (
             <Link
               href="/super-admin"
-              className="header-tool-btn w-11 h-11 hover:text-red-400 hover:border-red-500/40 hover:shadow-[0_0_10px_rgba(239,68,68,0.15)] text-red-400/80"
+              className="header-tool-btn h-11 w-11 text-destructive/80 hover:border-destructive/40 hover:text-destructive"
               title="Super Admin"
               aria-label="Super Admin"
             >
@@ -57,7 +60,7 @@ export function Header() {
           {user && hasRole('ADMIN') && (
             <Link
               href="/admin/users"
-              className="header-tool-btn w-11 h-11 hover:text-purple-400 hover:border-purple-500/40 hover:shadow-[0_0_10px_rgba(168,85,247,0.15)]"
+              className="header-tool-btn h-11 w-11 hover:border-primary/40 hover:text-primary"
               title={t('userManagement')}
               aria-label={t('userManagement')}
             >
@@ -68,7 +71,7 @@ export function Header() {
           {/* Language toggle */}
           <button
             onClick={() => setLanguage(lang === 'es' ? 'en' : 'es')}
-            className="header-tool-btn h-11 w-11 gap-0 px-0 sm:w-auto sm:gap-2 sm:px-3 hover:text-amber-400 hover:border-amber-500/40 hover:shadow-[0_0_10px_rgba(251,191,36,0.15)] font-mono text-sm"
+            className="header-tool-btn h-11 w-11 gap-0 px-0 font-mono text-sm hover:border-primary/40 hover:text-primary sm:w-auto sm:gap-2 sm:px-3"
             title="Toggle Language"
             aria-label="Cambiar idioma"
           >
@@ -79,7 +82,7 @@ export function Header() {
           {/* Theme toggle */}
           <button
             onClick={toggleTheme}
-            className="header-tool-btn w-11 h-11 hover:text-emerald-400 hover:border-emerald-500/40 hover:shadow-[0_0_10px_rgba(52,211,153,0.15)]"
+            className="header-tool-btn h-11 w-11 hover:border-primary/40 hover:text-primary"
             title="Toggle Theme"
             aria-label="Cambiar tema"
           >
@@ -100,7 +103,7 @@ export function Header() {
               </span>
               <button
                 onClick={handleSignOut}
-                className="header-tool-btn w-11 h-11 hover:text-red-400 hover:border-red-500/40 hover:shadow-[0_0_10px_rgba(248,113,113,0.15)]"
+                className="header-tool-btn h-11 w-11 hover:border-destructive/40 hover:text-destructive"
                 title={t('signOut')}
                 aria-label={t('signOut')}
               >

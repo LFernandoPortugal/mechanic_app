@@ -4,7 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { Header } from "@/components/Header";
+import { AppFrame } from "@/components/shell/AppFrame";
 import { MouseEffects } from "@/components/MouseEffects";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { SkipLink } from "@/components/SkipLink";
@@ -23,7 +23,7 @@ const geistMono = Geist_Mono({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#10b981",
+  themeColor: "#b9470e",
 };
 
 export const metadata: Metadata = {
@@ -39,6 +39,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
+      <head><script dangerouslySetInnerHTML={{__html:`try{var p=localStorage.getItem('app-theme')||'system';var d=p==='dark'||(p==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);document.documentElement.dataset.theme=d?'dark':'light'}catch(e){}`}} /></head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
@@ -49,10 +50,7 @@ export default function RootLayout({
               <ScrollToTop />
               <MouseEffects />
               <SkipLink />
-              <Header />
-              <main id="main-content" tabIndex={-1}>
-                {children}
-              </main>
+              <AppFrame>{children}</AppFrame>
               <Toaster
                 richColors
                 position="top-right"

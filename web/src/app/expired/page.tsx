@@ -24,11 +24,11 @@ export default function ExpiredPage() {
   return (
     <div className="min-h-screen page-bg flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6 text-center animate-fade-in">
-        <div className="mx-auto w-20 h-20 bg-red-100 dark:bg-red-950/40 rounded-full flex items-center justify-center border border-red-500/30 mb-2 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
+        <div className="mx-auto mb-2 flex h-20 w-20 items-center justify-center rounded-2xl border border-destructive/30 bg-destructive/10">
           <AlertTriangle className="w-10 h-10 text-red-500 dark:text-red-400 animate-pulse" />
         </div>
 
-        <Card className="glass-panel overflow-hidden border-red-500/25">
+        <Card className="app-card overflow-hidden border-destructive/30">
           <CardContent className="pt-8 pb-6 px-6 space-y-6">
             <div className="space-y-2">
               <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
@@ -54,7 +54,7 @@ export default function ExpiredPage() {
                 className="block w-full"
               >
                 <Button 
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold h-11 shadow-[0_4px_12px_rgba(16,185,129,0.15)] transition-all duration-300"
+                  className="h-11 w-full font-semibold"
                 >
                   <MessageSquare className="w-4 h-4 mr-2" />
                   {t("contactAdmin")}

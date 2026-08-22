@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { updateJob, registerPayment, type PaymentInput } from "@/lib/db";
@@ -13,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ArrowLeft, ArrowRight, DollarSign, Wand2, Copy, ExternalLink, CheckCircle, MessageCircle, Download, Mail, FileSearch, Link2, Link2Off } from "lucide-react";
+import { ArrowRight, CircleHelp, DollarSign, Wand2, Copy, ExternalLink, CheckCircle, MessageCircle, Download, Mail, FileSearch, Link2, Link2Off } from "lucide-react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { openWhatsAppQuote } from "@/lib/whatsapp";
 import { generateQuotePDF } from "@/lib/pdf";
@@ -37,7 +38,7 @@ const payableTotal = (job: Job) => {
 };
 
 export default function AdvisorQuoteBuilder() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { user, workshopSettings, signOut } = useAuth();
   const { jobs, loading } = useRealtimeJobs({ statuses: ["Approval", "Approved", "Repair"] });
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -90,7 +91,7 @@ export default function AdvisorQuoteBuilder() {
       await updateJob(selectedJob.id, {
         inspectionItems: updatedInspectionItems,
         totalEstimate: calculateTotal(),
-        status: "Approval"  // Awaiting client approval — NOT Ready
+        status: "Approval"  // Awaiting client approval, not Ready.
       }, user.uid, "Quote Generated");
       const issuedLink = await issueQuoteLink(selectedJob.id);
       // Keep the full job object for PDF/WhatsApp/Email
@@ -262,19 +263,19 @@ export default function AdvisorQuoteBuilder() {
     };
     
     return (
-      <div className="min-h-screen page-bg flex items-center justify-center p-4">
-        <Card className="glass-panel text-center max-w-lg w-full p-5 sm:p-8 border-blue-500/50">
-          <div className="w-16 h-16 bg-blue-100 dark:bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-8 h-8 text-blue-500 dark:text-blue-400" />
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Card className="app-card w-full max-w-lg p-5 text-center sm:p-8">
+          <div className="mx-auto mb-6 flex size-16 items-center justify-center rounded-2xl bg-primary/10">
+            <CheckCircle className="size-8 text-primary" />
           </div>
-          <h2 className="text-2xl font-bold text-blue-500 dark:text-blue-400 mb-1">{t('quoteGenerated')}</h2>
+          <h2 className="mb-1 text-2xl font-bold">{t('quoteGenerated')}</h2>
           <p className="text-muted-foreground text-sm mb-2">{t('quoteGeneratedDesc')}</p>
           <p className="mb-6 text-xs text-muted-foreground">
-            Enlace seguro y revocable · vence el {expiresAtLabel}
+            Enlace seguro y revocable. Vence el {expiresAtLabel}
           </p>
           
           {/* Quote URL Copy bar */}
-          <div className="bg-secondary dark:bg-black border border-border p-3 flex rounded items-center justify-between mb-6 overflow-hidden">
+          <div className="mb-6 flex items-center justify-between overflow-hidden rounded-lg border border-border bg-muted p-3">
              <span className="text-muted-foreground text-sm truncate mr-2">
                /quote/view?id={submittedJobId}#token=••••••••
              </span>
@@ -313,7 +314,7 @@ export default function AdvisorQuoteBuilder() {
 
             {/* Email */}
             <Button
-              className="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold h-12"
+              className="h-12 w-full bg-primary font-bold text-primary-foreground hover:brightness-95"
               disabled={!canSendEmail || sendingEmail}
               onClick={handleSendEmail}
             >
@@ -330,7 +331,7 @@ export default function AdvisorQuoteBuilder() {
             {/* PDF */}
             <Button
               variant="outline"
-              className="w-full border-blue-500/50 text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 h-12"
+              className="h-12 w-full border-primary/50 text-primary hover:bg-primary/10"
               onClick={() => generateQuotePDF(submittedJob, 'advisor', workshopSettings)}
             >
               <Download className="w-4 h-4 mr-2" />
@@ -340,7 +341,7 @@ export default function AdvisorQuoteBuilder() {
             <div className="flex flex-col gap-3 pt-2 sm:flex-row">
               <Button
                 onClick={() => window.open(quoteUrl, "_blank", "noopener,noreferrer")}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white sm:flex-1"
+                className="w-full bg-primary text-primary-foreground hover:brightness-95 sm:flex-1"
               >
                 <ExternalLink className="w-4 h-4 mr-2" /> {t('openClientView')}
               </Button>
@@ -367,7 +368,6 @@ export default function AdvisorQuoteBuilder() {
     return (
       <ProtectedRoute allowedRoles={['ADMIN', 'ADVISOR']}>
         <WorkflowQueueEmptyState
-          accent="violet"
           icon={<FileSearch className="h-8 w-8" />}
           eyebrow="Cotizaciones · 0 órdenes pendientes"
           title="No hay presupuestos por preparar"
@@ -403,38 +403,29 @@ export default function AdvisorQuoteBuilder() {
 
   const STATUS_COLOR: Record<string, string> = {
     Approval: 'text-amber-400 border-amber-500/60',
-    Ready: 'text-cyan-400 border-cyan-500/60',
-    Approved: 'text-emerald-400 border-emerald-500/60',
-    Repair: 'text-purple-400 border-purple-500/60',
+    Ready: 'text-success border-primary/40',
+    Approved: 'text-success border-primary/40',
+    Repair: 'text-primary border-primary/50',
   };
 
   return (
     <ProtectedRoute allowedRoles={['ADMIN', 'ADVISOR']}>
-      <div className="min-h-screen page-bg text-foreground px-4 md:px-8 py-6 flex justify-center">
-        <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="flex justify-center text-foreground">
+        <div className="workbench-layout max-w-7xl">
           {/* Left Sidebar: Pending Jobs (3/12 = 25%) */}
-          <div className="lg:col-span-3 flex flex-col">
-            <header className="mb-6 flex flex-col gap-3">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="group self-start gap-1.5 rounded-full border border-border bg-card/45 px-3.5 py-1.5 text-xs text-muted-foreground transition-all duration-300 hover:border-violet-500/50 hover:bg-violet-950/20 hover:text-violet-400"
-                onClick={() => router.push("/")}
-              >
-                <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
-                Inicio
-              </Button>
+          <div className="workbench-queue">
+            <header className="mb-5 flex items-start justify-between gap-3">
               <div>
-                <h1 className="text-2xl font-bold text-violet-500 dark:text-violet-400">{t('advisorArea')}</h1>
+                <h1 className="page-title">{t('advisorArea')}</h1>
                 <p className="text-muted-foreground text-xs">{t('advisorSubtitle')}</p>
-                <div className="mt-1 text-[10px] text-muted-foreground">
+                <div className="mt-2 text-xs font-medium text-primary">
                   {jobs.length} orden{jobs.length !== 1 ? 'es' : ''} de cotización/reparación
                 </div>
               </div>
+              <Link href="/help#quotes" className="tool-button" aria-label={lang === "es" ? "Ayuda de cotizaciones" : "Estimate help"}><CircleHelp size={18}/></Link>
             </header>
 
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1" style={{ maxHeight: 'calc(100vh - 160px)' }}>
+            <div className="queue-list">
               {jobs.length === 0 ? (
                 <p className="text-muted-foreground italic text-sm">{t('noPendingQuotes')}</p>
               ) : (
@@ -457,10 +448,10 @@ export default function AdvisorQuoteBuilder() {
                         );
                         setBaseLaborCost(Math.max(0, (Number(job.totalEstimate) || 0) - partsTotal));
                       }}
-                      className={`w-full text-left rounded-lg border p-3 transition-all ${
+                      className={`queue-item ${
                         isActive
-                          ? 'border-blue-500 bg-blue-950/20 shadow-[0_0_12px_rgba(59,130,246,0.18)]'
-                          : 'border-border bg-card/60 hover:border-accent hover:bg-accent/5'
+                          ? 'queue-item-active'
+                          : ''
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -469,7 +460,7 @@ export default function AdvisorQuoteBuilder() {
                             <VehicleIcon type={job.vehicleType} className="w-4 h-4 text-muted-foreground shrink-0" />
                             <p className="font-semibold text-sm truncate text-foreground">{job.vehicleId}</p>
                           </div>
-                          <p className="text-xs text-muted-foreground truncate">{job.clientId || '—'}</p>
+                          <p className="text-xs text-muted-foreground truncate">{job.clientId || '-'}</p>
                         </div>
                         <Badge
                           variant="outline"
@@ -492,12 +483,12 @@ export default function AdvisorQuoteBuilder() {
           </div>
 
       {/* Right Content: Quote Builder / Operations (9/12 = 75%) */}
-      <div className="lg:col-span-9">
+      <div className="workbench-detail">
         {selectedJob && selectedJob.status === "Approval" ? (
           <div className="space-y-6">
             {/* Glowing Stepper Guidance */}
             <WorkflowStepper currentStatus={selectedJob.status} />
-            <Card className="glass-panel">
+            <Card className="app-card">
               <CardHeader className="flex flex-row justify-between items-start">
                 <div>
                   <CardTitle className="flex items-center gap-2">
@@ -511,7 +502,7 @@ export default function AdvisorQuoteBuilder() {
                     onClick={handleAutoQuote}
                     variant="outline"
                     aria-label={t('autoQuote')}
-                    className="text-blue-500 dark:text-blue-400 border-blue-500/50 hover:bg-blue-50 dark:hover:bg-blue-950/30 flex-shrink-0"
+                    className="flex-shrink-0 border-primary/50 text-primary hover:bg-primary/10"
                   >
                     <Wand2 className="w-4 h-4 mr-2" />
                     <span className="hidden sm:inline">{t('autoQuote')}</span>
@@ -535,7 +526,7 @@ export default function AdvisorQuoteBuilder() {
                               ${item.status === 'Pass' ? 'bg-emerald-600' : ''}
                               ${item.status === 'Fail' ? 'bg-red-600' : ''}
                               ${item.status === 'Critical' ? 'bg-orange-600' : ''}
-                              ${item.status === 'Recommended' ? 'bg-blue-600' : ''}
+                              ${item.status === 'Recommended' ? 'bg-primary' : ''}
                             `}>
                               {t(`status${item.status}`) || item.status}
                             </Badge>
@@ -562,7 +553,7 @@ export default function AdvisorQuoteBuilder() {
                               type="number"
                               min="0"
                               placeholder="0.00"
-                              className="bg-background border-border text-right text-emerald-600 dark:text-emerald-400 font-mono"
+                              className="border-border bg-background text-right font-mono text-primary"
                               value={prices[item.id] === undefined ? '' : prices[item.id]}
                               onChange={(e) => setPrices({...prices, [item.id]: parseFloat(e.target.value) || 0})}
                               readOnly={selectedJob.status !== 'Approval'}
@@ -576,7 +567,7 @@ export default function AdvisorQuoteBuilder() {
 
                 <hr className="border-border" />
                 
-                <div className="flex flex-col md:flex-row gap-4 items-end justify-between bg-secondary/50 dark:bg-black/40 p-4 rounded-lg border border-border">
+                <div className="form-surface flex flex-col items-end justify-between gap-4 md:flex-row">
                    <div className="w-full md:w-1/3">
                       <Label htmlFor="quote-labor-cost" className="text-muted-foreground mb-1 block">
                         {t('globalLabor')} ({workshopSettings?.currencySymbol || "$"})
@@ -585,14 +576,14 @@ export default function AdvisorQuoteBuilder() {
                         id="quote-labor-cost"
                         type="number" 
                         min="0"
-                        className="bg-background border-border text-blue-600 dark:text-blue-400 font-mono"
+                        className="border-border bg-background font-mono text-primary"
                         value={baseLaborCost || ''}
                         onChange={(e) => setBaseLaborCost(parseFloat(e.target.value) || 0)}
                       />
                    </div>
                     <div className="text-right">
                       <p className="text-muted-foreground text-sm mb-1">{t('estimatedTotal')}</p>
-                      <p className="text-4xl font-mono text-emerald-600 dark:text-emerald-400 font-bold drop-shadow-[0_0_10px_rgba(52,211,153,0.5)]">
+                      <p className="font-mono text-4xl font-bold text-primary">
                         {workshopSettings?.currencySymbol || "$"}{calculateTotal().toFixed(2)}
                       </p>
                       {workshopSettings && workshopSettings.taxRate > 0 && (
@@ -609,18 +600,18 @@ export default function AdvisorQuoteBuilder() {
 
             <Button 
               size="lg" 
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold h-14 shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all"
+              className="h-14 w-full bg-primary font-bold text-primary-foreground hover:brightness-95"
               onClick={handleSaveQuote}
               disabled={managingQuoteLink}
             >
-              {managingQuoteLink ? "Generando enlace seguro…" : t('generateQuoteBtn')}
+              {managingQuoteLink ? "Generando enlace seguro..." : t('generateQuoteBtn')}
             </Button>
           </div>
         ) : selectedJob ? (
           <div className="space-y-6">
             {/* Glowing Stepper Guidance */}
             <WorkflowStepper currentStatus={selectedJob.status} />
-            <Card className="glass-panel">
+            <Card className="app-card">
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
@@ -635,11 +626,11 @@ export default function AdvisorQuoteBuilder() {
               </CardHeader>
               <CardContent className="space-y-6">
                             {/* Visualizar Total */}
-                <div className="bg-secondary/50 dark:bg-black/40 p-4 rounded-lg border border-border flex flex-col gap-3">
+                <div className="form-surface flex flex-col gap-3">
                   <div className="flex justify-between items-center">
                     <div>
                       <p className="text-sm text-muted-foreground">Monto Total Aprobado</p>
-                      <p className="text-3xl font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                      <p className="font-mono text-3xl font-bold text-primary">
                         {workshopSettings?.currencySymbol || "$"}{payableTotal(selectedJob).toFixed(2)}
                       </p>
                     </div>
@@ -684,7 +675,7 @@ export default function AdvisorQuoteBuilder() {
                 </div>
 
                 {/* Registrar Pago rápido */}
-                <div className="bg-secondary/50 p-4 rounded-lg border border-border mt-4">
+                <div className="form-surface mt-4">
                   <h3 className="font-semibold text-foreground mb-4">Registrar Nuevo Pago (Abono)</h3>
                   <div className="flex flex-col gap-4 sm:flex-row">
                     <div className="flex-1">
@@ -712,8 +703,8 @@ export default function AdvisorQuoteBuilder() {
                       </select>
                     </div>
                   </div>
-                   <Button onClick={handleAddPayment} disabled={paymentSubmitting} className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white">
-                    {paymentSubmitting ? "Procesando…" : "Procesar Abono"}
+                   <Button onClick={handleAddPayment} disabled={paymentSubmitting} className="mt-4 w-full bg-primary text-primary-foreground hover:brightness-95">
+                    {paymentSubmitting ? "Procesando..." : "Procesar Abono"}
                   </Button>
                 </div>
 
@@ -721,31 +712,31 @@ export default function AdvisorQuoteBuilder() {
                 <button
                   type="button"
                   onClick={() => router.push("/advisor/payments")}
-                  className="w-full mt-2 group flex items-center gap-4 rounded-xl border border-cyan-500/40 bg-cyan-950/20 p-4 text-left transition-all duration-200 hover:border-cyan-400/70 hover:bg-cyan-950/35 hover:shadow-[0_0_20px_rgba(34,211,238,0.12)]"
+                  className="group mt-2 flex w-full items-center gap-4 rounded-xl border border-primary/30 bg-primary/5 p-4 text-left transition-colors hover:border-primary/55 hover:bg-primary/10"
                 >
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-cyan-500/20 ring-1 ring-cyan-500/40 group-hover:bg-cyan-500/30 transition-colors">
-                    <DollarSign className="w-5 h-5 text-cyan-400" />
+                  <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/25">
+                    <DollarSign className="size-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-cyan-300 text-sm group-hover:text-cyan-200">
+                    <p className="text-sm font-bold text-foreground">
                       {selectedJob.status === 'Ready'
-                        ? '✅ Vehículo listo — Ve a Caja para cerrar el cobro'
+                        ? 'Vehículo listo. Ve a Caja para cerrar el cobro'
                         : selectedJob.status === 'QC'
-                        ? '🔍 En QC — Prepara el cobro en Módulo de Caja'
+                        ? 'En QC. Prepara el cobro en Módulo de Caja'
                         : 'Módulo de Caja / Pagos Completo'}
                     </p>
-                    <p className="text-xs text-cyan-500/80 mt-0.5 group-hover:text-cyan-400/90 truncate">
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
                       Historial de abonos, vuelto, recibos PDF y cierre de caja
                     </p>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-cyan-500 group-hover:text-cyan-300 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                  <ArrowRight className="size-4 shrink-0 text-primary transition-transform group-hover:translate-x-0.5" />
                 </button>
 
                 <div className="pt-4 flex flex-col gap-3 sm:flex-row sm:gap-4">
                   <Button
                     onClick={() => void handleRegenerateQuoteLink(selectedJob)}
                     variant="outline"
-                    className="flex-1 border-blue-500/50 text-blue-500"
+                    className="flex-1 border-primary/50 text-primary"
                     disabled={managingQuoteLink}
                   >
                     <Link2 className="w-4 h-4 mr-2" /> Regenerar enlace seguro
@@ -756,7 +747,7 @@ export default function AdvisorQuoteBuilder() {
             </Card>
           </div>
         ) : (
-          <div className="h-full flex items-center justify-center bg-secondary/50 dark:bg-zinc-900/10 border border-border rounded-xl border-dashed p-8 text-center text-muted-foreground">
+          <div className="detail-placeholder">
             {t('selectVehicleQuote')}
           </div>
         )}

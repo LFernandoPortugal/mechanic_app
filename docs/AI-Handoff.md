@@ -1,21 +1,24 @@
 # AI Handoff — SGA Mechanic App
 
-> Última actualización: 2026-08-14
+> Última actualización: 2026-08-22
 > Producción oficial: rama `main` en Vercel
-> Código funcional de producción verificado: `6ba3653` en `https://mechanic-app-zeta.vercel.app/`
+> Código funcional de producción verificado: `280418a` en `https://mechanic-app-zeta.vercel.app/`
 
 ## Punto de reanudación rápido
 
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
-- **Producción:** `6ba3653` incorpora el ciclo ADMIN coordinado de alta/edición/baja de personal entre Firebase Auth y Firestore; CI y Vercel Production pasaron. El smoke respondió 200 en `/`, `/login` y `/admin/users`, y 401 sin sesión en `/api/workshop/users` y `/api/admin/users`.
-- **Rama de trabajo:** ninguna rama funcional pendiente; al retomar, partir del `origin/main` vigente y crear una rama `codex/*` nueva.
-- **Árbol local al cerrar:** limpio y sincronizado con `origin/main` después de integrar el checkpoint documental.
+- **Producción:** `280418a` incorpora el restablecimiento de taller coordinado por servidor sobre el ciclo ADMIN, reconciliación global y presupuesto seguro de evidencia; GitHub/Vercel registran el deployment Production como exitoso.
+- **Rama de trabajo:** `codex/industrial-orange-proposal`, basada en el bloque completo de manuales, `/help` y migración visual iniciado desde `280418a`.
+- **Estado del bloque visual:** Industrial Orange fue aprobada como dirección de Preview. Usa acero mate/naranja quemado en claro y grafito/naranja herramienta en oscuro; el shell por rol, workflow canónico y `/help` ES/EN cubren las rutas internas, públicas y de administración. La rama no se fusionó ni desplegó a producción.
+- **Navegación aprobada en revisión:** el ADMIN usa navegación progresiva compacta (`Inicio`, `Operación`, `Gestión`, `Ayuda`); el grupo correspondiente a la ruta activa se abre automáticamente. Roles operativos mantienen accesos directos. Móvil/tablet usa cuatro destinos prioritarios y `Más`. La marca provisional `Mechanic OS` fue retirada a favor de `SGA`; `workshopName` sigue siendo el nombre contextual del taller.
+- **Rutas migradas:** `/`, `/login`, `/reception`, `/technician`, `/advisor`, `/quote/view`, `/qc`, `/advisor/payments`, `/inventory`, `/clients`, `/clients/detail`, `/admin/users`, `/admin/settings`, `/super-admin`, `/expired`, `/analytics` y `/help`. Técnico/Asesor comparten `cola + área de trabajo`; las demás rutas usan superficies, métricas, formularios, navegación y estados semánticos comunes. Se retiraron botones Inicio redundantes, glows y glass decorativo sin cambiar handlers ni transiciones.
+- **Documentación nueva:** `docs/Manuales/` contiene manuales ES por audiencia, guía consolidada EN, flujo, recuperación y matriz de acciones destructivas. `docs/Diseno/Auditoria-Visual-y-Sistema-Propuesto.md` conserva la auditoría y `docs/Diseno/Industrial-Orange-Proposal.md` registra la dirección aprobada y su cierre visual.
 - **Firebase esperado:** `mechanic-app-7d459`; las Rules del ciclo de usuarios se desplegaron solo después de activar la API en Vercel y fueron releídas desde el proyecto activo.
-- **Último hito:** PR #41 se integró como `6ba3653`; Gestión de Usuarios crea, edita y elimina personal por `/api/workshop/users`, bloquea duplicados/cruces de tenant/SUPER_ADMIN/autoeliminación/último ADMIN y evita bajas parciales entre Auth y Firestore.
-- **Calidad verificada:** producción pasa TypeScript, lint, 113 pruebas unitarias, 12 de integración de API, 24 pruebas de reglas, 4 E2E Chromium, audit runtime en 0 vulnerabilidades y build de 19 páginas/6 APIs; conserva además QA visual de escritorio y 390×844 sin errores de consola.
-- **Siguiente paso recomendado:** endurecer el borrado global de múltiples usuarios desde SUPER_ADMIN con la misma reanudación/idempotencia y añadir una vista de reconciliación de solo lectura que distinga cuentas Auth, perfiles `users` y talleres `settings`; mantener el trabajo visual amplio en una rama separada.
-- **No repetir ni asumir:** EmailJS confirmó aceptación y una persona confirmó recepción/presentación correcta en un inbox controlado. `p1` y SUPER_ADMIN no se usaron ni modificaron en este hito; no hace falta recrear usuarios/órdenes QA de emuladores y siempre debe verificarse el deployment vigente antes de un nuevo cambio.
+- **Último hito integrado:** PR #46 se integró como `280418a`; `/api/workshop/reset` coordina la cascada operativa y conserva usuarios/settings.
+- **Calidad verificada en esta rama:** auditoría runtime sin vulnerabilidades; TypeScript, lint y build de 20 páginas/8 APIs; 122 unitarias, 18 integraciones API y 26 Rules. Los 8 E2E pasaron contra emuladores, incluido `Reception → Diagnosis → Approval → Approved → Repair → QC → Ready → Delivered`, navegación/RBAC, personal, SUPER_ADMIN y la matriz visual de rutas/temas/tamaños.
+- **Siguiente paso:** revisar CI y la Vercel Preview actualizada del PR #48 y entregar el enlace final para aprobación humana. No fusionar ni desplegar antes de esa revisión.
+- **No repetir ni asumir:** este bloque no modificó producción, `p1`, SUPER_ADMIN, Rules ni infraestructura. Las operaciones E2E destructivas se limitaron a cuentas y órdenes descartables del proyecto `demo-mechanic-app` en emuladores. No ejecutar pruebas destructivas fuera de ese entorno.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
 
@@ -23,7 +26,7 @@ Para retomar, leer este documento completo y luego seguir el orden obligatorio d
 
 La aplicación es un SGA multitenant en Next.js 16, Firebase Auth/Firestore y Vercel. La estabilización y el ciclo coordinado de usuarios están integrados en `main`, desplegados en Vercel Production y acompañados por sus reglas Firestore en `mechanic-app-7d459`.
 
-- `origin/main` contiene `6ba3653`; producción sirve el ciclo ADMIN de personal sobre la recuperación de borradores de `8eab8b0`, la idempotencia de `961d827` y el runtime base `f3cac1e` en `https://mechanic-app-zeta.vercel.app/`. El historial anterior de E2E, flujos, portal, accesibilidad y estabilización permanece documentado en Git y en Bugs y Correcciones.
+- `origin/main` contiene `280418a`; producción sirve el reset server-side sobre el ciclo ADMIN de personal, la reconciliación global, la recuperación de borradores y la idempotencia en `https://mechanic-app-zeta.vercel.app/`. El historial anterior de E2E, flujos, portal, accesibilidad y estabilización permanece documentado en Git y en Bugs y Correcciones.
 - Las URLs Preview son efímeras y se toman del PR activo; no reutilizar aliases de ramas ya integradas.
 - Las reglas nuevas se compilaron y publicaron únicamente como `firestore:rules`; no se desplegaron Hosting, Storage ni índices.
 - El taller tester `p1` fue reparado: conserva su cuenta Auth y ahora tiene un único perfil ADMIN y un `settings/p1` vacío/activo. No se combinaron usuarios antiguos.
@@ -380,6 +383,15 @@ La verificación posterior dejó exactamente dos cuentas Auth habilitadas y dos 
 4. `master-control` y `demo-workshop` están protegidos. Firestore Rules bloquea toda eliminación directa de perfiles para obligar a usar endpoints coordinados.
 5. Las pruebas destructivas usaron solo Auth/Firestore Emulator con `demo-mechanic-app`: 113 unitarias, 25 Rules y 14 integraciones pasan; TypeScript, lint y build de 19 páginas/7 APIs también pasan.
 6. Este bloque aún no afirma ni ejecuta limpieza de datos reales. La primera revisión productiva debe ser solo lectura y cada divergencia debe confirmarse antes de eliminarla.
+
+## Experimento visual Phase 1 del 2026-08-17
+
+1. La rama `codex/help-premium-design` contiene un primer prototipo funcional del brief azul: tokens semánticos claros/oscuros, preferencia `light/dark/system`, shell ADMIN, sidebar de escritorio, navegación inferior móvil y header compacto.
+2. `/` conserva su ruta y presenta el nuevo dashboard solamente a ADMIN; los demás roles mantienen el inicio anterior. No cambiaron endpoints, modelos, Rules, infraestructura ni el workflow.
+3. El dashboard deriva seis KPI, órdenes que requieren atención y pagos exclusivamente de campos existentes. El componente reutilizable `OrderWorkflow` mantiene exactamente `Reception -> Diagnosis -> Approval -> Approved -> Repair -> QC -> Ready -> Delivered`.
+4. Ayuda se muestra deshabilitada como “Próximamente”; esta fase no implementa `/help` ni migra Reception, Advisor, Technician o Super Admin, de acuerdo con el alcance aprobado para el experimento.
+5. TypeScript, lint y build pasan. Los 5 E2E pasan contra Auth/Firestore Emulator y `demo-mechanic-app`, incluido el nuevo control de temas y navegación móvil. La suite unitaria quedó en 115/117 por dos timeouts no deterministas en pruebas antiguas de inventario y recepción; `dashboard.test.ts` sí pasa.
+6. No se desplegó, no se abrió PR y no se tocaron producción, Firebase real, `p1` ni SUPER_ADMIN. Antes de ampliar el rediseño, el usuario debe revisar y aprobar esta dirección visual.
 
 ## Siguiente bloque recomendado
 

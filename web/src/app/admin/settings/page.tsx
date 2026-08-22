@@ -3,19 +3,18 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ContextHelpLink } from "@/components/ContextHelpLink";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { getWorkshopSettings, updateWorkshopSettings, resetWorkshopData } from "@/lib/db";
-import { useRouter } from "next/navigation";
 import { uploadJobImage } from "@/lib/storage";
 import { toast } from "sonner";
-import { Building2, Save, UploadCloud, ArrowLeft, Trash2, AlertTriangle, RefreshCw } from "lucide-react";
+import { Building2, Save, UploadCloud, Trash2, AlertTriangle, RefreshCw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function SettingsPage() {
-  const router = useRouter();
   const { userProfile, loading: authLoading, refreshSettings } = useAuth();
   const [settings, setSettings] = useState({
     name: "SGA Auto",
@@ -144,30 +143,21 @@ export default function SettingsPage() {
 
   return (
     <ProtectedRoute allowedRoles={['ADMIN']}>
-      <div className="min-h-screen page-bg text-foreground p-6 md:p-12 flex justify-center">
+      <div className="flex justify-center text-foreground">
         <div className="max-w-3xl w-full">
-          <header className="mb-8 flex flex-col gap-3">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="group self-start gap-1.5 rounded-full border border-border bg-card/45 px-3.5 py-1.5 text-xs text-muted-foreground transition-all duration-300 hover:border-violet-500/50 hover:bg-violet-950/20 hover:text-violet-400"
-              onClick={() => router.push("/")}
-            >
-              <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
-              Inicio
-            </Button>
+          <header className="mb-8 flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
             <div>
-              <h1 className="text-3xl font-bold text-violet-500 flex items-center gap-2">
-                <Building2 className="w-8 h-8 text-violet-500 drop-shadow-[0_0_8px_rgba(139,92,246,0.3)] animate-pulse" /> Configuración del Taller
+              <h1 className="page-title flex items-center gap-2">
+                <Building2 className="size-7 text-primary" /> Configuración del Taller
               </h1>
               <p className="text-muted-foreground text-xs mt-2">
                 Administre la información pública del taller. Estos datos aparecerán en los reportes y cotizaciones enviados a los clientes.
               </p>
             </div>
+            <ContextHelpLink section="settings" />
           </header>
 
-          <Card className="glass-panel">
+          <Card className="app-card">
             <form onSubmit={handleSave}>
               <CardHeader>
                 <CardTitle>Datos de la Empresa</CardTitle>
@@ -220,7 +210,7 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="space-y-4 pt-4 border-t border-border">
-                  <h3 className="text-sm font-semibold text-violet-400">Configuración Financiera e Impuestos</h3>
+                  <h3 className="text-sm font-semibold text-primary">Configuración Financiera e Impuestos</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="currencySymbol">Divisa / Símbolo</Label>
@@ -299,7 +289,7 @@ export default function SettingsPage() {
                   <label className="flex items-center space-x-3 p-3 bg-secondary/30 dark:bg-black/20 rounded-lg cursor-pointer border border-border/40">
                     <input 
                       type="checkbox" 
-                      className="w-5 h-5 rounded border-border text-violet-500 focus:ring-violet-500 bg-background" 
+                      className="size-5 rounded border-border bg-background text-primary focus:ring-primary"
                       checked={settings.demoMode} 
                       onChange={(e) => setSettings({...settings, demoMode: e.target.checked})} 
                     />
@@ -310,7 +300,7 @@ export default function SettingsPage() {
                   </label>
                 </div>
 
-                <Button type="submit" className="w-full bg-violet-600 hover:bg-violet-700 text-white" disabled={saving}>
+                <Button type="submit" className="w-full bg-primary text-primary-foreground hover:brightness-95" disabled={saving}>
                   {saving ? "Guardando..." : <><Save className="w-4 h-4 mr-2" /> Guardar Configuración</>}
                 </Button>
               </CardContent>
@@ -319,10 +309,10 @@ export default function SettingsPage() {
 
           {/* Danger Zone */}
           {settings.allowResetData && (
-            <Card className="glass-panel border-red-500/20 bg-red-950/5 mt-8 overflow-hidden transition-all duration-300 hover:border-red-500/30">
+            <Card className="app-card mt-8 overflow-hidden border-destructive/30 bg-destructive/5">
               <CardHeader className="border-b border-red-500/10 bg-red-950/10">
                 <CardTitle className="text-red-500 flex items-center gap-2 text-lg font-bold">
-                  <AlertTriangle className="w-5 h-5 text-red-500 animate-pulse" />
+                  <AlertTriangle className="size-5 text-destructive" />
                   Zona de Peligro (Restablecer SaaS / Taller)
                 </CardTitle>
                 <CardDescription className="text-red-400/80 text-xs">
