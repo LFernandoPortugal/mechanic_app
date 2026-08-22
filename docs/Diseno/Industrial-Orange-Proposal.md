@@ -34,3 +34,9 @@ La propuesta conserva la arquitectura, componentes, densidad y comportamiento de
 - Mantiene contraste AA y `prefers-reduced-motion`.
 - No usa gradientes, texturas pesadas, cromados literales ni amarillo de construcción como fondo dominante.
 - La propuesta debe revisarse en Preview antes de reemplazar Precision Blue.
+
+## Portal de acceso
+
+`/login` funciona como una introducción operativa, no como una landing comercial. En escritorio presenta una composición dividida: propuesta de valor, workflow resumido y garantías operativas a la izquierda; formulario de acceso a la derecha. En móvil conserva el workflow, reduce el contenido secundario y prioriza que los campos y la acción de ingreso aparezcan temprano.
+
+La ruta `/` sin sesión redirige a este portal para evitar una segunda portada con accesos que todavía no están disponibles. El acceso mantiene recuperación de contraseña, idioma, tema, mensajes de error y redirección segura al destino solicitado.

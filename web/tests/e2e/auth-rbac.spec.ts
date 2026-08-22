@@ -43,6 +43,23 @@ async function waitForVisualReady(page: Page, theme: "light" | "dark") {
   await page.waitForTimeout(150);
 }
 
+test("the public entry presents the product and redirects to login", async ({ page }, testInfo) => {
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole("heading", { name: "Del ingreso a la entrega, cada orden bajo control." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Iniciar Sesión" })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Flujo operativo" })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("login-industrial-light-desktop.png"), fullPage: true });
+
+  await page.getByRole("button", { name: "Cambiar tema" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.screenshot({ path: testInfo.outputPath("login-industrial-dark-desktop.png"), fullPage: true });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByLabel("Correo Electrónico")).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("login-industrial-dark-mobile.png"), fullPage: true });
+});
+
 test("an ADMIN returns to the protected destination and opens user management", async ({ page }) => {
   await page.goto("/inventory");
   await expect(page).toHaveURL(/\/login\?redirect=%2Finventory$/);

@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLE_BADGE_CLASSES, ROLE_ROUTE_MAP, ROLE_META } from '@/types';
@@ -123,8 +125,16 @@ const allCards: NavCard[] = [
 ];
 
 export default function Home() {
-  const { hasRole } = useAuth();
+  const { hasRole, user, loading } = useAuth();
+  if (loading) return <div className="flex min-h-[60dvh] items-center justify-center"><span className="h-10 w-10 animate-spin rounded-full border-2 border-primary/20 border-t-primary" /></div>;
+  if (!user) return <UnauthenticatedHomeRedirect />;
   return hasRole('ADMIN') ? <AdminDashboard /> : <LegacyHome />;
+}
+
+function UnauthenticatedHomeRedirect() {
+  const router = useRouter();
+  useEffect(() => { router.replace('/login'); }, [router]);
+  return <div className="flex min-h-[60dvh] items-center justify-center"><span className="h-10 w-10 animate-spin rounded-full border-2 border-primary/20 border-t-primary" /></div>;
 }
 
 function LegacyHome() {

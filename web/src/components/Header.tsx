@@ -2,7 +2,7 @@
 
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Sun, Moon, Globe, LogOut, Users, Crown } from "lucide-react";
+import { Sun, Moon, Globe, LogOut, Users, Crown, Cog } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePathname, useRouter } from "next/navigation";
 import { ROLE_BADGE_CLASSES, ROLE_META } from "@/types";
@@ -39,7 +39,7 @@ export function Header() {
           href="/"
           className="flex shrink-0 items-center gap-1.5 text-lg font-bold tracking-tight text-foreground sm:gap-2 sm:text-xl"
         >
-          <span className="text-emerald-400">⚙</span> SGA
+          <Cog className="text-primary" size={18} aria-hidden="true" /> SGA
         </Link>
 
         {/* Right controls */}
