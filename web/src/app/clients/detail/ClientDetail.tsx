@@ -71,8 +71,8 @@ const statusLabels: Record<string, string> = {
 const statusConfig: Record<string, { color: string; icon: React.ReactNode }> = {
   Reception: { color: "text-emerald-400 border-emerald-500/30 bg-emerald-950/20", icon: <ClipboardList className="w-3 h-3" /> },
   Diagnosis: { color: "text-amber-400 border-amber-500/30 bg-amber-950/20", icon: <Wrench className="w-3 h-3" /> },
-  Approval: { color: "text-blue-400 border-blue-500/30 bg-blue-950/20", icon: <Clock className="w-3 h-3" /> },
-  Approved: { color: "text-blue-400 border-blue-500/30 bg-blue-950/20", icon: <CheckCircle2 className="w-3 h-3" /> },
+  Approval: { color: "text-primary border-primary/30 bg-primary/10", icon: <Clock className="w-3 h-3" /> },
+  Approved: { color: "text-primary border-primary/30 bg-primary/10", icon: <CheckCircle2 className="w-3 h-3" /> },
   Repair: { color: "text-orange-400 border-orange-500/30 bg-orange-950/20", icon: <Wrench className="w-3 h-3" /> },
   QC: { color: "text-purple-400 border-purple-500/30 bg-purple-950/20", icon: <CheckCircle2 className="w-3 h-3" /> },
   Ready: { color: "text-cyan-400 border-cyan-500/30 bg-cyan-950/20", icon: <CheckCircle2 className="w-3 h-3" /> },
@@ -83,7 +83,7 @@ const inspectionStatusIcon: Record<string, React.ReactNode> = {
   Pass: <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />,
   Fail: <XCircle className="w-3.5 h-3.5 text-red-400" />,
   Critical: <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />,
-  Recommended: <CircleDot className="w-3.5 h-3.5 text-blue-400" />,
+  Recommended: <CircleDot className="w-3.5 h-3.5 text-primary" />,
 };
 
 /* ─── Component ──────────────────────────────────────────── */
@@ -246,8 +246,8 @@ export default function ClientDetailPage() {
                 </Card>
                 <Card className="metric-card">
                   <CardContent className="py-4 flex flex-col items-center text-center gap-1">
-                    <CreditCard className="w-5 h-5 text-blue-400 mb-1" />
-                    <p className="text-xl font-bold text-blue-400">{fmtCurrency(totalPaid)}</p>
+                    <CreditCard className="mb-1 h-5 w-5 text-primary" />
+                    <p className="text-xl font-bold text-primary">{fmtCurrency(totalPaid)}</p>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total pagado</p>
                   </CardContent>
                 </Card>
@@ -553,7 +553,7 @@ export default function ClientDetailPage() {
                                   </div>
                                   <div className="p-3 bg-zinc-950/20 rounded-lg border border-border/30 text-center col-span-2 sm:col-span-1">
                                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Pagado</p>
-                                    <p className="text-sm font-semibold text-blue-400">{fmtCurrency(jobPaid)}</p>
+                                    <p className="text-sm font-semibold text-primary">{fmtCurrency(jobPaid)}</p>
                                   </div>
                                 </div>
 
@@ -570,7 +570,7 @@ export default function ClientDetailPage() {
                                           className="flex flex-col gap-2 p-2.5 bg-zinc-950/20 rounded-lg border border-border/30 text-sm sm:flex-row sm:items-center sm:justify-between"
                                         >
                                           <div className="flex flex-wrap items-center gap-2">
-                                            <CreditCard className="w-3.5 h-3.5 text-blue-400" />
+                                            <CreditCard className="h-3.5 w-3.5 text-primary" />
                                             <span className="text-foreground">{fmtCurrency(payment.amount)}</span>
                                             <Badge
                                               variant="outline"

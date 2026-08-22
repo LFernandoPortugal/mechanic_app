@@ -259,8 +259,8 @@ function LegacyHome() {
                 Recepción: <strong className="font-bold font-mono text-amber-400 ml-0.5">{jobs.filter(j => j.status === 'Reception').length}</strong>
               </span>
               <span className="flex items-center gap-1.5 bg-zinc-900/60 dark:bg-black/30 px-2.5 py-1 rounded border border-border/40 font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-                Diagnóstico: <strong className="font-bold font-mono text-blue-400 ml-0.5">{jobs.filter(j => j.status === 'Diagnosis').length}</strong>
+                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                Diagnóstico: <strong className="ml-0.5 font-mono font-bold text-primary">{jobs.filter(j => j.status === 'Diagnosis').length}</strong>
               </span>
               <span className="flex items-center gap-1.5 bg-zinc-900/60 dark:bg-black/30 px-2.5 py-1 rounded border border-border/40 font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
