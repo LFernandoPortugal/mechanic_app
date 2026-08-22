@@ -1,6 +1,6 @@
 # Auditoría visual y sistema propuesto
 
-> Estado: propuesta pendiente de aprobación; no se ha migrado ninguna ruta.
+> Estado: auditoría inicial completada. La dirección Precision Blue sirvió como prototipo y fue sustituida, tras revisión humana, por Industrial Orange en la rama Preview.
 > Producción auditada: `https://mechanic-app-zeta.vercel.app/`, commit `280418a`.
 > Fecha: 2026-08-14.
 
@@ -275,3 +275,11 @@ La página tendrá búsqueda local, índice, workflow, preguntas frecuentes y en
 La dirección Precision Blue se migró progresivamente a todas las rutas enumeradas en esta auditoría. El resultado centraliza jerarquía de superficies, navegación responsive, métricas, formularios, tablas/tarjetas, estados del workflow y acciones destructivas. El vidrio decorativo heredado quedó neutralizado en favor de superficies sólidas; verde se reserva principalmente para éxito, ámbar para advertencia y rojo para error o destrucción.
 
 La validación automatizada genera una matriz visual desktop 1440×1000 y móvil 390×844 en claro y oscuro para las rutas autenticadas, más estados públicos de login, cotización inválida, trial expirado y vistas SUPER_ADMIN. Las capturas sólo se toman después de que la autenticación, el shell y el tema hayan terminado de hidratar. Esta implementación permanece en una rama Preview y requiere revisión humana antes de cualquier merge.
+
+## Dirección aprobada y revisión final — 2026-08-22
+
+La revisión humana eligió Industrial Orange: acero mate de baja luminancia en claro, grafito en oscuro y naranja herramienta como único acento de marca. Verde, ámbar y rojo permanecen exclusivamente como éxito, advertencia y destrucción. La arquitectura de navegación, componentes y workflow aprobada en Precision Blue se conservó para evitar cambios funcionales.
+
+La matriz final volvió a recorrer las rutas mínimas en ambos temas y viewports. No detectó overflow horizontal ni fallos de montaje; la inspección de capturas confirmó la paleta correcta después de regenerar el caché local. La ayuda se amplió con secciones independientes de QC, pagos, configuración/reseteo y clientes, más accesos contextuales en las superficies operativas principales.
+
+Producción, Firebase Rules, infraestructura y datos reales no se modificaron. La rama sigue siendo Preview y no debe integrarse hasta la revisión del enlace Vercel actualizado.

@@ -1,6 +1,6 @@
 # AI Handoff — SGA Mechanic App
 
-> Última actualización: 2026-08-21
+> Última actualización: 2026-08-22
 > Producción oficial: rama `main` en Vercel
 > Código funcional de producción verificado: `280418a` en `https://mechanic-app-zeta.vercel.app/`
 
@@ -9,15 +9,15 @@
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
 - **Producción:** `280418a` incorpora el restablecimiento de taller coordinado por servidor sobre el ciclo ADMIN, reconciliación global y presupuesto seguro de evidencia; GitHub/Vercel registran el deployment Production como exitoso.
-- **Rama de trabajo:** `codex/help-premium-design`, creada desde `280418a` para manuales, `/help` y rediseño visual.
-- **Estado del bloque visual:** la dirección Precision Blue está implementada de extremo a extremo para revisión humana. El shell global por rol, tokens claro/oscuro, workflow canónico de 8 etapas y `/help` ES/EN cubren las rutas internas, públicas y de administración. La rama aún es una propuesta: no se fusionó ni desplegó a producción.
+- **Rama de trabajo:** `codex/industrial-orange-proposal`, basada en el bloque completo de manuales, `/help` y migración visual iniciado desde `280418a`.
+- **Estado del bloque visual:** Industrial Orange fue aprobada como dirección de Preview. Usa acero mate/naranja quemado en claro y grafito/naranja herramienta en oscuro; el shell por rol, workflow canónico y `/help` ES/EN cubren las rutas internas, públicas y de administración. La rama no se fusionó ni desplegó a producción.
 - **Navegación aprobada en revisión:** el ADMIN usa navegación progresiva compacta (`Inicio`, `Operación`, `Gestión`, `Ayuda`); el grupo correspondiente a la ruta activa se abre automáticamente. Roles operativos mantienen accesos directos. Móvil/tablet usa cuatro destinos prioritarios y `Más`. La marca provisional `Mechanic OS` fue retirada a favor de `SGA`; `workshopName` sigue siendo el nombre contextual del taller.
 - **Rutas migradas:** `/`, `/login`, `/reception`, `/technician`, `/advisor`, `/quote/view`, `/qc`, `/advisor/payments`, `/inventory`, `/clients`, `/clients/detail`, `/admin/users`, `/admin/settings`, `/super-admin`, `/expired`, `/analytics` y `/help`. Técnico/Asesor comparten `cola + área de trabajo`; las demás rutas usan superficies, métricas, formularios, navegación y estados semánticos comunes. Se retiraron botones Inicio redundantes, glows y glass decorativo sin cambiar handlers ni transiciones.
-- **Documentación nueva:** `docs/Manuales/` contiene manuales ES por audiencia, guía consolidada EN, flujo, recuperación y matriz de acciones destructivas. `docs/Diseno/Auditoria-Visual-y-Sistema-Propuesto.md` contiene la evidencia y dirección visual.
+- **Documentación nueva:** `docs/Manuales/` contiene manuales ES por audiencia, guía consolidada EN, flujo, recuperación y matriz de acciones destructivas. `docs/Diseno/Auditoria-Visual-y-Sistema-Propuesto.md` conserva la auditoría y `docs/Diseno/Industrial-Orange-Proposal.md` registra la dirección aprobada y su cierre visual.
 - **Firebase esperado:** `mechanic-app-7d459`; las Rules del ciclo de usuarios se desplegaron solo después de activar la API en Vercel y fueron releídas desde el proyecto activo.
 - **Último hito integrado:** PR #46 se integró como `280418a`; `/api/workshop/reset` coordina la cascada operativa y conserva usuarios/settings.
-- **Calidad verificada en esta rama:** TypeScript, lint y build de 20 páginas/8 APIs; 120 pruebas unitarias, 18 integraciones API y 26 Rules. Los 5 E2E funcionales pasaron contra emuladores, incluido `Reception → Diagnosis → Approval → Approved → Repair → QC → Ready → Delivered`; además pasan la matriz visual de 17 rutas y la sesión SUPER_ADMIN. La matriz genera 56 capturas de rutas/tamaños/temas y espera hidratación antes de capturar.
-- **Siguiente paso:** revisar el diff y las capturas representativas, confirmar accesibilidad/overflow en el Preview, abrir el PR, esperar CI + Vercel Preview y entregar el enlace para aprobación. No fusionar ni desplegar antes de revisión humana.
+- **Calidad verificada en esta rama:** auditoría runtime sin vulnerabilidades; TypeScript, lint y build de 20 páginas/8 APIs; 122 unitarias, 18 integraciones API y 26 Rules. Los 8 E2E pasaron contra emuladores, incluido `Reception → Diagnosis → Approval → Approved → Repair → QC → Ready → Delivered`, navegación/RBAC, personal, SUPER_ADMIN y la matriz visual de rutas/temas/tamaños.
+- **Siguiente paso:** revisar CI y la Vercel Preview actualizada del PR #48 y entregar el enlace final para aprobación humana. No fusionar ni desplegar antes de esa revisión.
 - **No repetir ni asumir:** este bloque no modificó producción, `p1`, SUPER_ADMIN, Rules ni infraestructura. Las operaciones E2E destructivas se limitaron a cuentas y órdenes descartables del proyecto `demo-mechanic-app` en emuladores. No ejecutar pruebas destructivas fuera de ese entorno.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.

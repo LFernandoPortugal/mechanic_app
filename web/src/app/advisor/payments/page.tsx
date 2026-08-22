@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ContextHelpLink } from "@/components/ContextHelpLink";
 import { registerPayment, PaymentInput } from "@/lib/db";
 import { getPayableTotal } from "@/lib/transactions";
 import { generateReceiptPDF } from "@/lib/pdf";
@@ -223,7 +224,7 @@ function JobCard({ job, onPaymentRegistered, onSessionExpired, workshopSettings,
             <Badge
               className={isDelivered
                 ? "bg-emerald-700/40 text-emerald-300 border-emerald-600/40"
-                : "bg-blue-700/40 text-blue-300 border-blue-600/40"
+                : "border-primary/30 bg-primary/10 text-primary"
               }
               variant="outline"
             >
@@ -382,7 +383,7 @@ function JobCard({ job, onPaymentRegistered, onSessionExpired, workshopSettings,
           )}
 
           {!isDelivered && isFullyPaid && (
-            <div className="flex items-center gap-2 text-sm text-blue-400 bg-blue-950/30 border border-blue-600/30 rounded-lg px-4 py-3">
+            <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary">
               <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
               <span>Pago completo registrado. La orden todavía debe completar el flujo de QC.</span>
             </div>
@@ -449,9 +450,10 @@ export default function PaymentsPage() {
                 </p>
               </div>
             </div>
-            <Badge variant="outline" className="self-start border-primary/40 bg-primary/10 px-3 py-1 text-xs text-primary sm:self-center">
-              Caja Activa
-            </Badge>
+            <div className="flex items-center gap-2 self-start sm:self-center">
+              <ContextHelpLink section="payments" compact />
+              <Badge variant="outline" className="border-primary/40 bg-primary/10 px-3 py-1 text-xs text-primary">Caja Activa</Badge>
+            </div>
           </header>
 
           {/* Summary pills */}

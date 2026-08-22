@@ -331,7 +331,7 @@ export default function AdvisorQuoteBuilder() {
             {/* PDF */}
             <Button
               variant="outline"
-              className="w-full border-blue-500/50 text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 h-12"
+              className="h-12 w-full border-primary/50 text-primary hover:bg-primary/10"
               onClick={() => generateQuotePDF(submittedJob, 'advisor', workshopSettings)}
             >
               <Download className="w-4 h-4 mr-2" />
@@ -502,7 +502,7 @@ export default function AdvisorQuoteBuilder() {
                     onClick={handleAutoQuote}
                     variant="outline"
                     aria-label={t('autoQuote')}
-                    className="text-blue-500 dark:text-blue-400 border-blue-500/50 hover:bg-blue-50 dark:hover:bg-blue-950/30 flex-shrink-0"
+                    className="flex-shrink-0 border-primary/50 text-primary hover:bg-primary/10"
                   >
                     <Wand2 className="w-4 h-4 mr-2" />
                     <span className="hidden sm:inline">{t('autoQuote')}</span>
@@ -526,7 +526,7 @@ export default function AdvisorQuoteBuilder() {
                               ${item.status === 'Pass' ? 'bg-emerald-600' : ''}
                               ${item.status === 'Fail' ? 'bg-red-600' : ''}
                               ${item.status === 'Critical' ? 'bg-orange-600' : ''}
-                              ${item.status === 'Recommended' ? 'bg-blue-600' : ''}
+                              ${item.status === 'Recommended' ? 'bg-primary' : ''}
                             `}>
                               {t(`status${item.status}`) || item.status}
                             </Badge>
@@ -576,7 +576,7 @@ export default function AdvisorQuoteBuilder() {
                         id="quote-labor-cost"
                         type="number" 
                         min="0"
-                        className="bg-background border-border text-blue-600 dark:text-blue-400 font-mono"
+                        className="border-border bg-background font-mono text-primary"
                         value={baseLaborCost || ''}
                         onChange={(e) => setBaseLaborCost(parseFloat(e.target.value) || 0)}
                       />
@@ -736,7 +736,7 @@ export default function AdvisorQuoteBuilder() {
                   <Button
                     onClick={() => void handleRegenerateQuoteLink(selectedJob)}
                     variant="outline"
-                    className="flex-1 border-blue-500/50 text-blue-500"
+                    className="flex-1 border-primary/50 text-primary"
                     disabled={managingQuoteLink}
                   >
                     <Link2 className="w-4 h-4 mr-2" /> Regenerar enlace seguro

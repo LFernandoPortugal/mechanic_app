@@ -296,7 +296,7 @@ export default function TechnicianDashboard() {
 
   const STATUS_COLOR: Record<string, string> = {
     Reception: 'text-amber-400 border-amber-500/60',
-    Diagnosis: 'text-blue-400 border-blue-500/60',
+    Diagnosis: 'text-primary border-primary/60',
     Approval: 'text-warning border-warning/50',
     Approved: 'text-success border-primary/40',
     Repair: 'text-primary border-primary/50',
@@ -461,7 +461,7 @@ export default function TechnicianDashboard() {
                         item.status === 'Pass' ? 'bg-emerald-600' :
                         item.status === 'Fail' ? 'bg-red-600' :
                         item.status === 'Critical' ? 'bg-orange-600' :
-                        item.status === 'Recommended' ? 'bg-blue-600' : '';
+                        item.status === 'Recommended' ? 'bg-primary' : '';
                       return (
                         <div key={item.id} className="p-3 bg-secondary/50 dark:bg-black/40 border border-border rounded flex justify-between items-start">
                           <div>
@@ -541,7 +541,7 @@ export default function TechnicianDashboard() {
                             ${newItemStatus === status && status === 'Pass' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}
                             ${newItemStatus === status && status === 'Fail' ? 'bg-red-600 hover:bg-red-700 text-white' : ''}
                             ${newItemStatus === status && status === 'Critical' ? 'bg-orange-600 hover:bg-orange-700 text-white' : ''}
-                            ${newItemStatus === status && status === 'Recommended' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
+                            ${newItemStatus === status && status === 'Recommended' ? 'bg-primary text-primary-foreground hover:brightness-95' : ''}
                             ${newItemStatus !== status ? 'border-border text-muted-foreground' : ''}
                           `}
                           onClick={() => setNewItemStatus(status)}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ContextHelpLink } from "@/components/ContextHelpLink";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -144,7 +145,7 @@ export default function SettingsPage() {
     <ProtectedRoute allowedRoles={['ADMIN']}>
       <div className="flex justify-center text-foreground">
         <div className="max-w-3xl w-full">
-          <header className="mb-8 flex flex-col gap-3">
+          <header className="mb-8 flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
             <div>
               <h1 className="page-title flex items-center gap-2">
                 <Building2 className="size-7 text-primary" /> Configuración del Taller
@@ -153,6 +154,7 @@ export default function SettingsPage() {
                 Administre la información pública del taller. Estos datos aparecerán en los reportes y cotizaciones enviados a los clientes.
               </p>
             </div>
+            <ContextHelpLink section="settings" />
           </header>
 
           <Card className="app-card">

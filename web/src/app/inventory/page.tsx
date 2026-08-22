@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AccessibleModal } from "@/components/AccessibleModal";
+import { ContextHelpLink } from "@/components/ContextHelpLink";
 import {
   getInventoryItems,
   addInventoryItem,
@@ -231,11 +232,14 @@ export default function InventoryPage() {
                 <p className="text-muted-foreground text-xs mt-0.5">Control de stock de repuestos y servicios del taller.</p>
               </div>
             </div>
-            {isAdmin && (
-              <Button onClick={openAdd} className="gap-2 self-start bg-primary font-bold text-primary-foreground hover:brightness-95 sm:self-center">
-                <Plus className="w-4 h-4" /> Agregar Repuesto
-              </Button>
-            )}
+            <div className="flex items-center gap-2 self-start sm:self-center">
+              <ContextHelpLink section="inventory" compact />
+              {isAdmin && (
+                <Button onClick={openAdd} className="gap-2 bg-primary font-bold text-primary-foreground hover:brightness-95">
+                  <Plus className="w-4 h-4" /> Agregar Repuesto
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* KPI bar */}
@@ -243,7 +247,7 @@ export default function InventoryPage() {
             {[
               { label: 'Total Items', value: items.length, color: 'text-primary' },
               { label: 'Stock Bajo', value: lowStock, color: lowStock > 0 ? 'text-destructive' : 'text-success', icon: lowStock > 0 ? <AlertTriangle className="w-3.5 h-3.5" /> : null },
-              { label: 'Categorías', value: new Set(items.map(i => i.category)).size, color: 'text-blue-400' },
+              { label: 'Categorías', value: new Set(items.map(i => i.category)).size, color: 'text-primary' },
               { label: 'Valor Inventario', value: formatMoney(items.reduce((acc, i) => acc + (i.stock > 0 ? i.stock * (i.costPrice ?? i.unitPrice) : 0), 0)), color: 'text-amber-400' },
             ].map(k => (
               <Card key={k.label} className="metric-card">
@@ -368,7 +372,7 @@ export default function InventoryPage() {
                           >
                             <ArrowUpCircle className="h-4 w-4" /> Salida
                           </Button>
-                          <Button type="button" size="sm" variant="outline" className="border-blue-500/30 text-blue-400" onClick={() => openHistory(item)}>
+                          <Button type="button" size="sm" variant="outline" className="border-primary/30 text-primary" onClick={() => openHistory(item)}>
                             <History className="h-4 w-4" /> Historial
                           </Button>
                           <Button type="button" size="sm" variant="outline" onClick={() => openEdit(item)}>
@@ -467,7 +471,7 @@ export default function InventoryPage() {
                                   title="Historial"
                                   aria-label={`Historial de ${item.name}`}
                                   onClick={() => openHistory(item)}
-                                  className="p-1.5 rounded hover:bg-blue-500/10 text-blue-400 transition-colors"
+                                  className="rounded p-1.5 text-primary transition-colors hover:bg-primary/10"
                                 >
                                   <History className="w-4 h-4" />
                                 </button>
@@ -668,7 +672,7 @@ export default function InventoryPage() {
             <CardHeader className="pb-4 shrink-0">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle id="inventory-history-title" className="text-blue-400 text-base flex items-center gap-2"><History className="w-4 h-4" /> Historial de Movimientos</CardTitle>
+                  <CardTitle id="inventory-history-title" className="flex items-center gap-2 text-base text-primary"><History className="w-4 h-4" /> Historial de Movimientos</CardTitle>
                   <CardDescription className="mt-1">{historyItem.name}</CardDescription>
                 </div>
                 <button type="button" onClick={() => setHistoryItem(null)} aria-label="Cerrar historial">
@@ -698,7 +702,7 @@ export default function InventoryPage() {
                           </span>
                         </div>
                         {tx.notes && <p className="text-xs text-muted-foreground mt-0.5 truncate">{tx.notes}</p>}
-                        {tx.jobId && <p className="text-xs text-blue-400 mt-0.5">Trabajo: {tx.jobId.substring(0, 12)}...</p>}
+                        {tx.jobId && <p className="mt-0.5 text-xs text-primary">Trabajo: {tx.jobId.substring(0, 12)}...</p>}
                       </div>
                       <div className="text-xs font-mono text-muted-foreground">{formatMoney(tx.unitPrice)}</div>
                     </div>

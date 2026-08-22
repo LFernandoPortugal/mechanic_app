@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLE_BADGE_CLASSES, ROLE_ROUTE_MAP, ROLE_META } from '@/types';
@@ -123,8 +125,16 @@ const allCards: NavCard[] = [
 ];
 
 export default function Home() {
-  const { hasRole } = useAuth();
+  const { hasRole, user, loading } = useAuth();
+  if (loading) return <div className="flex min-h-[60dvh] items-center justify-center"><span className="h-10 w-10 animate-spin rounded-full border-2 border-primary/20 border-t-primary" /></div>;
+  if (!user) return <UnauthenticatedHomeRedirect />;
   return hasRole('ADMIN') ? <AdminDashboard /> : <LegacyHome />;
+}
+
+function UnauthenticatedHomeRedirect() {
+  const router = useRouter();
+  useEffect(() => { router.replace('/login'); }, [router]);
+  return <div className="flex min-h-[60dvh] items-center justify-center"><span className="h-10 w-10 animate-spin rounded-full border-2 border-primary/20 border-t-primary" /></div>;
 }
 
 function LegacyHome() {
@@ -259,8 +269,8 @@ function LegacyHome() {
                 Recepción: <strong className="font-bold font-mono text-amber-400 ml-0.5">{jobs.filter(j => j.status === 'Reception').length}</strong>
               </span>
               <span className="flex items-center gap-1.5 bg-zinc-900/60 dark:bg-black/30 px-2.5 py-1 rounded border border-border/40 font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-                Diagnóstico: <strong className="font-bold font-mono text-blue-400 ml-0.5">{jobs.filter(j => j.status === 'Diagnosis').length}</strong>
+                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                Diagnóstico: <strong className="ml-0.5 font-mono font-bold text-primary">{jobs.filter(j => j.status === 'Diagnosis').length}</strong>
               </span>
               <span className="flex items-center gap-1.5 bg-zinc-900/60 dark:bg-black/30 px-2.5 py-1 rounded border border-border/40 font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />

@@ -49,14 +49,14 @@ export default function VehicleTypeSelector({
               } ${
                 isSelected
                   ? "border-primary/70 bg-primary/10 text-primary ring-1 ring-primary/40"
-                  : "border-border/60 bg-card/45 hover:border-violet-500/40 hover:bg-violet-950/5 hover:text-violet-400/90 hover:-translate-y-0.5"
+                  : "border-border/60 bg-card/45 hover:border-primary/40 hover:bg-primary/5 hover:text-primary hover:-translate-y-0.5"
               }`}
             >
               <div className="w-12 h-12 rounded-lg bg-secondary/40 group-hover:bg-secondary/60 flex items-center justify-center mb-3 transition-colors border border-border/30">
                 <VehicleIcon 
                   type={type.key} 
                   className={`w-6 h-6 transition-transform group-hover:scale-110 ${
-                    isSelected ? "text-violet-400" : "text-muted-foreground group-hover:text-violet-400"
+                    isSelected ? "text-primary" : "text-muted-foreground group-hover:text-primary"
                   }`} 
                 />
               </div>

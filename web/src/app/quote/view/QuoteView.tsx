@@ -342,7 +342,7 @@ export default function ClientQuoteView() {
                             ${item.status === 'Pass' ? 'bg-emerald-600' : ''}
                             ${item.status === 'Fail' ? 'bg-red-600' : ''}
                             ${item.status === 'Critical' ? 'bg-orange-600' : ''}
-                            ${item.status === 'Recommended' ? 'bg-blue-600' : ''}
+                            ${item.status === 'Recommended' ? 'bg-primary' : ''}
                           `}>
                             {t(`status${item.status}`) || item.status}
                           </Badge>

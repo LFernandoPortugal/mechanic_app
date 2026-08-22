@@ -14,7 +14,9 @@ async function createAuthUser(email) {
   const endpoint = `http://${authHost}/identitytoolkit.googleapis.com/v1/accounts:signUp?key=e2e-api-key`;
   let lastError;
 
-  for (let attempt = 0; attempt < 60; attempt += 1) {
+  // On cold Windows runners Firestore can bind several seconds before Auth.
+  // Keep the fixture bootstrap inside Playwright's 120 s webServer budget.
+  for (let attempt = 0; attempt < 240; attempt += 1) {
     try {
       const response = await fetch(endpoint, {
         method: "POST",
@@ -36,7 +38,7 @@ async function waitForFirestore() {
   const endpoint = `http://${firestoreHost}/v1/projects/${projectId}/databases/(default)/documents`;
   let lastError;
 
-  for (let attempt = 0; attempt < 60; attempt += 1) {
+  for (let attempt = 0; attempt < 240; attempt += 1) {
     try {
       const response = await fetch(endpoint);
       if (response.status >= 500) throw new Error(`Firestore Emulator returned ${response.status}.`);

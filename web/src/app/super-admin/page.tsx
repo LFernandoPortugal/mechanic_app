@@ -431,7 +431,7 @@ function SuperAdminContent() {
                                   ? "bg-red-950/20 text-red-400 border-red-500/30"
                                   : expiration
                                     ? "bg-success/10 text-success border-success/25"
-                                    : "bg-blue-950/20 text-blue-400 border-blue-500/30"
+                                    : "bg-primary/10 text-primary border-primary/30"
                               }`}>
                                 <Calendar className="w-3 h-3" />
                                 {isExpired ? "Expirado" : expiration
@@ -542,7 +542,7 @@ function SuperAdminContent() {
                                               hasRole
                                                 ? role === "ADMIN"
                                                   ? "bg-primary/10 text-primary border-primary/25"
-                                                  : "bg-blue-950/20 text-blue-400 border-blue-500/20"
+                                                  : "bg-primary/10 text-primary border-primary/25"
                                                 : "bg-secondary/30 text-muted-foreground/50 border-border/30 hover:text-muted-foreground"
                                             }`}
                                           >

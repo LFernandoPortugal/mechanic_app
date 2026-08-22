@@ -640,7 +640,7 @@ export default function Reception() {
                 <CardTitle className="text-lg">{t('liabilityTransfer')}</CardTitle>
                 <CardDescription>
                   {t('clientConfirms')}{" "}
-                  <span className="text-blue-400 font-medium">Firma digital legal.</span>
+                  <span className="font-medium text-primary">Firma digital legal.</span>
                 </CardDescription>
               </CardHeader>
               <CardContent>

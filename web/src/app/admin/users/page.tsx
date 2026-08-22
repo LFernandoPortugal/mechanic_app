@@ -11,6 +11,7 @@ import {
 } from "@/lib/workshop-users-client";
 import { UserProfile, UserRole, ROLE_BADGE_CLASSES, ROLE_META } from "@/types";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ContextHelpLink } from "@/components/ContextHelpLink";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -168,10 +169,13 @@ export default function AdminUsersPage() {
                 <p className="text-muted-foreground text-sm">{users.length} {t("registeredUsers")}</p>
               </div>
             </div>
-            <Button onClick={fetchUsers} variant="outline" className="self-start sm:self-auto">
-              <RefreshCw className="w-4 h-4 mr-2" />
-              {t("refresh")}
-            </Button>
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <ContextHelpLink section="employees" compact />
+              <Button onClick={fetchUsers} variant="outline">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                {t("refresh")}
+              </Button>
+            </div>
           </div>
 
           <Card className="app-card">
