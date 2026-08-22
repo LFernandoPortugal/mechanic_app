@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ContextHelpLink } from "@/components/ContextHelpLink";
 import { useRealtimeJobs } from "@/hooks/useRealtimeJobs";
 import { submitQualityControl } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -301,7 +302,8 @@ export default function QualityControlPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <ContextHelpLink section="qc" compact />
               <Badge variant="outline" className="gap-1.5 border-primary/40 bg-primary/10 px-3 py-1 text-xs text-primary">
                 Auditoría Activa
               </Badge>

@@ -1,5 +1,7 @@
 # Propuesta visual Industrial Orange
 
+> Estado: dirección aprobada para Preview y aplicada en la rama `codex/industrial-orange-proposal`. Producción permanece sin cambios.
+
 ## Lectura de marca
 
 SGA se plantea como una herramienta de trabajo para el taller: precisa, resistente y directa. La referencia material no es una interfaz futurista azul, sino la combinación habitual de maquinaria profesional: carcasas naranja, acero, grafito, caucho oscuro y señalización funcional.
@@ -15,7 +17,7 @@ La propuesta conserva la arquitectura, componentes, densidad y comportamiento de
 | Texto | `#242728` | `#f0f1ef` | Grafito y blanco técnico |
 | Primario | `#b9470e` | `#f07a2f` | Naranja herramienta para acción y selección |
 | Borde | `#c7cbc8` | `#3b4042` | Unión y estructura metálica |
-| Éxito | `#147554` | `#56c99b` | Confirmación real |
+| Éxito | `#0b6848` | `#56c99b` | Confirmación real con contraste reforzado en claro |
 | Advertencia | `#925300` | `#f2b65f` | Atención operativa |
 | Destructivo | `#b3261e` | `#ff7169` | Riesgo y eliminación |
 
@@ -33,10 +35,23 @@ La propuesta conserva la arquitectura, componentes, densidad y comportamiento de
 - Mantiene Geist y Geist Mono, radios de 12 a 16 px y targets táctiles existentes.
 - Mantiene contraste AA y `prefers-reduced-motion`.
 - No usa gradientes, texturas pesadas, cromados literales ni amarillo de construcción como fondo dominante.
-- La propuesta debe revisarse en Preview antes de reemplazar Precision Blue.
+- La transición completa debe revisarse en Preview antes de proponer cualquier integración a `main`.
 
 ## Portal de acceso
 
 `/login` funciona como una introducción operativa, no como una landing comercial. En escritorio presenta una composición dividida: propuesta de valor, workflow resumido y garantías operativas a la izquierda; formulario de acceso a la derecha. En móvil conserva el workflow, reduce el contenido secundario y prioriza que los campos y la acción de ingreso aparezcan temprano.
 
 La ruta `/` sin sesión redirige a este portal para evitar una segunda portada con accesos que todavía no están disponibles. El acceso mantiene recuperación de contraseña, idioma, tema, mensajes de error y redirección segura al destino solicitado.
+
+## Cierre de auditoría visual
+
+La matriz automatizada recorrió las rutas mínimas en 1440×1000 y 390×844, con tema claro y oscuro. Se inspeccionaron además capturas representativas de inicio, login, ayuda, QC y configuración después de regenerar el caché de Next.js desde cero.
+
+- La navegación ADMIN conserva cuatro destinos de primer nivel y despliega Operación/Gestión solo cuando corresponde.
+- Móvil mantiene cuatro accesos prioritarios y `Más`; no se detectó desbordamiento horizontal.
+- `/help` comparte superficies, tipografía, navegación y color de marca, y diferencia las operaciones destructivas mediante rojo semántico.
+- QC conserva verde únicamente como confirmación real; el naranja identifica navegación, foco, CTA y selección.
+- Los estados claro y oscuro no son inversiones: usan superficies, bordes, elevación y contraste propios.
+- Los enlaces contextuales llegan desde Recepción, Técnico, Órdenes, QC, Pagos, Inventario, Empleados y Configuración.
+
+La validación del 2026-08-22 pasó TypeScript, lint, 122 unitarias, 26 Rules, 18 integraciones, 8 E2E y build de 20 páginas/8 APIs. Los escenarios destructivos se limitaron a emuladores con `demo-mechanic-app`.

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AccessibleModal } from "@/components/AccessibleModal";
+import { ContextHelpLink } from "@/components/ContextHelpLink";
 import {
   getInventoryItems,
   addInventoryItem,
@@ -231,11 +232,14 @@ export default function InventoryPage() {
                 <p className="text-muted-foreground text-xs mt-0.5">Control de stock de repuestos y servicios del taller.</p>
               </div>
             </div>
-            {isAdmin && (
-              <Button onClick={openAdd} className="gap-2 self-start bg-primary font-bold text-primary-foreground hover:brightness-95 sm:self-center">
-                <Plus className="w-4 h-4" /> Agregar Repuesto
-              </Button>
-            )}
+            <div className="flex items-center gap-2 self-start sm:self-center">
+              <ContextHelpLink section="inventory" compact />
+              {isAdmin && (
+                <Button onClick={openAdd} className="gap-2 bg-primary font-bold text-primary-foreground hover:brightness-95">
+                  <Plus className="w-4 h-4" /> Agregar Repuesto
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* KPI bar */}

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ContextHelpLink } from "@/components/ContextHelpLink";
 import { registerPayment, PaymentInput } from "@/lib/db";
 import { getPayableTotal } from "@/lib/transactions";
 import { generateReceiptPDF } from "@/lib/pdf";
@@ -449,9 +450,10 @@ export default function PaymentsPage() {
                 </p>
               </div>
             </div>
-            <Badge variant="outline" className="self-start border-primary/40 bg-primary/10 px-3 py-1 text-xs text-primary sm:self-center">
-              Caja Activa
-            </Badge>
+            <div className="flex items-center gap-2 self-start sm:self-center">
+              <ContextHelpLink section="payments" compact />
+              <Badge variant="outline" className="border-primary/40 bg-primary/10 px-3 py-1 text-xs text-primary">Caja Activa</Badge>
+            </div>
           </header>
 
           {/* Summary pills */}
