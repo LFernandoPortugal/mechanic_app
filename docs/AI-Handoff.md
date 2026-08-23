@@ -2,24 +2,24 @@
 
 > Última actualización: 2026-08-22
 > Producción oficial: rama `main` en Vercel
-> Código funcional de producción verificado: `ac83b6e` en `https://mechanic-app-zeta.vercel.app/`
+> Código funcional de producción verificado: `e756a14` en `https://mechanic-app-zeta.vercel.app/`
 
 ## Punto de reanudación rápido
 
 > Este bloque es el checkpoint corto para una nueva sesión, cuenta o agente. Debe actualizarse al cerrar cada bloque de trabajo que cambie el estado del proyecto.
 
-- **Producción:** `ac83b6e` integra los manuales, `/help` por rol ES/EN, Industrial Orange, el selector de vehículos alineado con esa paleta y la identidad SVG adaptativa de SGA; GitHub Actions y Vercel Production finalizaron correctamente.
-- **Trabajo en revisión:** `codex/role-specific-home`, creada desde `main` en `6c2b284`. Separa el inicio global de SUPER_ADMIN del inicio operativo del taller; todavía no está integrado ni desplegado en producción.
+- **Producción:** `e756a14` integra los manuales, `/help` por rol ES/EN, Industrial Orange, la identidad SVG adaptativa de SGA y los inicios separados para gestión global y operación del taller; GitHub Actions y Vercel Production finalizaron correctamente.
+- **Bloque integrado:** PR #52 se fusionó por squash en `main` como `e756a14`. SUPER_ADMIN ya no entra al resumen del taller y el ADMIN de un taller vacío recibe primeros pasos accionables.
 - **Inicio por contexto:** SUPER_ADMIN entra en `/super-admin`, con consola global y navegación propia. Un ADMIN sin órdenes recibe onboarding de configuración/empleados/inventario/primera recepción; un taller con órdenes conserva el resumen operativo existente.
 - **Estado del bloque visual:** Industrial Orange está integrada y desplegada. Usa acero mate/naranja quemado en claro y grafito/naranja herramienta en oscuro; el shell por rol, workflow canónico y `/help` ES/EN cubren las rutas internas, públicas y de administración.
 - **Navegación aprobada en revisión:** el ADMIN usa navegación progresiva compacta (`Inicio`, `Operación`, `Gestión`, `Ayuda`); el grupo correspondiente a la ruta activa se abre automáticamente. Roles operativos mantienen accesos directos. Móvil/tablet usa cuatro destinos prioritarios y `Más`. La marca provisional `Mechanic OS` fue retirada a favor de `SGA`; `workshopName` sigue siendo el nombre contextual del taller.
 - **Rutas migradas:** `/`, `/login`, `/reception`, `/technician`, `/advisor`, `/quote/view`, `/qc`, `/advisor/payments`, `/inventory`, `/clients`, `/clients/detail`, `/admin/users`, `/admin/settings`, `/super-admin`, `/expired`, `/analytics` y `/help`. Técnico/Asesor comparten `cola + área de trabajo`; las demás rutas usan superficies, métricas, formularios, navegación y estados semánticos comunes. Se retiraron botones Inicio redundantes, glows y glass decorativo sin cambiar handlers ni transiciones.
 - **Documentación nueva:** `docs/Manuales/` contiene manuales ES por audiencia, guía consolidada EN, flujo, recuperación y matriz de acciones destructivas. `docs/Diseno/Auditoria-Visual-y-Sistema-Propuesto.md` conserva la auditoría y `docs/Diseno/Industrial-Orange-Proposal.md` registra la dirección aprobada y su cierre visual.
 - **Firebase esperado:** `mechanic-app-7d459`; las Rules del ciclo de usuarios se desplegaron solo después de activar la API en Vercel y fueron releídas desde el proyecto activo.
-- **Último hito integrado:** PR #50 se integró por squash en `main` como `ac83b6e`; añade estados Industrial Orange accesibles al selector de vehículos y la marca SGA en header, shell, favicon y manifest.
-- **Calidad verificada:** auditoría runtime sin vulnerabilidades; TypeScript, lint y build de 21 páginas/8 APIs; 124 unitarias, 18 integraciones API y 26 Rules. Los 8 E2E pasaron contra emuladores, incluido `Reception → Diagnosis → Approval → Approved → Repair → QC → Ready → Delivered`, navegación/RBAC, personal, SUPER_ADMIN y la matriz visual de rutas/temas/tamaños. El workflow de `main` `32613226751` repitió todos los gates correctamente en 4m14s.
-- **Verificación de producción:** Vercel marcó exitoso el deployment Production del commit `ac83b6e`. La URL oficial respondió HTTP 200 para `/login`, `/sga-mark.svg` y `/manifest.json`, con MIME `image/svg+xml` y `application/json` en los assets. El logo usa naranja/grafito en claro y naranja/metal medio en oscuro; el favicon sigue `prefers-color-scheme`.
-- **Siguiente paso:** revisar el PR y su Vercel Preview para `codex/role-specific-home`; no integrar ni desplegar hasta aprobación visual del usuario.
+- **Último hito integrado:** PR #52 se integró como `e756a14`; añade consola global SUPER_ADMIN, onboarding de taller nuevo y reemplaza el ambiguo `Danger On/Off` por `Habilitar/Deshabilitar borrado`, con indicador destructivo rojo accesible.
+- **Calidad verificada:** auditoría runtime sin vulnerabilidades; TypeScript, lint y build de 21 páginas/8 APIs; 129 unitarias, 18 integraciones API y 26 Rules. Los 8 E2E pasaron contra emuladores, incluido `Reception → Diagnosis → Approval → Approved → Repair → QC → Ready → Delivered`, navegación/RBAC, personal, SUPER_ADMIN y la matriz visual de rutas/temas/tamaños. El workflow de `main` `32617057435` repitió todos los gates correctamente en 4m03s.
+- **Verificación de producción:** Vercel marcó exitoso el deployment Production del commit `e756a14`. La URL oficial respondió HTTP 200 para `/login`, `/sga-mark.svg` y `/manifest.json`, con MIME `image/svg+xml` y `application/json` en los assets.
+- **Siguiente paso:** recoger feedback real sobre la consola global y el onboarding; no hay merge, despliegue manual ni migración pendiente para este bloque.
 - **No repetir ni asumir:** este bloque no modificó `p1`, SUPER_ADMIN, Rules, Firebase ni infraestructura. Las operaciones E2E destructivas se limitaron a cuentas y órdenes descartables del proyecto `demo-mechanic-app` en emuladores. No ejecutar pruebas destructivas fuera de ese entorno.
 
 Para retomar, leer este documento completo y luego seguir el orden obligatorio de `AGENTS.md`. Verificar siempre el estado real con `git fetch`, `git status`, `git log -1`, `origin/main`, `web/.firebaserc` y el deployment objetivo antes de actuar.
@@ -28,7 +28,7 @@ Para retomar, leer este documento completo y luego seguir el orden obligatorio d
 
 La aplicación es un SGA multitenant en Next.js 16, Firebase Auth/Firestore y Vercel. La estabilización, el ciclo coordinado de usuarios, los manuales, la ayuda contextual y el sistema visual Industrial Orange están integrados en `main` y desplegados en Vercel Production; las reglas Firestore permanecen en `mechanic-app-7d459`.
 
-- `origin/main` contiene `ac83b6e`; producción sirve el reset server-side sobre el ciclo ADMIN de personal, la reconciliación global, la recuperación de borradores, los manuales, `/help` por rol, Industrial Orange y la identidad adaptativa de SGA en `https://mechanic-app-zeta.vercel.app/`. El historial anterior de E2E, flujos, portal, accesibilidad y estabilización permanece documentado en Git y en Bugs y Correcciones.
+- `origin/main` contiene el código funcional `e756a14`; producción sirve el reset server-side sobre el ciclo ADMIN de personal, la reconciliación global, la consola SUPER_ADMIN, el onboarding de talleres nuevos, los manuales, `/help` por rol, Industrial Orange y la identidad adaptativa de SGA en `https://mechanic-app-zeta.vercel.app/`. El historial anterior de E2E, flujos, portal, accesibilidad y estabilización permanece documentado en Git y en Bugs y Correcciones.
 - Las URLs Preview son efímeras y se toman del PR activo; no reutilizar aliases de ramas ya integradas.
 - Las reglas nuevas se compilaron y publicaron únicamente como `firestore:rules`; no se desplegaron Hosting, Storage ni índices.
 - El taller tester `p1` fue reparado: conserva su cuenta Auth y ahora tiene un único perfil ADMIN y un `settings/p1` vacío/activo. No se combinaron usuarios antiguos.
