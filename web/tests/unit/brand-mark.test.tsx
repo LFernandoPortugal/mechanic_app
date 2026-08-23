@@ -14,7 +14,10 @@ describe("SGA brand assets", () => {
   });
 
   it("supports an accessible standalone mark", () => {
-    render(<BrandMark title="SGA" />);
+    const { container } = render(<BrandMark title="SGA" />);
     expect(screen.getByRole("img", { name: "SGA" })).toBeTruthy();
+    expect(container.querySelector('path[fill="var(--brand-orange)"]')).toBeTruthy();
+    expect(container.querySelector('path[fill="var(--brand-steel)"]')).toBeTruthy();
+    expect(container.querySelector('path[fill="var(--brand-channel)"]')).toBeTruthy();
   });
 });

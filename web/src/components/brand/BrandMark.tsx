@@ -25,17 +25,17 @@ export function BrandMark({ className = "h-10 w-10", title }: BrandMarkProps) {
       </defs>
       <path
         clipPath={`url(#${orangeClip})`}
-        fill="#c45112"
+        fill="var(--brand-orange)"
         d="m27 2 10 0 2 6 6 3 6-3 7 7-3 6 3 7 6 2v10l-6 2-3 7 3 6-7 7-6-3-7 3-2 6H27l-2-6-7-3-6 3-7-7 3-6-3-7-6-2V30l6-2 3-7-3-6 7-7 6 3 7-3 2-6Z"
       />
       <path
         clipPath={`url(#${graphiteClip})`}
-        fill="#292c2d"
+        fill="var(--brand-steel)"
         d="m27 2 10 0 2 6 6 3 6-3 7 7-3 6 3 7 6 2v10l-6 2-3 7 3 6-7 7-6-3-7 3-2 6H27l-2-6-7-3-6 3-7-7 3-6-3-7-6-2V30l6-2 3-7-3-6 7-7 6 3 7-3 2-6Z"
       />
-      <path fill="#f2f1ed" d="M17 15h27l7 7-7 7v-5H23c-2 0-3 1-3 3 0 1 1 2 3 3l18 6c5 2 8 5 8 10 0 7-5 11-12 11H16l-7-7 7-7v5h21c2 0 3-1 3-3 0-1-1-2-3-3l-18-6c-5-2-8-5-8-10 0-7 5-11 12-11Z" />
-      <circle cx="18" cy="25" r="3.5" fill="#c45112" stroke="#f2f1ed" strokeWidth="2" />
-      <circle cx="42" cy="46" r="3.5" fill="#292c2d" stroke="#f2f1ed" strokeWidth="2" />
+      <path fill="var(--brand-channel)" d="M17 15h27l7 7-7 7v-5H23c-2 0-3 1-3 3 0 1 1 2 3 3l18 6c5 2 8 5 8 10 0 7-5 11-12 11H16l-7-7 7-7v5h21c2 0 3-1 3-3 0-1-1-2-3-3l-18-6c-5-2-8-5-8-10 0-7 5-11 12-11Z" />
+      <circle cx="18" cy="25" r="3.5" fill="var(--brand-orange)" stroke="var(--brand-channel)" strokeWidth="2" />
+      <circle cx="42" cy="46" r="3.5" fill="var(--brand-steel)" stroke="var(--brand-channel)" strokeWidth="2" />
     </svg>
   );
 }
