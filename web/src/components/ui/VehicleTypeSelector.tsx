@@ -42,22 +42,25 @@ export default function VehicleTypeSelector({
             <button
               key={type.key}
               type="button"
+              aria-pressed={isSelected}
               disabled={disabled}
               onClick={() => onChange(type.key)}
-              className={`flex flex-col items-center justify-between text-center p-4 rounded-xl border transition-all duration-300 select-none group text-left ${
+              className={`group relative flex min-h-32 flex-col items-center justify-between overflow-hidden rounded-xl border p-4 text-center transition-[background-color,border-color,box-shadow,color,transform] duration-200 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                 disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
               } ${
                 isSelected
-                  ? "border-primary/70 bg-primary/10 text-primary ring-1 ring-primary/40"
-                  : "border-border/60 bg-card/45 hover:border-primary/40 hover:bg-primary/5 hover:text-primary hover:-translate-y-0.5"
+                  ? "border-primary bg-primary/15 text-primary shadow-[inset_0_3px_0_var(--primary),0_8px_22px_rgb(185_71_14_/_0.12)]"
+                  : "border-border bg-card hover:border-primary/55 hover:bg-primary/8 hover:text-primary hover:-translate-y-0.5"
               }`}
             >
-              <div className="w-12 h-12 rounded-lg bg-secondary/40 group-hover:bg-secondary/60 flex items-center justify-center mb-3 transition-colors border border-border/30">
+              <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-lg border transition-[background-color,border-color,color,transform] group-hover:scale-105 ${
+                isSelected
+                  ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                  : "border-border bg-secondary/55 text-muted-foreground group-hover:border-primary/40 group-hover:bg-primary/10 group-hover:text-primary"
+              }`}>
                 <VehicleIcon 
                   type={type.key} 
-                  className={`w-6 h-6 transition-transform group-hover:scale-110 ${
-                    isSelected ? "text-primary" : "text-muted-foreground group-hover:text-primary"
-                  }`} 
+                  className="h-6 w-6"
                 />
               </div>
               

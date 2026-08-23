@@ -30,6 +30,7 @@ export const metadata: Metadata = {
   title: "SGA — Automotive Management System",
   description: "Sistema de Gestión Automotriz — Reception, Diagnosis, Quoting & Client Approval",
   manifest: "/manifest.json",
+  icons: { icon: "/sga-mark.svg" },
 };
 
 export default function RootLayout({

@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { BarChart3, Building2, CarFront, ChevronDown, CircleHelp, ClipboardPlus, Globe2, Home, LogOut, Menu, Moon, Package, ReceiptText, Settings, ShieldCheck, Sun, Users, Wrench, X } from "lucide-react";
+import { BarChart3, CarFront, ChevronDown, CircleHelp, ClipboardPlus, Globe2, Home, LogOut, Menu, Moon, Package, ReceiptText, Settings, ShieldCheck, Sun, Users, Wrench, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import type { UserRole } from "@/types";
+import { BrandMark } from "@/components/brand/BrandMark";
 
 const copy = {
   es: { home:"Inicio", operation:"Operación", management:"Gestión", reception:"Recepción", technician:"Técnico", advisor:"Órdenes", qc:"Control QC", payments:"Pagos", clients:"Clientes", employees:"Empleados", inventory:"Inventario", analytics:"Analítica", settings:"Configuración", help:"Ayuda", more:"Más", signout:"Cerrar sesión", theme:"Tema", system:"Sistema", close:"Cerrar menú", language:"Cambiar idioma", nav:"Navegación principal", mobileNav:"Navegación móvil", workshop:"Taller" },
@@ -69,7 +70,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return <div className="app-shell min-h-[100dvh] bg-background text-foreground">
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 border-r border-sidebar-border bg-sidebar lg:flex lg:flex-col">
-      <Link href="/" className="flex h-20 items-center gap-3 border-b border-sidebar-border px-5"><span className="brand-mark"><Building2 size={20}/></span><span className="min-w-0"><strong className="block tracking-tight">SGA</strong><small className="block truncate text-muted-foreground">{workshopSettings?.workshopName || c.workshop}</small></span></Link>
+      <Link href="/" className="flex h-20 items-center gap-3 border-b border-sidebar-border px-5"><span className="brand-mark"><BrandMark className="h-10 w-10" /></span><span className="min-w-0"><strong className="block font-black tracking-[-0.04em]">SGA</strong><small className="block truncate text-muted-foreground">{workshopSettings?.workshopName || c.workshop}</small></span></Link>
       <nav className="flex-1 space-y-1 overflow-y-auto p-3" aria-label={c.nav}>{isAdmin ? <>{renderLink(visible.find((item) => item.href === "/")!)}{renderGroup(c.operation, CarFront, operationItems)}{renderGroup(c.management, Settings, managementItems)}{renderLink(visible.find((item) => item.href === "/help")!)}</> : visible.map((item) => renderLink(item))}</nav>
       <div className="border-t border-sidebar-border p-3"><button onClick={logout} className="sidebar-link w-full"><LogOut size={18}/>{c.signout}</button></div>
     </aside>

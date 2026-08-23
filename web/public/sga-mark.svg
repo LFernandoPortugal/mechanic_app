@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <style>:root{--o:#b9470e;--s:#292c2d;--c:#f7f6f2}@media(prefers-color-scheme:dark){:root{--o:#f07a2f;--s:#59615e;--c:#f4f5f2}}</style>
+  <defs>
+    <clipPath id="orange"><path d="M8 0h56v64H0L64 0Z"/></clipPath>
+    <clipPath id="graphite"><path d="M0 0h64L0 64V0Z"/></clipPath>
+  </defs>
+  <path clip-path="url(#orange)" fill="var(--o)" d="m27 2 10 0 2 6 6 3 6-3 7 7-3 6 3 7 6 2v10l-6 2-3 7 3 6-7 7-6-3-7 3-2 6H27l-2-6-7-3-6 3-7-7 3-6-3-7-6-2V30l6-2 3-7-3-6 7-7 6 3 7-3 2-6Z"/>
+  <path clip-path="url(#graphite)" fill="var(--s)" d="m27 2 10 0 2 6 6 3 6-3 7 7-3 6 3 7 6 2v10l-6 2-3 7 3 6-7 7-6-3-7 3-2 6H27l-2-6-7-3-6 3-7-7 3-6-3-7-6-2V30l6-2 3-7-3-6 7-7 6 3 7-3 2-6Z"/>
+  <path fill="var(--c)" d="M17 15h27l7 7-7 7v-5H23c-2 0-3 1-3 3 0 1 1 2 3 3l18 6c5 2 8 5 8 10 0 7-5 11-12 11H16l-7-7 7-7v5h21c2 0 3-1 3-3 0-1-1-2-3-3l-18-6c-5-2-8-5-8-10 0-7 5-11 12-11Z"/>
+  <circle cx="18" cy="25" r="3.5" fill="var(--o)" stroke="var(--c)" stroke-width="2"/>
+  <circle cx="42" cy="46" r="3.5" fill="var(--s)" stroke="var(--c)" stroke-width="2"/>
+</svg>
