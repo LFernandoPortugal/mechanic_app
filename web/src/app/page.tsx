@@ -125,10 +125,17 @@ const allCards: NavCard[] = [
 ];
 
 export default function Home() {
-  const { hasRole, user, loading } = useAuth();
+  const { hasRole, user, userProfile, loading } = useAuth();
   if (loading) return <div className="flex min-h-[60dvh] items-center justify-center"><span className="h-10 w-10 animate-spin rounded-full border-2 border-primary/20 border-t-primary" /></div>;
   if (!user) return <UnauthenticatedHomeRedirect />;
+  if (userProfile?.roles.includes('SUPER_ADMIN')) return <RoleHomeRedirect destination="/super-admin" />;
   return hasRole('ADMIN') ? <AdminDashboard /> : <LegacyHome />;
+}
+
+function RoleHomeRedirect({ destination }: { destination: string }) {
+  const router = useRouter();
+  useEffect(() => { router.replace(destination); }, [destination, router]);
+  return <div className="flex min-h-[60dvh] items-center justify-center"><span className="h-10 w-10 animate-spin rounded-full border-2 border-primary/20 border-t-primary" /></div>;
 }
 
 function UnauthenticatedHomeRedirect() {

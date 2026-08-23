@@ -17,6 +17,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { UserProfile, UserRole } from "@/types";
 import { extendExpiration } from "@/lib/dates";
+import { SuperAdminShell } from "@/components/shell/SuperAdminShell";
 
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : "Error desconocido";
@@ -247,19 +248,28 @@ function SuperAdminContent() {
     } finally { setActionLoading(null); }
   };
 
+  const globalMetrics: Array<{ label: string; value: number; icon: typeof Building2 }> = [
+    { label: "Talleres", value: workshops.length, icon: Building2 },
+    { label: "Trials activos", value: workshops.filter((workshop) => workshop.expiresAt && new Date(workshop.expiresAt) > new Date()).length, icon: Calendar },
+    { label: "Usuarios", value: reconciledUsers.length, icon: Users },
+    { label: "Requieren revisión", value: reconciledUsers.filter((profile) => profile.status !== "consistent").length, icon: ShieldAlert },
+  ];
+
   return (
+    <SuperAdminShell>
     <div className="mx-auto max-w-7xl space-y-8 pb-20 text-foreground">
         <div className="max-w-7xl mx-auto space-y-8 animate-fade-in">
 
           {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div id="overview" className="scroll-mt-36 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-red-100 dark:bg-red-950/30 rounded-xl border border-red-500/30">
                 <Crown className="h-8 w-8 text-primary" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-red-500 dark:text-red-400">Panel del Creador</h1>
-                <p className="text-muted-foreground text-xs">Gestión global de talleres, cuentas y suscripciones.</p>
+                <p className="eyebrow">SUPER_ADMIN</p>
+                <h1 className="page-title">Consola global</h1>
+                <p className="mt-1 text-sm text-muted-foreground">Estado de talleres, accesos, trials y consistencia de cuentas.</p>
               </div>
             </div>
             <Button onClick={() => { loadWorkshops(); loadUsers(); }} variant="outline" className="border-border text-muted-foreground hover:text-foreground">
@@ -267,10 +277,14 @@ function SuperAdminContent() {
             </Button>
           </div>
 
+          <section className="grid grid-cols-2 gap-3 xl:grid-cols-4" aria-label="Resumen global">
+            {globalMetrics.map(({ label, value, icon: Icon }) => <article key={label} className="metric-card"><Icon className="mb-4 text-primary" size={20}/><strong className="block text-2xl tabular-nums">{value}</strong><span className="mt-1 block text-xs font-medium text-muted-foreground">{label}</span></article>)}
+          </section>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
             {/* ── Create Workshop + Admin ── */}
-            <Card className="app-card lg:col-span-1">
+            <Card id="create-workshop" className="app-card scroll-mt-36 lg:col-span-1">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg font-bold text-primary">
                   <UserPlus className="w-5 h-5" /> Nuevo Taller + Admin
@@ -397,7 +411,7 @@ function SuperAdminContent() {
             </Card>
 
             {/* ── Workshops List ── */}
-            <Card className="app-card lg:col-span-2">
+            <Card id="workshops" className="app-card scroll-mt-36 lg:col-span-2">
               <CardHeader>
                 <CardTitle className="text-lg font-bold flex items-center gap-2 text-red-400">
                   <Building2 className="w-5 h-5" /> Talleres ({workshops.length})
@@ -575,7 +589,7 @@ function SuperAdminContent() {
           </div>
 
           {/* ── All Users Audit ── */}
-          <Card className="app-card">
+          <Card id="user-audit" className="app-card scroll-mt-36">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg font-bold text-primary">
                 <Users className="w-5 h-5" /> Auditoría Auth + Firestore ({reconciledUsers.length})
@@ -649,6 +663,7 @@ function SuperAdminContent() {
 
         </div>
     </div>
+    </SuperAdminShell>
   );
 }
 
