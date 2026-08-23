@@ -45,7 +45,7 @@ Share the initial password through a private channel. Ask the ADMIN to use **For
 
 ### Danger Mode
 
-**Danger On** temporarily allows the workshop ADMIN to reset operational data and enables protected inventory deletion where applicable. It does not delete anything by itself. Enable it for an approved operation, verify the result, then return it to **Danger Off**.
+**Habilitar borrado** temporarily allows the workshop ADMIN to reset operational data and enables protected inventory deletion where applicable. The red **Borrado habilitado** indicator does not delete anything by itself. Enable it only for an approved operation, verify the result, then select **Deshabilitar borrado**.
 
 ### Destructive operations
 

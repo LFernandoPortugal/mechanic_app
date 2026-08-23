@@ -160,6 +160,7 @@ test("the SUPER_ADMIN workspace renders on desktop and mobile", async ({ page },
   await expect(page).toHaveURL(/\/super-admin$/, { timeout: 20_000 });
   await expect(page.getByRole("heading", { name: "Consola global" })).toBeVisible({ timeout: 20_000 });
   await expect(page.getByRole("navigation", { name: "Consola global" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^(Habilitar|Deshabilitar) borrado$/ }).first()).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("super-admin-light-desktop.png"), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: testInfo.outputPath("super-admin-light-mobile.png"), fullPage: true });

@@ -24,7 +24,7 @@ Si el email ya existe en Firebase Authentication, la operación responde con con
 
 | Acción | Resultado |
 |---|---|
-| `Danger On/Off` | Autoriza o revoca el borrado de datos operativos por el ADMIN del taller. |
+| `Habilitar/Deshabilitar borrado` | Autoriza o revoca temporalmente el borrado de datos operativos por el ADMIN del taller. Mientras está activo aparece `Borrado habilitado`. |
 | `+7d / +30d` | Extiende la expiración vigente; si ya venció, cuenta desde el momento actual. Nunca acorta un trial activo. |
 | `Revocar` | Expira el acceso inmediatamente. |
 | `Borrar Datos` | Elimina enlaces públicos, jobs, inventario y movimientos del taller; conserva usuarios y settings. |

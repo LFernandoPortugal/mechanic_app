@@ -462,8 +462,8 @@ function SuperAdminContent() {
                                 </span>
                               )}
                               {ws.allowResetData && (
-                                <span className="text-[10px] px-2 py-0.5 rounded-full border bg-amber-950/20 text-amber-400 border-amber-500/30 flex items-center gap-1">
-                                  <ShieldAlert className="w-3 h-3" /> Danger On
+                                <span className="flex items-center gap-1 rounded-full border border-destructive/35 bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">
+                                  <ShieldAlert className="w-3 h-3" /> Borrado habilitado
                                 </span>
                               )}
                             </div>
@@ -484,10 +484,10 @@ function SuperAdminContent() {
                           {/* Action buttons */}
                           <div className="flex flex-wrap gap-1.5 shrink-0">
                             <Button size="xs" variant="outline"
-                              className="text-[10px] h-7 px-2 border-border text-muted-foreground hover:text-amber-400"
+                              className="h-7 border-border px-2 text-[10px] text-muted-foreground hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
                               onClick={() => toggleResetPermission(ws.id, ws.allowResetData || false)}
                               disabled={actionLoading !== null}>
-                              Danger {ws.allowResetData ? "Off" : "On"}
+                              {ws.allowResetData ? "Deshabilitar borrado" : "Habilitar borrado"}
                             </Button>
                             <Button size="xs" variant="outline"
                               className="h-7 border-border px-2 text-[10px] text-muted-foreground hover:text-primary"
