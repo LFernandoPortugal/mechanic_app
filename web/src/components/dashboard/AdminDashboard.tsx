@@ -7,6 +7,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeJobs } from "@/hooks/useRealtimeJobs";
 import { getAttentionOrders, getDashboardMetrics, getStageCounts } from "@/lib/dashboard";
 import { OrderWorkflow } from "./OrderWorkflow";
+import { WorkshopOnboarding } from "./WorkshopOnboarding";
 
 const copy = {
  es: { hello:"Resumen operativo", subtitle:"Lo importante del taller, en un solo lugar.", active:"Vehículos activos", approval:"Esperando aprobación", repair:"En reparación", ready:"Listos para entrega", pending:"Pagos pendientes", revenue:"Ingresos de hoy", attention:"Órdenes que requieren atención", noAttention:"Todo está bajo control", noAttentionDesc:"No hay órdenes con bloqueos detectables en este momento.", quick:"Acciones rápidas", newOrder:"Nueva orden", clients:"Ver clientes", inventory:"Inventario", payments:"Registrar pago", approvalReason:"Falta autorización del cliente", technicianReason:"Sin técnico asignado", qcReason:"Control de calidad pendiente", paymentReason:"Pago pendiente", open:"Abrir orden", empty:"El taller aún no tiene órdenes", emptyDesc:"Crea la primera orden desde recepción para comenzar el flujo operativo.", retry:"Reintentar", error:"No pudimos cargar las órdenes." },
@@ -31,7 +32,7 @@ export function AdminDashboard() {
   return <>
     <div className="space-y-6">
       <div><p className="eyebrow">{workshopSettings?.workshopName || "SGA"}</p><h1 className="page-title">{c.hello}</h1><p className="mt-1 text-sm text-muted-foreground sm:text-base">{c.subtitle}</p></div>
-      {error ? <div role="alert" className="app-card flex flex-wrap items-center justify-between gap-4 border-destructive/30 p-5"><div><strong>{c.error}</strong><p className="text-sm text-muted-foreground">{error}</p></div><button className="app-button-secondary" onClick={retry}>{c.retry}</button></div> : loading ? <DashboardSkeleton /> : jobs.length === 0 ? <div className="app-card py-14 text-center"><ClipboardPlus className="mx-auto mb-4 text-primary" size={32}/><h2 className="section-title">{c.empty}</h2><p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{c.emptyDesc}</p><Link className="app-button-primary mt-5 inline-flex" href="/reception">{c.newOrder}</Link></div> : <>
+      {error ? <div role="alert" className="app-card flex flex-wrap items-center justify-between gap-4 border-destructive/30 p-5"><div><strong>{c.error}</strong><p className="text-sm text-muted-foreground">{error}</p></div><button className="app-button-secondary" onClick={retry}>{c.retry}</button></div> : loading ? <DashboardSkeleton /> : jobs.length === 0 ? <WorkshopOnboarding /> : <>
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6" aria-label={c.hello}>{cards.map(([label,value,Icon]) => <article className="metric-card" key={label}><Icon className="mb-5 text-primary" size={20}/><strong className="block text-2xl tabular-nums">{value}</strong><span className="mt-1 block text-xs font-medium text-muted-foreground">{label}</span></article>)}</section>
         <OrderWorkflow counts={getStageCounts(jobs)} lang={lang}/>
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(280px,.7fr)]">

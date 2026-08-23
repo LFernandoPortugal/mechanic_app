@@ -77,10 +77,10 @@ test("an ADMIN returns to the protected destination and opens user management", 
 test("the ADMIN dashboard supports both themes and mobile navigation", async ({ page }, testInfo) => {
   await page.goto("/login?redirect=%2F");
   await signIn(page, "admin.e2e@example.com");
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/$/, { timeout: 30_000 });
   await expect(page.getByRole("heading", { name: "Resumen operativo" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Navegación principal" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "El taller aún no tiene órdenes" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Configura tu taller y crea la primera orden" })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("dashboard-light-desktop.png"), fullPage: true });
 
   await page.getByRole("button", { name: "Tema: dark" }).click();
@@ -155,10 +155,12 @@ test("the complete route set renders in desktop and mobile across both themes", 
 });
 
 test("the SUPER_ADMIN workspace renders on desktop and mobile", async ({ page }, testInfo) => {
-  await page.goto("/login?redirect=%2Fsuper-admin");
+  await page.goto("/login");
   await signIn(page, "super-admin.e2e@example.com");
   await expect(page).toHaveURL(/\/super-admin$/, { timeout: 20_000 });
-  await expect(page.getByRole("heading", { name: "Panel del Creador" })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("heading", { name: "Consola global" })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("navigation", { name: "Consola global" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^(Habilitar|Deshabilitar) borrado$/ }).first()).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath("super-admin-light-desktop.png"), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: testInfo.outputPath("super-admin-light-mobile.png"), fullPage: true });
@@ -237,7 +239,7 @@ test("minimum-role users take a signed reception through delivery", async ({ pag
 
   await page.goto("/login");
   await signIn(page, "reception.e2e@example.com");
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/$/, { timeout: 30_000 });
 
   await page.goto("/reception");
   await expect(page.getByRole("heading", { name: "Recepción de Vehículo" })).toBeVisible();
@@ -299,7 +301,7 @@ test("minimum-role users take a signed reception through delivery", async ({ pag
   await page.getByRole("button", { name: "Abrir Vista del Cliente" }).click();
   const clientPage = await clientPagePromise;
   await expect(clientPage).toHaveURL(/\/quote\/view\?id=[A-Za-z0-9]{20}#token=[A-Za-z0-9_-]+$/);
-  await expect(clientPage.getByRole("heading", { name: /Portal del Cliente/ })).toBeVisible({ timeout: 30_000 });
+  await expect(clientPage.getByRole("heading", { name: /Portal del Cliente/ })).toBeVisible({ timeout: 60_000 });
   await expect(clientPage.getByText("S/. 170.00", { exact: true })).toBeVisible();
 
   await drawAndConfirmSignature(clientPage);

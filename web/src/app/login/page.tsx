@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { getSafeAuthRedirect } from "@/lib/auth-redirect";
+import { getPostLoginRedirect } from "@/lib/role-home";
 import { AlertCircle, ClipboardCheck, Lock, ShieldCheck, Wrench } from "lucide-react";
 import { toast } from "sonner";
 
@@ -25,7 +26,7 @@ function LoginLoading() {
 
 function LoginForm() {
   const { t, lang } = useLanguage();
-  const { user, loading: authLoading } = useAuth();
+  const { user, userProfile, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = getSafeAuthRedirect(searchParams.get('redirect'));
@@ -38,8 +39,10 @@ function LoginForm() {
   const [sendingReset, setSendingReset] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && user) router.replace(redirectTo);
-  }, [authLoading, redirectTo, router, user]);
+    if (!authLoading && user && userProfile) {
+      router.replace(getPostLoginRedirect(redirectTo, userProfile.roles));
+    }
+  }, [authLoading, redirectTo, router, user, userProfile]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +55,7 @@ function LoginForm() {
       if (!profile) {
         throw new Error("Tu cuenta no tiene un perfil activo. Contacta al administrador.");
       }
-      router.push(redirectTo);
+      router.push(getPostLoginRedirect(redirectTo, profile.roles));
     } catch (err: unknown) {
       const code = typeof err === "object" && err !== null && "code" in err
         ? String(err.code)

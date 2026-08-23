@@ -73,15 +73,15 @@ Para restaurar el acceso, extiende el trial después de confirmar que el taller 
 
 ## 5. Danger Mode
 
-**Danger On** permite temporalmente que el ADMIN del taller vea y ejecute el restablecimiento de datos, y habilita la baja individual de inventario donde corresponde. No borra nada por sí solo.
+**Habilitar borrado** permite temporalmente que el ADMIN del taller vea y ejecute el restablecimiento de datos, y habilita la baja individual de inventario donde corresponde. El indicador rojo **Borrado habilitado** no borra nada por sí solo.
 
 Procedimiento seguro:
 
 1. Confirma por escrito el taller y el objetivo del reset.
-2. Activa **Danger On**.
+2. Pulsa **Habilitar borrado**.
 3. Pide al ADMIN que ejecute la acción y confirme el resultado, o usa **Borrar Datos** con autorización explícita.
 4. Verifica el resultado.
-5. Vuelve a **Danger Off**.
+5. Pulsa **Deshabilitar borrado**.
 
 No dejes Danger Mode activo como configuración normal.
 
